@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<HTML>
+<head>
+<title>Login Form </title>
+<style>
+.show-password {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+
+body {
+margin-top:80px;
+font-family:Arial;
+text-align: center;
+
+background-image: url("background.jpg");
+}
+form {
+    width: 500px;
+    margin: auto;
+	padding:50px;
+	border:2px solid black;
+	
+	
+}
+input[type='email'],
+input[type="text"],
+input[type="password"] {
+    padding:8px;
+	font-size:16px;
+	margin-bottom:12px;
+    width: 100%;
+    box-sizing: border-box;
+	background-color: #E8F0FE;
+}
+
+input[type="submit"] {
+    font-size: 18px;
+	background-color:white;
+	color:black;
+    padding: 10px 25px;
+}
+
+h1{
+margin-top:70px;
+margin-bottom:50px;
+}
+
+</style>
+</head>
+
+<body>
+
+
+ 
+
+
+
+<h1>Registration</h1>
+
+<script>
+function showpassword() {
+    var pass = document.getElementById("password");
+
+    if (pass.type === "password") {
+        pass.type = "text";
+    } else {
+        pass.type = "password";
+    }
+}
+</script>
+
+<form action='login_form.html' method='post' >
+
+
+
+<input type='email' id='email' name='email' minlength=5 maxlength=30 pattern="[A-Za-z0-9@.]+"  required title="Enter valid Email" placeholder="Enter Email"><br><br>
+
+
+<input type='text' id='username' name='username'  minlength=5 maxlength=25 pattern="[A-Za-z0-9@.]+"
+    title="Only letters and numbers are allowed" required placeholder="Enter New Username"><br><br>
+
+
+
+<input type='password' id='password' name='password' minlength=5 maxlength=12 pattern="[A-Za-z0-9@.]+" title="Password can contain only letters, numbers, @ and . (No spaces allowed)" placeholder='Create New Password' required>
+
+
+<div class="show-password">
+<input type='checkbox'id='show' onclick="showpassword()">
+<label for='show'>Show Password</label> </div>
+<br>
+
+<input type='submit' id="submitbutton" value='Create Account'>
+<br><br>
+
+
+</form>
+</body>
