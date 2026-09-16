@@ -1,0 +1,586 @@
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>All Books</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* Sidebar */
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        /* Manage Books Button */
+
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .manage:hover {
+            background-color: #555;
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        /* Sub Menu */
+
+        .submenu {
+            display: none;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+        }
+
+        /* Main */
+
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        /* Page Header */
+
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .top h1 {
+            margin: 0;
+            text-align: center;
+            color: #333;
+        }
+
+        .top p {
+            text-align: center;
+            color: #666;
+        }
+
+        /* Search */
+
+        .search {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .search input {
+            width: 350px;
+            padding: 10px;
+            border: 1px solid #aaa;
+        }
+
+        .search button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search button:hover {
+            background-color: #555;
+        }
+
+        /* Books */
+
+        .books {
+            background-color: white;
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .books h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+            color: #333;
+        }
+
+        .available {
+            color: green;
+            font-weight: bold;
+        }
+
+        .issued {
+            color: red;
+            font-weight: bold;
+        }
+
+        /* Logout */
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+        /* Mobile */
+
+        @media (max-width: 800px) {
+
+            .sidebar {
+                width: 180px;
+            }
+
+            .main {
+                margin-left: 180px;
+            }
+
+            .search input {
+                width: 60%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- Sidebar -->
+
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">Dashboard</a>
+
+        <a href="my_profile.html">My Profile</a>
+
+        <!-- Manage Books Menu -->
+
+        <div class="manage" onclick="toggleMenu()">
+
+            Manage Books
+
+            <span class="arrow" id="arrow">+</span>
+
+        </div>
+
+
+        <!-- Manage Books Submenu -->
+
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Delete Book
+            </a>
+
+        </div>
+
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+        
+
+
+        <div class="logout">
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Main Content -->
+
+    <div class="main">
+
+
+        <!-- Page Header -->
+
+        <div class="top">
+
+            <h1>All Books</h1>
+
+            <p>
+                View complete details of books in the library.
+            </p>
+
+
+            <!-- Search -->
+
+            <div class="search">
+
+                <input
+                    id="search"
+                    type="text"
+                    placeholder="Search book by title or author"
+                >
+
+                <button onclick="searchBook()">
+                    Search
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Book Details -->
+
+        <div class="books">
+
+            <h2>Book Details</h2>
+
+
+            <table id="bookTable">
+
+                <tr>
+
+                    <th>Book ID</th>
+
+                    <th>Book Name</th>
+
+                    <th>Author</th>
+
+                    <th>Category</th>
+
+                    <th>Publisher</th>
+
+                    <th>Year</th>
+
+                    <th>Quantity</th>
+
+                    <th>Status</th>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>-</td>
+
+                </tr>
+
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- Toggle JavaScript -->
+
+    <script>
+
+        function toggleMenu() {
+
+            var menu = document.getElementById("submenu");
+
+            var arrow = document.getElementById("arrow");
+
+
+            if (menu.style.display == "block") {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            }
+
+            else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+        }
+
+
+        function searchBook() {
+
+            var input =
+                document.getElementById("search").value.toLowerCase();
+
+            var rows =
+                document.querySelectorAll("#bookTable tr");
+
+
+            for (var i = 1; i < rows.length; i++) {
+
+                var text =
+                    rows[i].innerText.toLowerCase();
+
+                if (text.includes(input)) {
+
+                    rows[i].style.display = "";
+
+                }
+
+                else {
+
+                    rows[i].style.display = "none";
+
+                }
+
+            }
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
+```

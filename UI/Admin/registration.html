@@ -1,0 +1,296 @@
+<!-- <?php
+/*
+require_once "db.php";
+
+$username_err = $password_err = $confirm_password_err = "";
+$successful_msg = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    $username = trim($_POST['username']);
+    $password = trim($_POST['password']);
+    $confirm_password = trim($_POST['confirm_password']);
+
+    // Validate username
+    if (empty($username)) {
+        $username_err = "Please enter a username.";
+    } 
+    elseif (!preg_match("/^[a-zA-Z0-9@.]+$/", $username)) {
+        $username_err = "Username can only contain alphabets, numbers, @ and .";
+    } 
+    else {
+
+        // Check if username already exists
+        $sql = "SELECT User_id FROM login WHERE Username = ?";
+
+        if ($stmt = $conn->prepare($sql)) {
+
+            $stmt->bind_param("s", $username);
+
+            if ($stmt->execute()) {
+
+                $stmt->store_result();
+
+                if ($stmt->num_rows == 1) {
+                    $username_err = "This username already exists.";
+                }
+
+            } else {
+                echo "Oops! Something went wrong. Please try again.";
+            }
+
+            $stmt->close();
+        }
+    }
+
+    // Validate password
+    if (empty($password)) {
+        $password_err = "Please enter a password.";
+    } 
+    elseif (strlen($password) < 6) {
+        $password_err = "Password should contain at least 6 characters.";
+    }
+
+    // Confirm password
+    if (empty($confirm_password)) {
+        $confirm_password_err = "Please confirm your password.";
+    } 
+    elseif ($password != $confirm_password) {
+        $confirm_password_err = "Passwords do not match.";
+    }
+
+    // Insert data into database
+    if (
+        empty($username_err) &&
+        empty($password_err) &&
+        empty($confirm_password_err)
+    ) {
+
+        $sql = "INSERT INTO login (Username, Password) VALUES (?, ?)";
+
+        if ($stmt = $conn->prepare($sql)) {
+
+            $param_password = password_hash($password, PASSWORD_DEFAULT);
+
+            $stmt->bind_param("ss", $username, $param_password);
+
+            if ($stmt->execute()) {
+
+                $successful_msg = "Registration successful. Redirecting to Login...";
+
+                header("refresh:2;url=login_form.html");
+
+            } else {
+                echo "Oops! Something went wrong. Please try again later.";
+            }
+
+            $stmt->close();
+        }
+    }
+
+    $conn->close();
+}
+*/
+?>
+-->
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Registration</title>
+
+<style>
+
+body {
+    margin-top: 50px;
+    font-family: Arial;
+    text-align: center;
+    background-image: url(Images/library0.png);
+    background-size: cover;
+}
+
+form {
+    width: 500px;
+    margin: auto;
+    padding: 30px;
+    border: 2px solid black;
+    background-color: white;
+    border-radius: 8px;
+}
+
+
+
+h1 {
+    margin-bottom: 30px;
+    color: #333;
+}
+
+label {
+    display: block;
+    text-align: left;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+}
+
+input:focus, select:focus, textarea:focus {
+    border: 1px solid #555;
+}
+
+.show-password {
+    display: flex;
+    align-items: center;
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+.show-password input {
+    width: auto;
+    margin: 0 5px 0 0;
+}
+
+.show-password label {
+    margin: 0;
+}
+
+input[type="submit"] {
+    width: auto;
+    padding: 10px 25px;
+    font-size: 18px;
+    background-color: #333;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+input[type="submit"]:hover {
+    background-color: #555;
+}
+
+</style>
+
+</head>
+
+<body>
+<script>
+function showpassword() {
+    var pass = document.getElementById("password");
+
+    if (pass.type === "password") {
+        pass.type = "text";
+    } else {
+        pass.type = "password";
+    }
+}
+</script>
+
+<h1>Registration</h1>
+<form action="login_form.html" method="post">
+
+    <label for="name">Name:</label>
+    <input
+        type="text"
+        id="name"
+        name="name"
+        maxlength="50"
+        pattern="[A-Za-z ]+"
+        required
+        placeholder="Enter Full Name"
+    >
+
+    <label for="gender">Gender:</label>
+    <select id="gender" name="gender" required>
+        <option value="" disabled selected>Select Gender</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+    </select>
+
+    <label for="email">Email:</label>
+    <input
+        type="email"
+        id="email"
+        name="email"
+        minlength="5"
+        maxlength="30"
+        required
+        placeholder="Enter Email"
+    >
+
+    <label for="phoneno">Phone Number:</label>
+    <input
+        type="tel"
+        id="phoneno"
+        name="phoneno"
+        minlength="10"
+        maxlength="10"
+        pattern="[0-9]{10}"
+        required
+        placeholder="Enter Mobile Number"
+    >
+
+    <label for="address">Address:</label>
+    <textarea
+        id="address"
+        name="address"
+        rows="3"
+        required
+        placeholder="Enter Full Address"
+    ></textarea>
+
+    <label for="username">Username:</label>
+    <input
+        type="text"
+        id="username"
+        name="username"
+        minlength="5"
+        maxlength="25"
+        pattern="[A-Za-z0-9@.]+"
+        required
+        placeholder="Enter New Username"
+    >
+
+    <label for="password">Password:</label>
+    <input
+        type="password"
+        id="password"
+        name="password"
+        minlength="6"
+        maxlength="12"
+        pattern="[A-Za-z0-9@.]+"
+        required
+        placeholder="Create New Password"
+    >
+
+    <label for="confirm_password">Confirm Password:</label>
+    <input
+        type="password"
+        id="confirm_password"
+        name="confirm_password"
+        minlength="6"
+        maxlength="12"
+        required
+        placeholder="Confirm Password"
+    >
+
+    <div class="show-password">
+        <input type="checkbox" id="show" onclick="showpassword()">
+        <label for="show">Show Password</label>
+    </div>
+
+    <input type="submit" value="Create Account">
+
+</form>
+
+</body>
+
+</html>

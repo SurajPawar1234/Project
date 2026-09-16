@@ -1,0 +1,469 @@
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Add Book</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* Sidebar */
+
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        /* Manage Books */
+
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .manage:hover {
+            background-color: #555;
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        /* Sub Menu */
+
+        .submenu {
+            display: block;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+            font-size: 13px;
+        }
+
+        /* Main */
+
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        /* Top */
+
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .top h1 {
+            text-align: center;
+            margin: 0;
+            color: #333;
+        }
+
+        .top p {
+            text-align: center;
+            color: #666;
+        }
+
+        /* Form */
+
+        .form-box {
+            width: 600px;
+            margin: 25px auto;
+            background-color: white;
+            padding: 25px;
+            border: 1px solid #ddd;
+        }
+
+        .form-box h2 {
+            text-align: center;
+            margin-top: 0;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #aaa;
+        }
+
+        /* Buttons */
+
+        .buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .buttons input {
+            padding: 10px 25px;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        .add {
+            background-color: #333;
+        }
+
+        .clear {
+            background-color: #777;
+            margin-left: 10px;
+        }
+
+        .buttons input:hover {
+            opacity: 0.8;
+        }
+
+        /* Logout */
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">Dashboard</a>
+
+        <a href="my_profile.html">My Profile</a>
+
+        <!-- Manage Books Menu -->
+        <div class="manage" onclick="toggleMenu()">
+            Manage Books
+            <span class="arrow" id="arrow">+</span>
+        </div>
+
+        <!-- Manage Books Submenu -->
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">View All Books</a>
+
+            <a href="add_book.html">Add Book</a>
+
+            <a href="update_book.html">Update / Delete Book</a>
+
+        </div>
+
+        <a href="issue_book.html">Issue Book</a>
+
+        <a href="return_book.html">Return Book</a>
+
+        <a href="returned_books.html">Recent Returned Books</a>
+
+        <a href="members.html">Members Details</a>
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+        <div class="logout">
+
+            <a href="login_form.html">Logout</a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Main -->
+
+    <div class="main">
+
+
+        
+
+        <!-- Add Book Form -->
+
+        <div class="form-box">
+
+            <h2>Book Details</h2>
+
+
+            <form action="#" method="post">
+
+
+                <!-- Book ID -->
+
+                <div class="form-group">
+
+                    <label for="book_id">Book ID</label>
+
+                    <input
+                        type="number"
+                        id="book_id"
+                        name="Book_id"
+                        placeholder="Enter book ID"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Book Title -->
+
+                <div class="form-group">
+
+                    <label for="title">Book Title</label>
+
+                    <input
+                        type="text"
+                        id="title"
+                        name="Title"
+                        placeholder="Enter book title"
+                        maxlength="100"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Author -->
+                <div class="form-group">
+                    <label for="author">Author</label>
+
+                    <input
+                        type="text"
+                        id="author"
+                        name="Author"
+                        placeholder="Enter author name"
+                        maxlength="100"
+                        required
+                    >
+                </div>
+
+
+                <!-- ISBN -->
+
+                <div class="form-group">
+
+                    <label for="isbn">ISBN</label>
+
+                    <input
+                        type="text"
+                        id="isbn"
+                        name="ISBN"
+                        placeholder="Enter ISBN"
+                        maxlength="20"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Category -->
+
+                <div class="form-group">
+
+                    <label for="category">Category</label>
+
+                    <select
+                        id="category"
+                        name="Category"
+                        required
+                    >
+
+                        <option value="">
+                            Select Category
+                        </option>
+
+                        <option value="Computer Science">
+                            Computer Science
+                        </option>
+
+                        <option value="Programming">
+                            Programming
+                        </option>
+
+                        <option value="Networking">
+                            Networking
+                        </option>
+
+                        <option value="Database">
+                            Database
+                        </option>
+
+                        <option value="Other">
+                            Other
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- Publisher -->
+
+                <div class="form-group">
+
+                    <label for="publisher">Publisher</label>
+
+                    <input
+                        type="text"
+                        id="publisher"
+                        name="Publisher"
+                        placeholder="Enter publisher name"
+                        maxlength="100"
+                    >
+
+                </div>
+
+
+                <!-- Quantity -->
+
+                <div class="form-group">
+
+                    <label for="quantity">Quantity</label>
+
+                    <input
+                        type="number"
+                        id="quantity"
+                        name="Quantity"
+                        placeholder="Enter quantity"
+                        min="1"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Price -->
+
+                <div class="form-group">
+
+                    <label for="price">Price</label>
+
+                    <input
+                        type="number"
+                        id="price"
+                        name="Price"
+                        placeholder="Enter book price"
+                        min="0"
+                    >
+
+                </div>
+
+
+                <!-- Buttons -->
+
+                <div class="buttons">
+
+                    <input
+                        type="submit"
+                        value="Add Book"
+                        class="add"
+                    >
+
+                    <input
+                        type="reset"
+                        value="Clear"
+                        class="clear"
+                    >
+
+                </div>
+
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- Toggle Menu -->
+
+    <script>
+
+        function toggleMenu() {
+
+            var menu = document.getElementById("submenu");
+
+            var arrow = document.getElementById("arrow");
+
+
+            if (menu.style.display == "none") {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+            else {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            }
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
+```

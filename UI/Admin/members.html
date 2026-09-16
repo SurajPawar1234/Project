@@ -1,0 +1,553 @@
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Member Details</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* Sidebar */
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        /* Manage Books */
+
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .manage:hover {
+            background-color: #555;
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        /* Sub Menu */
+
+        .submenu {
+            display: none;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+        }
+
+        /* Main */
+
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        /* Page Header */
+
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .top h1 {
+            margin: 0;
+            text-align: center;
+            color: #333;
+        }
+
+        .top p {
+            text-align: center;
+            color: #666;
+        }
+
+        /* Search */
+
+        .search {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .search input {
+            width: 350px;
+            padding: 10px;
+            border: 1px solid #aaa;
+        }
+
+        .search button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .search button:hover {
+            background-color: #555;
+        }
+
+        /* Members */
+
+        .members {
+            background-color: white;
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .members h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+            color: #333;
+        }
+
+        /* Delete Button */
+
+        .delete {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            cursor: pointer;
+        }
+
+        .delete:hover {
+            background-color: #c9302c;
+        }
+
+        /* Logout */
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+        /* Mobile */
+
+        @media (max-width: 800px) {
+
+            .sidebar {
+                width: 180px;
+            }
+
+            .main {
+                margin-left: 180px;
+            }
+
+            .search input {
+                width: 60%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- Sidebar -->
+
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">
+            Dashboard
+        </a>
+
+        <a href="my_profile.html">
+            My Profile
+        </a>
+
+
+        <!-- Manage Books -->
+
+        <div class="manage" onclick="toggleMenu()">
+
+            Manage Books
+
+            <span class="arrow" id="arrow">
+                +
+            </span>
+
+        </div>
+
+
+        <!-- Sub Menu -->
+
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Delete Book
+            </a>
+
+        </div>
+
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+        
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+
+        <!-- Logout -->
+
+        <div class="logout">
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- Main Content -->
+
+    <div class="main">
+
+
+        <!-- Page Header -->
+
+        <div class="top">
+
+            <h1>Member Details</h1>
+
+
+            <!-- Search -->
+
+            <div class="search">
+
+                <input
+                    type="text"
+                    id="search"
+                    placeholder="Search by member name or ID"
+                >
+
+                <button onclick="searchMember()">
+                    Search
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Member Details -->
+
+        <div class="members">
+
+            <h2>Library Members</h2>
+
+
+            <table id="memberTable">
+
+                <tr>
+
+                    <th>Member ID</th>
+
+                    <th>Member Name</th>
+
+                    <th>Email</th>
+
+                    <th>Phone</th>
+
+                    <th>Address</th>
+
+                    <th>Membership Date</th>
+
+                    <th>Books Issued</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>
+                        <button
+                            class="delete"
+                            onclick="deleteMember(this)">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>
+                        <button
+                            class="delete"
+                            onclick="deleteMember(this)">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>
+                        <button
+                            class="delete"
+                            onclick="deleteMember(this)">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>
+                        <button
+                            class="delete"
+                            onclick="deleteMember(this)">
+                            Delete
+                        </button>
+                    </td>
+
+                </tr>
+
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+
+    <!-- JavaScript -->
+
+    <script>
+
+        function toggleMenu() {
+
+            var menu = document.getElementById("submenu");
+
+            var arrow = document.getElementById("arrow");
+
+
+            if (menu.style.display == "block") {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            }
+
+            else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+        }
+
+
+        function searchMember() {
+
+            var input =
+                document.getElementById("search").value.toLowerCase();
+
+            var rows =
+                document.querySelectorAll("#memberTable tr");
+
+
+            for (var i = 1; i < rows.length; i++) {
+
+                var text =
+                    rows[i].innerText.toLowerCase();
+
+                if (text.includes(input)) {
+
+                    rows[i].style.display = "";
+
+                }
+
+                else {
+
+                    rows[i].style.display = "none";
+
+                }
+
+            }
+
+        }
+
+
+        function deleteMember(button) {
+
+            var confirmDelete =
+                confirm("Are you sure you want to delete this member?");
+
+            if (confirmDelete) {
+
+                var row = button.parentElement.parentElement;
+
+                row.remove();
+
+            }
+
+        }
+
+    </script>
+
+
+</body>
+
+</html>
+```

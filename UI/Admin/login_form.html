@@ -1,32 +1,40 @@
+
 <!DOCTYPE HTML>
 <HTML>
 <head>
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Login Form </title>
-<style>
+<style>    
 .show-password {
     display: flex;
-    align-items: center;
+    align-items: 10% center;
     gap: 5px;
     margin-bottom: 15px;
 }
 
-
 body {
-margin-top:80px;
-font-family:Arial;
-text-align: center;
+    display:flex;
+    align-items: center;
+    justify-content: center;     
+    flex-direction: column;
+    font-family:Arial;
+    min-height: 100vh;
+    background-image: url(Images/library0.png);
+    background-repeat: no-repeat;
+    background-position:center;
+    background-size:cover;
+   
 
-background-image: url("background.jpg");
-}
+}   
 form {
-    width: 500px;
-    margin: auto;
-	padding:50px;
+    width:270px;
+	padding:33px;
+    text-align: center;
 	border:2px solid black;
-	
-	
+    background-color:whitesmoke;
+    
 }
-input[type='email'],
+
 input[type="text"],
 input[type="password"] {
     padding:8px;
@@ -34,7 +42,6 @@ input[type="password"] {
 	margin-bottom:12px;
     width: 100%;
     box-sizing: border-box;
-	background-color: #E8F0FE;
 }
 
 input[type="submit"] {
@@ -44,10 +51,13 @@ input[type="submit"] {
     padding: 10px 25px;
 }
 
-h1{
-margin-top:70px;
-margin-bottom:50px;
+label
+{
+    display:block;
+    text-align: left;
+    margin-bottom: -10px;
 }
+
 
 </style>
 </head>
@@ -55,11 +65,8 @@ margin-bottom:50px;
 <body>
 
 
- 
 
-
-
-<h1>Forgot Password</h1>
+<h1>Login Form</h1>
 
 <script>
 function showpassword() {
@@ -73,19 +80,16 @@ function showpassword() {
 }
 </script>
 
-<form action='login_form.html' method='post' >
+<form action='db.php' method='post' >
 
 
-
-<input type='email' id='email' name='email' minlength=5 maxlength=30 pattern="[A-Za-z0-9@.]+"  required title="Enter valid Email" placeholder="Enter Email"><br><br>
-
-
+<label for='username'>Username:</label><br>
 <input type='text' id='username' name='username'  minlength=5 maxlength=25 pattern="[A-Za-z0-9@.]+"
     title="Only letters and numbers are allowed" required placeholder="Enter Username"><br><br>
 
 
-
-<input type='password' id='password' name='password' minlength=5 maxlength=12 pattern="[A-Za-z0-9@.]+" title="Password can contain only letters, numbers, @ and . (No spaces allowed)" placeholder='Create New Password' required>
+<label for='password'>Password:</label><br>
+<input type='password' id='password' name='password' minlength=5 maxlength=12 pattern="[A-Za-z0-9@.]+" title="Password can contain only letters, numbers, @ and . (No spaces allowed)" placeholder='Enter Password' required>
 
 
 <div class="show-password">
@@ -96,6 +100,9 @@ function showpassword() {
 <input type='submit' id="submitbutton" value='Login'>
 <br><br>
 
+<a href="ForgotPassword.html">Forgot Password ? </a>
+<br> <br>
+<a href="Registration.html">Create New Account</a>
 
 </form>
 </body>

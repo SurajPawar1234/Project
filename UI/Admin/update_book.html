@@ -1,0 +1,1350 @@
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Update Book</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* =========================
+           ORIGINAL SIDEBAR
+        ========================== */
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .manage:hover {
+            background-color: #555;
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        .submenu {
+            display: block;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+            font-size: 13px;
+        }
+
+
+        /* =========================
+           MAIN CONTENT
+        ========================== */
+
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .top h1 {
+            text-align: center;
+            margin: 0;
+            color: #333;
+        }
+
+
+        /* =========================
+           SEARCH
+        ========================== */
+
+        .search {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .search input {
+            width: 350px;
+            padding: 10px;
+            border: 1px solid #aaa;
+        }
+
+        .search button {
+            padding: 10px 20px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+
+        .search button:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================
+           BOOK TABLE
+        ========================== */
+
+        .books {
+            background-color: white;
+            margin-top: 25px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            overflow-x: auto;
+        }
+
+        .books h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1050px;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        th {
+            background-color: #eee;
+        }
+
+
+        /* =========================
+           ACTION BUTTONS
+        ========================== */
+
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .update-btn {
+            background-color: #333;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .update-btn:hover {
+            background-color: #555;
+        }
+
+        .delete-btn {
+            background-color: #c0392b;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #a93226;
+        }
+
+
+        /* =========================
+           ORIGINAL LOGOUT
+        ========================== */
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+
+        /* =========================
+           UPDATE POPUP
+        ========================== */
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-box {
+            width: 600px;
+            max-width: 95%;
+            max-height: 90vh;
+            overflow-y: auto;
+            background-color: white;
+            padding: 25px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: #333;
+        }
+
+        .close-btn {
+            border: none;
+            background: transparent;
+            font-size: 28px;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+
+        /* =========================
+           FORM
+        ========================== */
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #aaa;
+            box-sizing: border-box;
+            font-family: Arial;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+        .form-group input[readonly] {
+            background-color: #eee;
+        }
+
+
+        /* =========================
+           POPUP BUTTONS
+        ========================== */
+
+        .form-buttons {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .save-btn {
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .save-btn:hover {
+            background-color: #555;
+        }
+
+        .cancel-btn {
+            background-color: #777;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .cancel-btn:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 900px) {
+
+            .main {
+                margin-left: 220px;
+                padding: 15px;
+            }
+
+            .search input {
+                width: 250px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         ORIGINAL SIDEBAR
+    ========================== -->
+
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">
+            Dashboard
+        </a>
+
+        <a href="my_profile.html">
+            My Profile
+        </a>
+
+        <div class="manage" onclick="toggleMenu()">
+
+            Manage Books
+
+            <span class="arrow" id="arrow">+</span>
+
+        </div>
+
+
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Return Book
+            </a>
+
+        </div>
+
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+
+        <div class="logout">
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <div class="main">
+
+
+        <div class="top">
+
+            <h1>
+                Update Book
+            </h1>
+
+
+            <div class="search">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search by Book ID, Name, Author or Category"
+                    onkeypress="searchOnEnter(event)"
+                >
+
+                <button onclick="searchBooks()">
+                    Search
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             BOOK TABLE
+        ========================== -->
+
+        <div class="books">
+
+            <h2>
+                All Books
+            </h2>
+
+
+            <table id="bookTable">
+
+                <tr>
+
+                    <th>Book ID</th>
+
+                    <th>Book Title</th>
+
+                    <th>Author</th>
+
+                    <th>ISBN</th>
+
+                    <th>Category</th>
+
+                    <th>Publisher</th>
+
+                    <th>Quantity</th>
+
+                    <th>Price</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+
+                <!-- EMPTY BOOK ROW 1 -->
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>0</td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="update-btn"
+                                onclick="showForm(this)"
+                            >
+                                Update
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteBook(this)"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMPTY BOOK ROW 2 -->
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>0</td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="update-btn"
+                                onclick="showForm(this)"
+                            >
+                                Update
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteBook(this)"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMPTY BOOK ROW 3 -->
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>0</td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="update-btn"
+                                onclick="showForm(this)"
+                            >
+                                Update
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteBook(this)"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMPTY BOOK ROW 4 -->
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>0</td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="update-btn"
+                                onclick="showForm(this)"
+                            >
+                                Update
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteBook(this)"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- EMPTY BOOK ROW 5 -->
+
+                <tr>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>-</td>
+
+                    <td>0</td>
+
+                    <td>0</td>
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <button
+                                class="update-btn"
+                                onclick="showForm(this)"
+                            >
+                                Update
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteBook(this)"
+                            >
+                                Delete
+                            </button>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         UPDATE POPUP
+    ========================== -->
+
+    <div class="modal" id="updateModal">
+
+
+        <div class="modal-box">
+
+
+            <div class="modal-header">
+
+                <h2>
+                    Update Book Details
+                </h2>
+
+                <button
+                    class="close-btn"
+                    onclick="closeForm()"
+                >
+                    ×
+                </button>
+
+            </div>
+
+
+            <!-- BOOK ID -->
+
+            <div class="form-group">
+
+                <label>
+                    Book ID
+                </label>
+
+                <input
+                    type="text"
+                    id="editBookId"
+                    readonly
+                    value="-"
+                >
+
+            </div>
+
+
+            <!-- BOOK TITLE -->
+
+            <div class="form-group">
+
+                <label>
+                    Book Title
+                </label>
+
+                <input
+                    type="text"
+                    id="editTitle"
+                    maxlength="100"
+                >
+
+            </div>
+
+
+            <!-- AUTHOR -->
+
+            <div class="form-group">
+
+                <label>
+                    Author
+                </label>
+
+                <input
+                    type="text"
+                    id="editAuthor"
+                    maxlength="100"
+                >
+
+            </div>
+
+
+            <!-- ISBN -->
+
+            <div class="form-group">
+
+                <label>
+                    ISBN
+                </label>
+
+                <input
+                    type="text"
+                    id="editISBN"
+                    maxlength="20"
+                >
+
+            </div>
+
+
+            <!-- CATEGORY -->
+
+            <div class="form-group">
+
+                <label>
+                    Category
+                </label>
+
+                <select id="editCategory">
+
+                    <option value="">
+                        Select Category
+                    </option>
+
+                    <option value="Computer Science">
+                        Computer Science
+                    </option>
+
+                    <option value="Programming">
+                        Programming
+                    </option>
+
+                    <option value="Networking">
+                        Networking
+                    </option>
+
+                    <option value="Database">
+                        Database
+                    </option>
+
+                    <option value="Other">
+                        Other
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- PUBLISHER -->
+
+            <div class="form-group">
+
+                <label>
+                    Publisher
+                </label>
+
+                <input
+                    type="text"
+                    id="editPublisher"
+                    maxlength="100"
+                >
+
+            </div>
+
+
+            <!-- QUANTITY -->
+
+            <div class="form-group">
+
+                <label>
+                    Quantity
+                </label>
+
+                <input
+                    type="number"
+                    id="editQuantity"
+                    min="1"
+                    value="0"
+                >
+
+            </div>
+
+
+            <!-- PRICE -->
+
+            <div class="form-group">
+
+                <label>
+                    Price
+                </label>
+
+                <input
+                    type="number"
+                    id="editPrice"
+                    min="0"
+                    value="0"
+                >
+
+            </div>
+
+
+            <!-- BUTTONS -->
+
+            <div class="form-buttons">
+
+                <button
+                    class="save-btn"
+                    onclick="updateBook()"
+                >
+                    Update Book
+                </button>
+
+                <button
+                    class="cancel-btn"
+                    onclick="closeForm()"
+                >
+                    Cancel
+                </button>
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <script>
+
+
+        /* =========================
+           SIDEBAR MENU
+        ========================== */
+
+        function toggleMenu() {
+
+            var menu =
+                document.getElementById("submenu");
+
+            var arrow =
+                document.getElementById("arrow");
+
+
+            if (menu.style.display == "block") {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            }
+
+            else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+        }
+
+
+        /* =========================
+           SELECTED ROW
+        ========================== */
+
+        var selectedRow = null;
+
+
+        /* =========================
+           SHOW UPDATE POPUP
+        ========================== */
+
+        function showForm(button) {
+
+            selectedRow =
+                button.closest("tr");
+
+
+            var cells =
+                selectedRow.getElementsByTagName("td");
+
+
+            document.getElementById("editBookId").value =
+                cells[0].innerText.trim();
+
+
+            document.getElementById("editTitle").value =
+                cells[1].innerText.trim() === "-"
+                ? ""
+                : cells[1].innerText.trim();
+
+
+            document.getElementById("editAuthor").value =
+                cells[2].innerText.trim() === "-"
+                ? ""
+                : cells[2].innerText.trim();
+
+
+            document.getElementById("editISBN").value =
+                cells[3].innerText.trim() === "-"
+                ? ""
+                : cells[3].innerText.trim();
+
+
+            document.getElementById("editCategory").value =
+                cells[4].innerText.trim() === "-"
+                ? ""
+                : cells[4].innerText.trim();
+
+
+            document.getElementById("editPublisher").value =
+                cells[5].innerText.trim() === "-"
+                ? ""
+                : cells[5].innerText.trim();
+
+
+            document.getElementById("editQuantity").value =
+                cells[6].innerText.trim();
+
+
+            document.getElementById("editPrice").value =
+                cells[7].innerText.trim();
+
+
+            document
+                .getElementById("updateModal")
+                .classList.add("show");
+
+        }
+
+
+        /* =========================
+           CLOSE POPUP
+        ========================== */
+
+        function closeForm() {
+
+            document
+                .getElementById("updateModal")
+                .classList.remove("show");
+
+            selectedRow = null;
+
+        }
+
+
+        /* =========================
+           UPDATE BOOK
+        ========================== */
+
+        function updateBook() {
+
+            if (selectedRow === null) {
+
+                return;
+
+            }
+
+
+            var title =
+                document
+                    .getElementById("editTitle")
+                    .value
+                    .trim();
+
+
+            var author =
+                document
+                    .getElementById("editAuthor")
+                    .value
+                    .trim();
+
+
+            var isbn =
+                document
+                    .getElementById("editISBN")
+                    .value
+                    .trim();
+
+
+            var category =
+                document
+                    .getElementById("editCategory")
+                    .value;
+
+
+            var publisher =
+                document
+                    .getElementById("editPublisher")
+                    .value
+                    .trim();
+
+
+            var quantity =
+                document
+                    .getElementById("editQuantity")
+                    .value;
+
+
+            var price =
+                document
+                    .getElementById("editPrice")
+                    .value;
+
+
+            if (
+                title === "" ||
+                author === "" ||
+                isbn === "" ||
+                category === "" ||
+                publisher === "" ||
+                quantity === ""
+            ) {
+
+                alert("Please fill all book details.");
+
+                return;
+
+            }
+
+
+            if (quantity < 1) {
+
+                alert("Quantity must be at least 1.");
+
+                return;
+
+            }
+
+
+            if (price === "" || price < 0) {
+
+                alert("Please enter a valid price.");
+
+                return;
+
+            }
+
+
+            var cells =
+                selectedRow.getElementsByTagName("td");
+
+
+            cells[1].innerText = title;
+
+            cells[2].innerText = author;
+
+            cells[3].innerText = isbn;
+
+            cells[4].innerText = category;
+
+            cells[5].innerText = publisher;
+
+            cells[6].innerText = quantity;
+
+            cells[7].innerText = price;
+
+
+            alert("Book updated successfully!");
+
+
+            closeForm();
+
+        }
+
+
+        /* =========================
+           DELETE BOOK
+        ========================== */
+
+        function deleteBook(button) {
+
+            var row =
+                button.closest("tr");
+
+
+            var bookId =
+                row.cells[0].innerText.trim();
+
+
+            var bookTitle =
+                row.cells[1].innerText.trim();
+
+
+            var confirmDelete =
+                confirm(
+                    "Are you sure you want to delete Book ID " +
+                    bookId +
+                    " - " +
+                    bookTitle +
+                    "?"
+                );
+
+
+            if (confirmDelete) {
+
+                row.remove();
+
+                alert("Book deleted successfully!");
+
+            }
+
+        }
+
+
+        /* =========================
+           SEARCH BOOKS
+        ========================== */
+
+        function searchBooks() {
+
+            var input =
+                document
+                    .getElementById("searchInput")
+                    .value
+                    .toLowerCase()
+                    .trim();
+
+
+            var table =
+                document.getElementById("bookTable");
+
+
+            var rows =
+                table.getElementsByTagName("tr");
+
+
+            var found = false;
+
+
+            for (var i = 1; i < rows.length; i++) {
+
+                var row = rows[i];
+
+
+                var cells =
+                    row.getElementsByTagName("td");
+
+
+                if (cells.length > 0) {
+
+                    var rowText =
+                        row.innerText.toLowerCase();
+
+
+                    if (
+                        input === "" ||
+                        rowText.includes(input)
+                    ) {
+
+                        row.style.display = "";
+
+                        found = true;
+
+                    }
+
+                    else {
+
+                        row.style.display = "none";
+
+                    }
+
+                }
+
+            }
+
+
+            if (!found && input !== "") {
+
+                alert("No book found.");
+
+            }
+
+        }
+
+
+        /* =========================
+           SEARCH WITH ENTER
+        ========================== */
+
+        function searchOnEnter(event) {
+
+            if (event.key === "Enter") {
+
+                searchBooks();
+
+            }
+
+        }
+
+
+        /* =========================
+           CLOSE POPUP WHEN CLICKING
+           OUTSIDE
+        ========================== */
+
+        document
+            .getElementById("updateModal")
+            .addEventListener(
+                "click",
+                function(event) {
+
+                    if (event.target === this) {
+
+                        closeForm();
+
+                    }
+
+                }
+            );
+
+    </script>
+
+
+</body>
+
+</html>
+```
+
