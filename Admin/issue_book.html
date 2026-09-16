@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Issue Book</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* =========================
+           ORIGINAL SIDEBAR
+        ========================== */
+
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background-color: #555;
+        }
+
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .manage:hover {
+            background-color: #555;
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        .submenu {
+            display: block;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+            font-size: 13px;
+        }
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+
+        /* =========================
+           MAIN CONTENT
+        ========================== */
+
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+
+        /* =========================
+           FORM CONTAINER
+        ========================== */
+
+        .form-container {
+            background-color: white;
+            width: 650px;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 30px;
+            border: 1px solid #ddd;
+        }
+
+        .form-container h1 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-subtitle {
+            text-align: center;
+            color: #777;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           FORM
+        ========================== */
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #aaa;
+            box-sizing: border-box;
+            font-family: Arial;
+            font-size: 14px;
+            background-color: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #555;
+        }
+
+
+        /* =========================
+           INFORMATION BOX
+        ========================== */
+
+        .info-box {
+            background-color: #f5f5f5;
+            border-left: 4px solid #555;
+            padding: 12px 15px;
+            margin-bottom: 25px;
+            font-size: 13px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+
+        /* =========================
+           TWO COLUMN DATES
+        ========================== */
+
+        .date-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .date-row .form-group {
+            width: 50%;
+        }
+
+
+        /* =========================
+           STATUS
+        ========================== */
+
+        .status-box {
+            width: 100%;
+            padding: 11px;
+            box-sizing: border-box;
+            border: 1px solid #aaa;
+            background-color: #f5f5f5;
+            color: #555;
+            font-size: 14px;
+        }
+
+
+        /* =========================
+           BUTTONS
+        ========================== */
+
+        .button-area {
+            text-align: center;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .issue-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        .issue-btn:hover {
+            background-color: #555;
+        }
+
+        .clear-btn {
+            background-color: #777;
+            color: white;
+            border: none;
+            padding: 11px 28px;
+            font-size: 15px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .clear-btn:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 900px) {
+
+            .main {
+                margin-left: 220px;
+                padding: 15px;
+            }
+
+            .form-container {
+                width: auto;
+            }
+
+        }
+
+        @media (max-width: 600px) {
+
+            .date-row {
+                display: block;
+            }
+
+            .date-row .form-group {
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- =========================
+         ORIGINAL SIDEBAR
+    ========================== -->
+
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">
+            Dashboard
+        </a>
+
+        <a href="my_profile.html">
+            My Profile
+        </a>
+
+        <div class="manage" onclick="toggleMenu()">
+
+            Manage Books
+
+            <span class="arrow" id="arrow">+</span>
+
+        </div>
+
+
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Delete Book
+            </a>
+
+        </div>
+
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+
+        <div class="logout">
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+
+    <div class="main">
+
+
+        <div class="form-container">
+
+            <h1>
+                Issue Book
+            </h1>
+
+            <div class="form-subtitle">
+                Record a new book issue for a library member
+            </div>
+
+
+            
+
+
+            <form id="issueForm">
+
+
+                <!-- MEMBER -->
+
+                <div class="form-group">
+
+                    <label for="member">
+                        Member
+                    </label>
+
+                    <select id="member" required>
+
+                        <option value="">
+                            Select Member
+                        </option>
+
+                        <option value="Rahul Patil">
+                            Rahul Patil
+                        </option>
+
+                        <option value="Priya Sharma">
+                            Priya Sharma
+                        </option>
+
+                        <option value="Amit Joshi">
+                            Amit Joshi
+                        </option>
+
+                        <option value="Sneha More">
+                            Sneha More
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- BOOK -->
+
+                <div class="form-group">
+
+                    <label for="book">
+                        Book
+                    </label>
+
+                    <select id="book" required>
+
+                        <option value="">
+                            Select Book
+                        </option>
+
+                        <option value="Database Management System">
+                            Database Management System
+                        </option>
+
+                        <option value="Web Development">
+                            Web Development
+                        </option>
+
+                        <option value="Computer Networks">
+                            Computer Networks
+                        </option>
+
+                        <option value="Java Programming">
+                            Java Programming
+                        </option>
+
+                        <option value="Operating System">
+                            Operating System
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- DATES -->
+
+                <div class="date-row">
+
+
+                    <div class="form-group">
+
+                        <label for="issueDate">
+                            Issue Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="issueDate"
+                            required
+                        >
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label for="dueDate">
+                            Due Date
+                        </label>
+
+                        <input
+                            type="date"
+                            id="dueDate"
+                            required
+                        >
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- STATUS -->
+
+                <div class="form-group">
+
+                    <label>
+                        Status
+                    </label>
+
+                    <div class="status-box">
+                        Issued
+                    </div>
+
+                </div>
+
+
+                <!-- BUTTONS -->
+
+                <div class="button-area">
+
+                    <button
+                        type="submit"
+                        class="issue-btn"
+                    >
+                        Issue Book
+                    </button>
+
+
+                    <button
+                        type="reset"
+                        class="clear-btn"
+                    >
+                        Clear
+                    </button>
+
+                </div>
+
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <script>
+
+
+        /* =========================
+           SIDEBAR MENU
+        ========================== */
+
+        function toggleMenu() {
+
+            var menu =
+                document.getElementById("submenu");
+
+            var arrow =
+                document.getElementById("arrow");
+
+
+            if (menu.style.display == "block") {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            }
+
+            else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+        }
+
+
+        /* =========================
+           SET TODAY'S DATE
+        ========================== */
+
+        window.onload = function() {
+
+            var today =
+                new Date().toISOString().split("T")[0];
+
+            document.getElementById("issueDate").value =
+                today;
+
+            document.getElementById("issueDate").min =
+                today;
+
+        };
+
+
+        /* =========================
+           DUE DATE VALIDATION
+        ========================== */
+
+        document
+            .getElementById("issueDate")
+            .addEventListener("change", function() {
+
+                document
+                    .getElementById("dueDate")
+                    .min = this.value;
+
+            });
+
+
+        /* =========================
+           FORM SUBMIT
+        ========================== */
+
+        document
+            .getElementById("issueForm")
+            .addEventListener("submit", function(event) {
+
+                event.preventDefault();
+
+
+                var member =
+                    document.getElementById("member").value;
+
+                var book =
+                    document.getElementById("book").value;
+
+                var issueDate =
+                    document.getElementById("issueDate").value;
+
+                var dueDate =
+                    document.getElementById("dueDate").value;
+
+
+                if (dueDate < issueDate) {
+
+                    alert(
+                        "Due Date cannot be before Issue Date."
+                    );
+
+                    return;
+
+                }
+
+
+                alert(
+                    "Book issued successfully!\n\n" +
+                    "Member: " + member +
+                    "\nBook: " + book +
+                    "\nDue Date: " + dueDate
+                );
+
+
+                this.reset();
+
+
+                /* Set issue date again after reset */
+
+                var today =
+                    new Date().toISOString().split("T")[0];
+
+                document.getElementById("issueDate").value =
+                    today;
+
+                document.getElementById("issueDate").min =
+                    today;
+
+            });
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Library - Member</title>
+
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+
+        body {
+
+            margin: 0;
+
+            font-family: Arial, sans-serif;
+
+            background-color: #f5f5f5;
+
+            color: #333;
+        }
+
+
+        /* =================================================
+           HEADER
+        ================================================= */
+
+        .header {
+
+            height: 65px;
+
+            background-color: #43515a;
+
+            color: white;
+
+            display: flex;
+
+            align-items: center;
+
+            padding: 0 25px;
+
+            position: relative;
+
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+        }
+
+
+        .library-title {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            white-space: nowrap;
+        }
+
+
+        /* =================================================
+           ANNOUNCEMENT
+        ================================================= */
+
+        .header-announcement {
+
+            position: absolute;
+
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            width: 60%;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            overflow: hidden;
+
+            white-space: nowrap;
+        }
+
+
+        .announcement-icon {
+
+            font-size: 18px;
+
+            margin-right: 8px;
+
+            flex-shrink: 0;
+        }
+
+
+        .announcement-scroll {
+
+            overflow: hidden;
+
+            width: 100%;
+        }
+
+
+        .announcement-track {
+
+            display: inline-flex;
+
+            white-space: nowrap;
+
+            animation: announcementMove 18s linear infinite;
+        }
+
+
+        .announcement-item {
+
+            margin-right: 80px;
+
+            font-size: 17px;
+
+            color: white;
+        }
+
+
+        @keyframes announcementMove {
+
+            0% {
+                transform: translateX(100%);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+
+        }
+
+
+        /* =================================================
+           HEADER RIGHT
+        ================================================= */
+
+        .header-right {
+
+            margin-left: auto;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 18px;
+        }
+
+
+        .profile-icon {
+
+            width: 36px;
+
+            height: 36px;
+
+            border-radius: 50%;
+
+            background-color: white;
+
+            color: #43515a;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 20px;
+
+            cursor: pointer;
+
+            transition: 0.2s;
+        }
+
+
+        .profile-icon:hover {
+
+            transform: scale(1.05);
+
+            background-color: #eeeeee;
+        }
+
+
+        .logout {
+
+            color: white;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            padding: 8px 12px;
+
+            border-radius: 4px;
+
+            transition: 0.2s;
+        }
+
+
+        .logout:hover {
+
+            background-color: rgba(255,255,255,0.12);
+        }
+
+
+        /* =================================================
+           MAIN
+        ================================================= */
+
+        main {
+
+            width: 90%;
+
+            max-width: 1300px;
+
+            margin: 25px auto 40px auto;
+        }
+
+
+        /* =================================================
+           WELCOME CARD
+        ================================================= */
+
+        .welcome-card {
+
+            background-color: white;
+
+            border: 1px solid #ddd;
+
+            border-radius: 6px;
+
+            padding: 22px;
+
+            margin-bottom: 20px;
+
+            text-align: center;
+        }
+
+
+        .welcome-card h2 {
+
+            margin: 0;
+
+            font-size: 24px;
+
+            color: #43515a;
+        }
+
+
+        /* =================================================
+           COMMON CARD
+        ================================================= */
+
+        .card {
+
+            background-color: white;
+
+            border: 1px solid #ddd;
+
+            border-radius: 6px;
+
+            padding: 20px;
+
+            margin-bottom: 20px;
+
+            overflow-x: auto;
+        }
+
+
+        .card h3 {
+
+            margin: 0 0 18px 0;
+
+            color: #43515a;
+
+            font-size: 19px;
+        }
+
+
+        /* =================================================
+           TABLE
+        ================================================= */
+
+        table {
+
+            width: 100%;
+
+            border-collapse: collapse;
+
+            min-width: 700px;
+        }
+
+
+        th {
+
+            background-color: #43515a;
+
+            color: white;
+
+            padding: 12px;
+
+            text-align: left;
+
+            font-size: 14px;
+        }
+
+
+        td {
+
+            padding: 12px;
+
+            border-bottom: 1px solid #ddd;
+
+            font-size: 14px;
+
+            color: #444;
+        }
+
+
+        tr:last-child td {
+
+            border-bottom: none;
+        }
+
+
+        .no-records {
+
+            text-align: center;
+
+            color: #777;
+
+            padding: 25px;
+
+            font-size: 14px;
+        }
+
+
+        /* =================================================
+           SEARCH + FILTER
+        ================================================= */
+
+        .books-header {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 12px;
+
+            margin-bottom: 18px;
+        }
+
+
+        .books-header h3 {
+
+            margin: 0;
+
+            white-space: nowrap;
+        }
+
+
+        .search-filter {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 8px;
+
+            margin-left: auto;
+        }
+
+
+        .search-box {
+
+            width: 230px;
+
+            padding: 9px 11px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 4px;
+
+            outline: none;
+
+            font-size: 14px;
+        }
+
+
+        .search-box:focus {
+
+            border-color: #43515a;
+        }
+
+
+        .search-btn,
+        .filter-btn {
+
+            border: none;
+
+            padding: 9px 15px;
+
+            border-radius: 4px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+
+        .search-btn {
+
+            background-color: #43515a;
+
+            color: white;
+        }
+
+
+        .filter-btn {
+
+            background-color: #666;
+
+            color: white;
+        }
+
+
+        .search-btn:hover {
+
+            background-color: #344149;
+        }
+
+
+        .filter-btn:hover {
+
+            background-color: #555;
+        }
+
+
+        /* =================================================
+           FILTER MODAL
+        ================================================= */
+
+        .filter-overlay {
+
+            display: none;
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0,0,0,0.45);
+
+            z-index: 1000;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        .filter-popup {
+
+            width: 430px;
+
+            max-width: 92%;
+
+            background-color: white;
+
+            border-radius: 7px;
+
+            padding: 22px;
+
+            box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+        }
+
+
+        .filter-popup h3 {
+
+            margin: 0 0 20px 0;
+
+            color: #43515a;
+        }
+
+
+        .filter-group {
+
+            margin-bottom: 16px;
+        }
+
+
+        .filter-group label {
+
+            display: block;
+
+            font-size: 14px;
+
+            margin-bottom: 7px;
+
+            font-weight: bold;
+        }
+
+
+        .filter-group select {
+
+            width: 100%;
+
+            padding: 9px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 4px;
+
+            background: white;
+
+            font-size: 14px;
+        }
+
+
+        .filter-actions {
+
+            display: flex;
+
+            gap: 10px;
+
+            margin-top: 20px;
+        }
+
+
+        .apply-filter,
+        .clear-filter {
+
+            flex: 1;
+
+            padding: 10px;
+
+            border: none;
+
+            border-radius: 4px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+        }
+
+
+        .apply-filter {
+
+            background-color: #43515a;
+
+            color: white;
+        }
+
+
+        .clear-filter {
+
+            background-color: #ddd;
+
+            color: #333;
+        }
+
+
+        /* =================================================
+           PROFILE MODAL
+        ================================================= */
+
+        .profile-overlay {
+
+            display: none;
+
+            position: fixed;
+
+            top: 0;
+
+            left: 0;
+
+            width: 100%;
+
+            height: 100%;
+
+            background: rgba(0,0,0,0.45);
+
+            z-index: 1100;
+
+            justify-content: center;
+
+            align-items: center;
+        }
+
+
+        .profile-popup {
+
+            width: 450px;
+
+            max-width: 92%;
+
+            background-color: white;
+
+            border-radius: 7px;
+
+            box-shadow: 0 5px 25px rgba(0,0,0,0.25);
+
+            overflow: hidden;
+        }
+
+
+        .profile-popup-header {
+
+            background-color: #43515a;
+
+            color: white;
+
+            padding: 15px 18px;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+        }
+
+
+        .profile-popup-header h3 {
+
+            margin: 0;
+
+            font-size: 18px;
+        }
+
+
+        .close-profile {
+
+            background: transparent;
+
+            border: none;
+
+            color: white;
+
+            font-size: 25px;
+
+            cursor: pointer;
+
+            line-height: 1;
+        }
+
+
+        .profile-content {
+
+            padding: 25px;
+        }
+
+
+        .profile-avatar {
+
+            width: 75px;
+
+            height: 75px;
+
+            border-radius: 50%;
+
+            background-color: #43515a;
+
+            color: white;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: center;
+
+            font-size: 35px;
+
+            margin: 0 auto 25px auto;
+        }
+
+
+        .profile-details {
+
+            width: 100%;
+        }
+
+
+        .profile-row {
+
+            display: flex;
+
+            border-bottom: 1px solid #eee;
+
+            padding: 13px 0;
+        }
+
+
+        .profile-row:last-child {
+
+            border-bottom: none;
+        }
+
+
+        .profile-label {
+
+            width: 40%;
+
+            font-weight: bold;
+
+            color: #555;
+
+            font-size: 14px;
+        }
+
+
+        .profile-value {
+
+            width: 60%;
+
+            color: #777;
+
+            font-size: 14px;
+        }
+
+
+        /* =================================================
+           MEMBER NAVIGATION
+        ================================================= */
+
+        .member-navigation {
+            width: 100%;
+            background-color: white;
+            border-bottom: 1px solid #ddd;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            padding: 8px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            overflow-x: auto;
+        }
+
+        .member-navigation a {
+            color: #43515a;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 5px;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+
+        .member-navigation a:hover {
+            background-color: #43515a;
+            color: white;
+        }
+
+        /* =================================================
+           LIBRARY DETAILS
+        ================================================= */
+
+        .library-details {
+            width: 92%;
+            max-width: 1200px;
+            margin: 20px auto 30px auto;
+        }
+
+        .library-details h3 {
+            margin-top: 0;
+            margin-bottom: 18px;
+        }
+
+        .library-detail-row {
+            display: flex;
+            border-bottom: 1px solid #eee;
+            padding: 12px 0;
+        }
+
+        .library-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .library-detail-label {
+            width: 30%;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .library-detail-value {
+            width: 70%;
+            color: #777;
+            font-size: 14px;
+        }
+
+        .footer {
+            text-align: center;
+            color: #777;
+            font-size: 12px;
+            padding: 0 20px 25px 20px;
+        }
+
+
+        /* =================================================
+           RESPONSIVE
+        ================================================= */
+
+        @media (max-width: 900px) {
+
+            .header-announcement {
+
+                width: 50%;
+            }
+
+            .search-filter {
+
+                flex-wrap: wrap;
+            }
+
+            .search-box {
+
+                width: 180px;
+            }
+
+        }
+
+
+        @media (max-width: 650px) {
+
+            .header {
+
+                padding: 0 15px;
+            }
+
+
+            .header-announcement {
+
+                display: none;
+            }
+
+
+            .library-title {
+
+                font-size: 19px;
+            }
+
+
+            .header-right {
+
+                gap: 8px;
+            }
+
+
+            main {
+
+                width: 94%;
+
+                margin-top: 18px;
+            }
+
+
+            .books-header {
+
+                flex-direction: column;
+
+                align-items: stretch;
+            }
+
+
+            .books-header h3 {
+
+                margin-bottom: 5px;
+            }
+
+
+            .search-filter {
+
+                width: 100%;
+
+                margin-left: 0;
+            }
+
+
+            .search-box {
+
+                flex: 1;
+
+                width: auto;
+            }
+
+
+            .search-btn,
+            .filter-btn {
+
+                padding: 9px 11px;
+            }
+
+
+            .profile-row {
+
+                display: block;
+            }
+
+
+            .profile-label,
+            .profile-value {
+
+                width: 100%;
+
+                display: block;
+            }
+
+
+            .profile-value {
+
+                margin-top: 5px;
+            }
+
+            .library-details,
+            .bottom-navigation {
+                width: 94%;
+            }
+
+            .library-detail-row {
+                display: block;
+            }
+
+            .library-detail-label,
+            .library-detail-value {
+                width: 100%;
+                display: block;
+            }
+
+            .library-detail-value {
+                margin-top: 5px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body id="top">
+
+
+<!-- =================================================
+     HEADER
+================================================= -->
+
+<header class="header">
+
+
+    <div class="library-title">
+
+        📚 Library
+
+    </div>
+
+
+    <!-- Announcement -->
+
+    <div class="header-announcement">
+
+        <div class="announcement-icon">
+
+            📢
+
+        </div>
+
+
+        <div class="announcement-scroll">
+
+            <div
+                class="announcement-track"
+                id="announcementTrack">
+
+                <!-- Active announcements will appear here -->
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Header Right -->
+
+    <div class="header-right">
+
+
+        <div
+            class="profile-icon"
+            onclick="openProfile()"
+            title="Member Details">
+
+            👤
+
+        </div>
+
+
+        <a
+            href="login_form.html"
+            class="logout">
+
+            Logout
+
+        </a>
+
+    </div>
+
+</header>
+
+
+<!-- =================================================
+     MEMBER NAVIGATION
+================================================= -->
+
+<nav class="member-navigation" aria-label="Member Navigation">
+    <a href="#top">Home</a>
+    <a href="#issued-books">My Issued Books</a>
+    <a href="#all-books">All Books</a>
+    <a href="#library-details">About Library</a>
+</nav>
+
+
+<!-- =================================================
+     MAIN CONTENT
+================================================= -->
+
+<main id="top">
+
+
+    <!-- =================================================
+         WELCOME
+    ================================================= -->
+
+    <div class="welcome-card">
+
+        <h2>
+            Welcome
+        </h2>
+
+    </div>
+
+
+
+    <!-- =================================================
+         MY ISSUED BOOKS
+    ================================================= -->
+
+    <div class="card" id="issued-books">
+
+        <h3>
+            My Issued Books
+        </h3>
+
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Book Name</th>
+
+                    <th>Author</th>
+
+                    <th>ISBN</th>
+
+                    <th>Issue Date</th>
+
+                    <th>Due Date</th>
+
+                    <th>Fine</th>
+
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="issuedBooksTable">
+
+                <!-- Real issued-book records will be loaded here -->
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+
+    <!-- =================================================
+         ALL BOOKS
+    ================================================= -->
+
+    <div class="card" id="all-books">
+
+
+        <div class="books-header">
+
+
+            <h3>
+                All Books in Library
+            </h3>
+
+
+            <div class="search-filter">
+
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="search-box"
+                    placeholder="Search by name, author or ISBN">
+
+
+                <button
+                    class="search-btn"
+                    onclick="searchBooks()">
+
+                    Search
+
+                </button>
+
+
+                <button
+                    class="filter-btn"
+                    onclick="openFilter()">
+
+                    Filter
+
+                </button>
+
+            </div>
+
+        </div>
+
+
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>Book Name</th>
+
+                    <th>Author</th>
+
+                    <th>ISBN</th>
+
+                    <th>Category</th>
+
+                    <th>Status</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody id="booksTable">
+
+                <!-- Real book records will be loaded here -->
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+
+    <!-- =================================================
+         LIBRARY DETAILS
+    ================================================= -->
+
+    <div class="card library-details" id="library-details">
+
+        <h3>About Library</h3>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Library Name</div>
+            <div class="library-detail-value" id="libraryName"></div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Address</div>
+            <div class="library-detail-value" id="libraryAddress"></div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Opening Time</div>
+            <div class="library-detail-value" id="openingTime"></div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Closing Time</div>
+            <div class="library-detail-value" id="closingTime"></div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Working Days</div>
+            <div class="library-detail-value">Monday to Saturday</div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Sunday</div>
+            <div class="library-detail-value">Closed</div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Holidays</div>
+            <div class="library-detail-value">Closed</div>
+        </div>
+
+        <div class="library-detail-row">
+            <div class="library-detail-label">Contact Number</div>
+            <div class="library-detail-value" id="contactNumber"></div>
+        </div>
+
+    </div>
+
+
+</main>
+
+
+
+<!-- =================================================
+     FILTER POPUP
+================================================= -->
+
+<div
+    class="filter-overlay"
+    id="filterOverlay">
+
+
+    <div class="filter-popup">
+
+
+        <h3>
+            Filter Books
+        </h3>
+
+
+        <!-- Category -->
+
+        <div class="filter-group">
+
+            <label>
+                Category
+            </label>
+
+            <select id="categoryFilter">
+
+                <option value="">
+                    All Categories
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- Sort -->
+
+        <div class="filter-group">
+
+            <label>
+                Sort By
+            </label>
+
+            <select id="sortFilter">
+
+                <option value="">
+                    Default
+                </option>
+
+                <option value="nameAsc">
+                    Book Name A-Z
+                </option>
+
+                <option value="nameDesc">
+                    Book Name Z-A
+                </option>
+
+                <option value="authorAsc">
+                    Author A-Z
+                </option>
+
+                <option value="authorDesc">
+                    Author Z-A
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- Status -->
+
+        <div class="filter-group">
+
+            <label>
+                Status
+            </label>
+
+            <select id="statusFilter">
+
+                <option value="">
+                    All Status
+                </option>
+
+                <option value="Available">
+                    Available
+                </option>
+
+                <option value="Issued">
+                    Issued
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <!-- Buttons -->
+
+        <div class="filter-actions">
+
+
+            <button
+                class="apply-filter"
+                onclick="applyFilter()">
+
+                Apply Filter
+
+            </button>
+
+
+            <button
+                class="clear-filter"
+                onclick="clearFilter()">
+
+                Clear
+
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- =================================================
+     MEMBER DETAILS POPUP
+================================================= -->
+
+<div
+    class="profile-overlay"
+    id="profileOverlay">
+
+
+    <div class="profile-popup">
+
+
+        <!-- Profile Header -->
+
+        <div class="profile-popup-header">
+
+
+            <h3>
+                Member Details
+            </h3>
+
+
+            <button
+                class="close-profile"
+                onclick="closeProfile()">
+
+                ×
+
+            </button>
+
+        </div>
+
+
+
+        <!-- Profile Content -->
+
+        <div class="profile-content">
+
+
+            <div class="profile-avatar">
+
+                👤
+
+            </div>
+
+
+            <div class="profile-details">
+
+
+                <!-- Username -->
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Username
+                    </div>
+
+                    <div
+                        class="profile-value"
+                        id="profileUsername">
+
+                    </div>
+
+                </div>
+
+
+                <!-- Name -->
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Name
+                    </div>
+
+                    <div
+                        class="profile-value"
+                        id="profileName">
+
+                    </div>
+
+                </div>
+
+
+                <!-- Email -->
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Email
+                    </div>
+
+                    <div
+                        class="profile-value"
+                        id="profileEmail">
+
+                    </div>
+
+                </div>
+
+
+                <!-- Mobile Number -->
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Mobile Number
+                    </div>
+
+                    <div
+                        class="profile-value"
+                        id="profileMobile">
+
+                    </div>
+
+                </div>
+
+
+                <!-- Address -->
+
+                <div class="profile-row">
+
+                    <div class="profile-label">
+                        Address
+                    </div>
+
+                    <div
+                        class="profile-value"
+                        id="profileAddress">
+
+                    </div>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<div class="footer">
+    Library Management System &nbsp;|&nbsp; Member Portal
+</div>
+
+<script>
+
+
+/* =================================================
+   DATA
+================================================= */
+
+/*
+   No dummy data is included.
+
+   These arrays are intentionally empty.
+   Replace them later with data from your database/backend.
+*/
+
+let books = [];
+
+let issuedBooks = [];
+
+
+
+/* =================================================
+   LOAD BOOKS
+================================================= */
+
+function loadBooks(bookList = books) {
+
+    const table =
+        document.getElementById("booksTable");
+
+
+    table.innerHTML = "";
+
+
+    if (bookList.length === 0) {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="5" class="no-records">
+                    No books available.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    bookList.forEach(book => {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>${escapeHTML(book.name || "")}</td>
+
+            <td>${escapeHTML(book.author || "")}</td>
+
+            <td>${escapeHTML(book.isbn || "")}</td>
+
+            <td>${escapeHTML(book.category || "")}</td>
+
+            <td>${escapeHTML(book.status || "")}</td>
+
+        `;
+
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+
+/* =================================================
+   LOAD ISSUED BOOKS
+================================================= */
+
+function loadIssuedBooks() {
+
+    const table =
+        document.getElementById("issuedBooksTable");
+
+
+    table.innerHTML = "";
+
+
+    if (issuedBooks.length === 0) {
+
+        table.innerHTML = `
+            <tr>
+                <td colspan="7" class="no-records">
+                    No issued books.
+                </td>
+            </tr>
+        `;
+
+        return;
+    }
+
+
+    issuedBooks.forEach(book => {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>${escapeHTML(book.name || "")}</td>
+
+            <td>${escapeHTML(book.author || "")}</td>
+
+            <td>${escapeHTML(book.isbn || "")}</td>
+
+            <td>${escapeHTML(book.issueDate || "")}</td>
+
+            <td>${escapeHTML(book.dueDate || "")}</td>
+
+            <td>${escapeHTML(book.fine || "")}</td>
+
+            <td>${escapeHTML(book.status || "")}</td>
+
+        `;
+
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+
+/* =================================================
+   SEARCH BOOKS
+================================================= */
+
+function searchBooks() {
+
+    const searchValue =
+        document
+        .getElementById("searchInput")
+        .value
+        .trim()
+        .toLowerCase();
+
+
+    if (!searchValue) {
+
+        loadBooks();
+
+        return;
+    }
+
+
+    const filteredBooks =
+        books.filter(book =>
+
+            String(book.name || "")
+                .toLowerCase()
+                .includes(searchValue)
+
+            ||
+
+            String(book.author || "")
+                .toLowerCase()
+                .includes(searchValue)
+
+            ||
+
+            String(book.isbn || "")
+                .toLowerCase()
+                .includes(searchValue)
+
+        );
+
+
+    loadBooks(filteredBooks);
+
+}
+
+
+
+/* =================================================
+   ENTER KEY SEARCH
+================================================= */
+
+document
+    .getElementById("searchInput")
+    .addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+
+            searchBooks();
+
+        }
+
+    });
+
+
+
+/* =================================================
+   OPEN FILTER
+================================================= */
+
+function openFilter() {
+
+    document
+        .getElementById("filterOverlay")
+        .style.display = "flex";
+
+}
+
+
+
+/* =================================================
+   CLOSE FILTER
+================================================= */
+
+function closeFilter() {
+
+    document
+        .getElementById("filterOverlay")
+        .style.display = "none";
+
+}
+
+
+
+/* =================================================
+   LOAD CATEGORIES
+================================================= */
+
+function loadCategories() {
+
+    const categorySelect =
+        document.getElementById("categoryFilter");
+
+
+    const categories =
+        [...new Set(
+            books
+                .map(book => book.category)
+                .filter(category => category)
+        )];
+
+
+    categorySelect.innerHTML = `
+
+        <option value="">
+            All Categories
+        </option>
+
+    `;
+
+
+    categories.forEach(category => {
+
+        const option =
+            document.createElement("option");
+
+
+        option.value = category;
+
+        option.textContent = category;
+
+
+        categorySelect.appendChild(option);
+
+    });
+
+}
+
+
+
+/* =================================================
+   APPLY FILTER
+================================================= */
+
+function applyFilter() {
+
+    const category =
+        document
+        .getElementById("categoryFilter")
+        .value;
+
+
+    const status =
+        document
+        .getElementById("statusFilter")
+        .value;
+
+
+    const sort =
+        document
+        .getElementById("sortFilter")
+        .value;
+
+
+    let filteredBooks =
+        [...books];
+
+
+    /* Category */
+
+    if (category) {
+
+        filteredBooks =
+            filteredBooks.filter(
+                book => book.category === category
+            );
+
+    }
+
+
+    /* Status */
+
+    if (status) {
+
+        filteredBooks =
+            filteredBooks.filter(
+                book => book.status === status
+            );
+
+    }
+
+
+    /* Sorting */
+
+    if (sort === "nameAsc") {
+
+        filteredBooks.sort(
+            (a, b) =>
+                String(a.name || "")
+                .localeCompare(String(b.name || ""))
+        );
+
+    }
+
+
+    if (sort === "nameDesc") {
+
+        filteredBooks.sort(
+            (a, b) =>
+                String(b.name || "")
+                .localeCompare(String(a.name || ""))
+        );
+
+    }
+
+
+    if (sort === "authorAsc") {
+
+        filteredBooks.sort(
+            (a, b) =>
+                String(a.author || "")
+                .localeCompare(String(b.author || ""))
+        );
+
+    }
+
+
+    if (sort === "authorDesc") {
+
+        filteredBooks.sort(
+            (a, b) =>
+                String(b.author || "")
+                .localeCompare(String(a.author || ""))
+        );
+
+    }
+
+
+    loadBooks(filteredBooks);
+
+
+    /*
+       Automatically close the filter popup
+       after applying.
+    */
+
+    closeFilter();
+
+}
+
+
+
+/* =================================================
+   CLEAR FILTER
+================================================= */
+
+function clearFilter() {
+
+    document
+        .getElementById("categoryFilter")
+        .value = "";
+
+
+    document
+        .getElementById("sortFilter")
+        .value = "";
+
+
+    document
+        .getElementById("statusFilter")
+        .value = "";
+
+
+    document
+        .getElementById("searchInput")
+        .value = "";
+
+
+    loadBooks();
+
+
+    closeFilter();
+
+}
+
+
+
+/* =================================================
+   FILTER OUTSIDE CLICK
+================================================= */
+
+document
+    .getElementById("filterOverlay")
+    .addEventListener(
+        "click",
+        function(event) {
+
+            if (event.target === this) {
+
+                closeFilter();
+
+            }
+
+        }
+    );
+
+
+
+/* =================================================
+   PROFILE
+================================================= */
+
+function openProfile() {
+
+    /*
+       No dummy profile values are used.
+       These values should later come from
+       the logged-in member/database.
+    */
+
+    document.getElementById("profileUsername").textContent = "";
+
+    document.getElementById("profileName").textContent = "";
+
+    document.getElementById("profileEmail").textContent = "";
+
+    document.getElementById("profileMobile").textContent = "";
+
+    document.getElementById("profileAddress").textContent = "";
+
+
+    document
+        .getElementById("profileOverlay")
+        .style.display = "flex";
+
+}
+
+
+
+function closeProfile() {
+
+    document
+        .getElementById("profileOverlay")
+        .style.display = "none";
+
+}
+
+
+
+/* =================================================
+   PROFILE OUTSIDE CLICK
+================================================= */
+
+document
+    .getElementById("profileOverlay")
+    .addEventListener(
+        "click",
+        function(event) {
+
+            if (event.target === this) {
+
+                closeProfile();
+
+            }
+
+        }
+    );
+
+
+
+/* =================================================
+   ANNOUNCEMENTS
+================================================= */
+
+function loadAnnouncements() {
+
+    const track =
+        document.getElementById("announcementTrack");
+
+
+    track.innerHTML = "";
+
+
+    const announcements =
+        JSON.parse(
+            localStorage.getItem("libraryAnnouncements") || "[]"
+        );
+
+
+    const now =
+        new Date();
+
+
+    const activeAnnouncements =
+        announcements.filter(announcement => {
+
+            const start =
+                new Date(announcement.startDate);
+
+            const end =
+                new Date(announcement.endDate);
+
+
+            return (
+                now >= start &&
+                now <= end
+            );
+
+        });
+
+
+    if (activeAnnouncements.length === 0) {
+
+        track.innerHTML = "";
+
+        return;
+    }
+
+
+    activeAnnouncements.forEach(announcement => {
+
+        const item =
+            document.createElement("div");
+
+
+        item.className =
+            "announcement-item";
+
+
+        item.textContent =
+            `${announcement.title}: ${announcement.message}`;
+
+
+        track.appendChild(item);
+
+    });
+
+}
+
+
+
+/* =================================================
+   LIBRARY DETAILS
+================================================= */
+
+/*
+   Keep these values blank until they are connected
+   to your library_details database table.
+*/
+const libraryDetails = {
+    name: "",
+    address: "",
+    openingTime: "",
+    closingTime: "",
+    contactNumber: ""
+};
+
+function loadLibraryDetails() {
+    document.getElementById("libraryName").textContent = libraryDetails.name;
+    document.getElementById("libraryAddress").textContent = libraryDetails.address;
+    document.getElementById("openingTime").textContent = libraryDetails.openingTime;
+    document.getElementById("closingTime").textContent = libraryDetails.closingTime;
+    document.getElementById("contactNumber").textContent = libraryDetails.contactNumber;
+}
+
+
+/* =================================================
+   ESCAPE HTML
+================================================= */
+
+function escapeHTML(value) {
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
+
+
+
+/* =================================================
+   INITIAL LOAD
+================================================= */
+
+loadBooks();
+
+loadIssuedBooks();
+
+loadCategories();
+
+loadAnnouncements();
+loadLibraryDetails();
+
+
+/*
+   Refresh announcements every 30 seconds
+   so expired/new announcements update automatically.
+*/
+
+setInterval(
+    loadAnnouncements,
+    30000
+);
+
+
+</script>
+
+
+</body>
+
+</html>

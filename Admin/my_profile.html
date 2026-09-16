@@ -1,0 +1,258 @@
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>My Profile - Library Management System</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a,
+        .manage {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover,
+        .manage:hover {
+            background-color: rgba(255, 255, 255, .11);
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        .submenu {
+            display: none;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+        }
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .top h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .top p {
+            color: #666;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            max-width: 700px;
+            margin: 25px auto;
+            background-color: white;
+            padding: 25px;
+            border: 1px solid #ddd;
+        }
+
+        .profile-card h2 {
+            margin-top: 0;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 12px;
+        }
+
+        .profile-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .profile-table th,
+        .profile-table td {
+            padding: 14px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        .profile-table th {
+            width: 35%;
+            background-color: #eee;
+            color: #333;
+        }
+
+        .edit-button {
+            display: block;
+            width: fit-content;
+            margin: 20px auto 0;
+            padding: 12px 25px;
+            background-color: #333;
+            color: white;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+
+        .edit-button:hover {
+            background-color: #555;
+        }
+
+        @media (max-width: 800px) {
+            .sidebar {
+                width: 180px;
+            }
+
+            .main {
+                margin-left: 180px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">Dashboard</a>
+
+        <a href="my_profile.html">My Profile</a>
+
+        <!-- Manage Books Menu -->
+        <div class="manage" onclick="toggleMenu()">
+            Manage Books
+            <span class="arrow" id="arrow">+</span>
+        </div>
+
+        <!-- Manage Books Submenu -->
+        <div class="submenu" id="submenu">
+            <a href="view_books.html">View All Books</a>
+            <a href="add_book.html">Add Book</a>
+            <a href="update_book.html">Update / Delete Book</a>
+            
+        </div>
+
+        <a href="issue_book.html">Issue Book</a>
+        <a href="return_book.html">Return Book</a>
+        <a href="returned_books.html">Recent Returned Books</a>
+        <a href="members.html">Members Details</a>
+        <a href="announcement.html" class="active">
+            Announcements
+        </a>
+
+        <div class="logout">
+            <a href="login_form.html">Logout</a>
+        </div>
+
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+
+        <div class="top">
+            <h1>My Profile</h1>
+        </div>
+
+        <div class="profile-card">
+
+            <h2>User Details</h2>
+
+            <table class="profile-table">
+                <tr>
+                    <th>Username</th>
+                    <td>-</td>
+                </tr>
+
+                <tr>
+                    <th>Name</th>
+                    <td>-</td>
+                </tr>
+
+                <tr>
+                    <th>Email Address</th>
+                    <td>-</td>
+                </tr>
+
+                <tr>
+                    <th>Phone Number</th>
+                    <td>-</td>
+                </tr>
+
+                
+
+            </table>
+
+        </div>
+
+    </div>
+
+    <script>
+        function toggleMenu() {
+
+            var menu = document.getElementById("submenu");
+            var arrow = document.getElementById("arrow");
+
+            if (menu.style.display === "block") {
+
+                menu.style.display = "none";
+                arrow.innerHTML = "+";
+
+            } else {
+
+                menu.style.display = "block";
+                arrow.innerHTML = "-";
+
+            }
+        }
+    </script>
+
+</body>
+
+</html>
+```

@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Pay Fine - Library</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background: #222;
+        }
+
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
+
+        .sidebar a:hover {
+            background: #555;
+        }
+
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background: #222;
+            text-align: center;
+        }
+
+        /* Main */
+        .main {
+            margin-left: 220px;
+            padding: 30px;
+        }
+
+        .top {
+            background: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .top h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .top p {
+            color: #666;
+        }
+
+        /* Payment Box */
+        .payment-box {
+            width: 550px;
+            max-width: 100%;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .payment-box h2 {
+            color: #333;
+            margin-top: 0;
+        }
+
+        /* Member Details */
+        .details {
+            background: #f7f7f7;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+            border-radius: 5px;
+        }
+
+        .details p {
+            margin: 9px 0;
+        }
+
+        .fine {
+            color: red;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Payment Method */
+        .payment-method {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .payment-method h3 {
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .method-options {
+            display: flex;
+            gap: 15px;
+        }
+
+        .method-option {
+            flex: 1;
+            border: 1px solid #ccc;
+            padding: 14px;
+            border-radius: 5px;
+            cursor: pointer;
+            background: #fafafa;
+        }
+
+        .method-option:hover {
+            background: #f0f0f0;
+        }
+
+        .method-option input {
+            margin-right: 8px;
+        }
+
+        /* QR Code Popup */
+        .qr-popup {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+        }
+
+        .qr-popup-content {
+            background: white;
+            width: 400px;
+            max-width: 90%;
+            margin: 8% auto;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            position: relative;
+        }
+
+        .qr-popup-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .qr-code {
+            width: 280px;
+            height: 280px;
+            object-fit: contain;
+            border: 1px solid #ddd;
+            padding: 8px;
+            background: white;
+            margin-top: 10px;
+        }
+
+        .upi-id {
+            font-weight: bold;
+            margin-top: 12px;
+            color: #333;
+        }
+
+        .instruction {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .close-btn {
+            position: absolute;
+            right: 15px;
+            top: 10px;
+            font-size: 28px;
+            color: #555;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: black;
+        }
+
+        /* Buttons */
+        .paid-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .paid-btn:hover {
+            background: #555;
+        }
+
+        .back-btn {
+            display: block;
+            margin-top: 15px;
+            color: #333;
+            text-decoration: none;
+        }
+
+        /* Success */
+        .success {
+            display: none;
+        }
+
+        .success h2 {
+            color: green;
+        }
+
+        .receipt {
+            background: #f7f7f7;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            border-radius: 5px;
+        }
+
+        .return-btn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 13px;
+            background: green;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .return-btn:hover {
+            background: #006400;
+        }
+
+        @media(max-width:700px) {
+
+            .sidebar {
+                width: 180px;
+            }
+
+            .main {
+                margin-left: 180px;
+            }
+
+            .qr-code {
+                width: 240px;
+                height: 240px;
+            }
+
+            .method-options {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">Dashboard</a>
+
+        <a href="my_profile.html">My Profile</a>
+
+        <a href="view_books.html">View All Books</a>
+
+        <a href="issue_book.html">Issue Book</a>
+
+        <a href="return_book.html">Return Book</a>
+
+        <a href="issued_books.html">
+            View All Issued Books
+        </a>
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+        <div class="logout">
+            <a href="login_form.html">Logout</a>
+        </div>
+
+    </div>
+
+
+    <!-- Main -->
+    <div class="main">
+
+        <div class="top">
+
+            <h1>Pay Fine</h1>
+
+            <p>
+                Pay the pending library fine to return the book.
+            </p>
+
+        </div>
+
+
+        <div class="payment-box">
+
+            <!-- Payment Section -->
+            <div id="paymentSection">
+
+                <h2>Library Fine Payment</h2>
+
+
+                <!-- Details -->
+                <div class="details">
+
+                    <p>
+                        <b>Member ID:</b>
+                        <span id="memberId">202</span>
+                    </p>
+
+                    <p>
+                        <b>Member Name:</b>
+                        <span id="memberName">Priya Sharma</span>
+                    </p>
+
+                    <p>
+                        <b>Book ID:</b>
+                        <span id="bookId">105</span>
+                    </p>
+
+                    <p>
+                        <b>Book Name:</b>
+                        <span id="bookName">
+                            Operating System
+                        </span>
+                    </p>
+
+                    <p>
+                        <b>Fine Amount:</b>
+
+                        <span class="fine">
+                            ₹<span id="fineAmount">50</span>
+                        </span>
+                    </p>
+
+                </div>
+
+
+                <!-- Payment Method -->
+                <div class="payment-method">
+
+                    <h3>Select Payment Method</h3>
+
+                    <div class="method-options">
+
+                        <label class="method-option">
+
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="UPI"
+                                onchange="selectPaymentMethod('UPI')"
+                            >
+
+                            UPI
+
+                        </label>
+
+
+                        <label class="method-option">
+
+                            <input
+                                type="radio"
+                                name="paymentMethod"
+                                value="Cash"
+                                onchange="selectPaymentMethod('Cash')"
+                            >
+
+                            Cash
+
+                        </label>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Payment Button -->
+                <button
+                    class="paid-btn"
+                    onclick="paymentDone()"
+                >
+                    Pay Fine ₹<span id="payAmount">50</span>
+                </button>
+
+
+                <a
+                    href="return_book.html"
+                    class="back-btn"
+                >
+                    ← Back to Return Book
+                </a>
+
+            </div>
+
+
+            <!-- Success -->
+            <div
+                class="success"
+                id="successSection"
+            >
+
+                <h2>✓ Payment Successful</h2>
+
+                <p>
+                    Fine payment has been recorded successfully.
+                </p>
+
+
+                <div class="receipt">
+
+                    <p>
+                        <b>Member ID:</b>
+                        <span id="receiptMemberId"></span>
+                    </p>
+
+                    <p>
+                        <b>Member Name:</b>
+                        <span id="receiptMember"></span>
+                    </p>
+
+                    <p>
+                        <b>Book:</b>
+                        <span id="receiptBook"></span>
+                    </p>
+
+                    <p>
+                        <b>Amount Paid:</b>
+                        ₹<span id="receiptAmount"></span>
+                    </p>
+
+                    <p>
+                        <b>Payment Method:</b>
+                        <span id="receiptPaymentMethod"></span>
+                    </p>
+
+                    <p>
+                        <b>Status:</b>
+                        <span style="color:green;">
+                            Paid
+                        </span>
+                    </p>
+
+                </div>
+
+
+                <button
+                    class="return-btn"
+                    onclick="returnBook()"
+                >
+                    Return Book
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- UPI QR Popup -->
+    <div
+        class="qr-popup"
+        id="qrPopup"
+    >
+
+        <div class="qr-popup-content">
+
+            <span
+                class="close-btn"
+                onclick="closeQR()"
+            >
+                &times;
+            </span>
+
+            <h2>Pay Using UPI</h2>
+
+            <p>
+                Scan the QR code to pay the fine amount.
+            </p>
+
+            <img
+                src="Images/qr.png"
+                class="qr-code"
+                alt="UPI QR Code"
+            >
+
+            <div class="upi-id">
+                UPI ID:
+                example-6@okhdfcbank
+            </div>
+
+            <p class="instruction">
+                Scan the QR code using any UPI app
+                and pay the exact fine amount.
+            </p>
+
+            <button
+                class="paid-btn"
+                onclick="upiPaymentDone()"
+            >
+                I Have Paid ₹<span id="upiPayAmount">50</span>
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+        /* Load details from Return Book page */
+
+        window.onload = function() {
+
+            var memberId =
+                localStorage.getItem("memberId");
+
+            var memberName =
+                localStorage.getItem("memberName");
+
+            var bookId =
+                localStorage.getItem("bookId");
+
+            var bookName =
+                localStorage.getItem("bookName");
+
+            var fine =
+                localStorage.getItem("fine");
+
+
+            if (memberId) {
+                document.getElementById("memberId")
+                    .innerText = memberId;
+            }
+
+            if (memberName) {
+                document.getElementById("memberName")
+                    .innerText = memberName;
+            }
+
+            if (bookId) {
+                document.getElementById("bookId")
+                    .innerText = bookId;
+            }
+
+            if (bookName) {
+                document.getElementById("bookName")
+                    .innerText = bookName;
+            }
+
+            if (fine) {
+
+                document.getElementById("fineAmount")
+                    .innerText = fine;
+
+                document.getElementById("payAmount")
+                    .innerText = fine;
+
+                document.getElementById("upiPayAmount")
+                    .innerText = fine;
+            }
+        };
+
+
+        /* Select Payment Method */
+
+        function selectPaymentMethod(method) {
+
+            if (method === "UPI") {
+
+                document.getElementById("qrPopup")
+                    .style.display = "block";
+
+            }
+
+            else if (method === "Cash") {
+
+                closeQR();
+
+                alert(
+                    "Cash payment selected. Please collect the fine amount from the member."
+                );
+            }
+        }
+
+
+        /* Close QR Popup */
+
+        function closeQR() {
+
+            document.getElementById("qrPopup")
+                .style.display = "none";
+        }
+
+
+        /* UPI Payment */
+
+        function upiPaymentDone() {
+
+            var confirmPayment = confirm(
+                "Have you paid the fine using UPI?"
+            );
+
+            if (!confirmPayment) {
+                return;
+            }
+
+            closeQR();
+
+            completePayment("UPI");
+        }
+
+
+        /* Main Payment Button */
+
+        function paymentDone() {
+
+            var selectedMethod =
+                document.querySelector(
+                    'input[name="paymentMethod"]:checked'
+                );
+
+
+            if (!selectedMethod) {
+
+                alert(
+                    "Please select a payment method first."
+                );
+
+                return;
+            }
+
+
+            var method =
+                selectedMethod.value;
+
+
+            /* UPI */
+
+            if (method === "UPI") {
+
+                document.getElementById("qrPopup")
+                    .style.display = "block";
+
+            }
+
+
+            /* Cash */
+
+            else if (method === "Cash") {
+
+                var confirmCash = confirm(
+                    "Have you received the cash payment of ₹" +
+                    document.getElementById("fineAmount").innerText +
+                    "?"
+                );
+
+                if (!confirmCash) {
+                    return;
+                }
+
+                completePayment("Cash");
+            }
+        }
+
+
+        /* Complete Payment */
+
+        function completePayment(method) {
+
+            /* Receipt details */
+
+            document.getElementById("receiptMemberId")
+                .innerText =
+                document.getElementById("memberId")
+                    .innerText;
+
+
+            document.getElementById("receiptMember")
+                .innerText =
+                document.getElementById("memberName")
+                    .innerText;
+
+
+            document.getElementById("receiptBook")
+                .innerText =
+                document.getElementById("bookName")
+                    .innerText;
+
+
+            document.getElementById("receiptAmount")
+                .innerText =
+                document.getElementById("fineAmount")
+                    .innerText;
+
+
+            document.getElementById("receiptPaymentMethod")
+                .innerText = method;
+
+
+            /* Show Success */
+
+            document.getElementById("paymentSection")
+                .style.display = "none";
+
+
+            document.getElementById("successSection")
+                .style.display = "block";
+        }
+
+
+        /* Return Book */
+
+        function returnBook() {
+
+            alert(
+                "Fine paid successfully! Book returned successfully."
+            );
+
+
+            /* Clear stored payment details */
+
+            localStorage.removeItem("memberId");
+
+            localStorage.removeItem("memberName");
+
+            localStorage.removeItem("bookId");
+
+            localStorage.removeItem("bookName");
+
+            localStorage.removeItem("fine");
+
+
+            window.location.href =
+                "return_book.html";
+        }
+
+
+        /* Close popup if user clicks outside it */
+
+        window.onclick = function(event) {
+
+            var popup =
+                document.getElementById("qrPopup");
+
+            if (event.target === popup) {
+                closeQR();
+            }
+        };
+
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Library Announcements</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial;
+            background-color: #f2f2f2;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            width: 220px;
+            height: 100vh;
+            background-color: #333;
+            position: fixed;
+            left: 0;
+            top: 0;
+            color: white;
+        }
+
+        .sidebar h2 {
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+
+        .sidebar a,
+        .manage {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 15px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+        }
+
+        .sidebar a:hover,
+        .manage:hover {
+            background-color: rgba(255, 255, 255, .11);
+        }
+
+        .arrow {
+            float: right;
+        }
+
+        .submenu {
+            display: none;
+            background-color: #444;
+        }
+
+        .submenu a {
+            padding-left: 40px;
+        }
+
+        /* Active Menu */
+        .active {
+            background-color: rgba(255, 255, 255, .11);
+        }
+
+        /* Logout */
+        .logout {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+        }
+
+        .logout a {
+            background-color: #222;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 220px;
+            padding: 25px;
+        }
+
+        /* Top Area */
+        .top {
+            background-color: white;
+            padding: 20px;
+            border: 1px solid #ddd;
+        }
+
+        .top h1 {
+            margin-top: 0;
+            margin-bottom: 0;
+            text-align: center;
+        }
+
+        /* Announcement Form */
+        .announcement-form {
+            background-color: white;
+            margin-top: 25px;
+            padding: 25px;
+            border: 1px solid #ddd;
+        }
+
+        .announcement-form h2 {
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 11px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            font-family: Arial;
+            font-size: 15px;
+        }
+
+        .form-group textarea {
+            height: 120px;
+            resize: vertical;
+        }
+
+        /* Date and Time */
+        .date-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Buttons */
+        .button-area {
+            margin-top: 5px;
+        }
+
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .publish-btn {
+            background-color: #333;
+            color: white;
+        }
+
+        .publish-btn:hover {
+            background-color: #222;
+        }
+
+        .clear-btn {
+            background-color: #ddd;
+            color: #222;
+        }
+
+        .clear-btn:hover {
+            background-color: #ccc;
+        }
+
+        /* Existing Announcements */
+        .recent {
+            background-color: white;
+            margin-top: 25px;
+            padding: 25px;
+            border: 1px solid #ddd;
+        }
+
+        .recent h2 {
+            margin-top: 0;
+        }
+
+        /* Table */
+        .recent table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .recent th,
+        .recent td {
+            padding: 12px;
+            border: 1px solid #ccc;
+            text-align: left;
+        }
+
+        .recent th {
+            background-color: #eee;
+        }
+
+        .recent td {
+            vertical-align: top;
+        }
+
+        /* Action Buttons */
+        .edit-btn {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 7px 13px;
+            cursor: pointer;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+
+        .edit-btn:hover {
+            background-color: #222;
+        }
+
+        .delete-btn {
+            background-color: #b30000;
+            color: white;
+            border: none;
+            padding: 7px 13px;
+            cursor: pointer;
+        }
+
+        .delete-btn:hover {
+            background-color: #8f0000;
+        }
+
+        /* Disabled Buttons */
+        .disabled-btn {
+            background-color: #ccc !important;
+            color: #777 !important;
+            cursor: not-allowed !important;
+        }
+
+        /* Status Button */
+        .status-btn {
+            background-color: #555;
+            color: white;
+            border: none;
+            padding: 7px 13px;
+            cursor: pointer;
+            margin-top: 6px;
+        }
+
+        .status-btn:hover {
+            background-color: #333;
+        }
+
+        /* Status */
+        .scheduled {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .published {
+            font-weight: bold;
+            color: #222;
+        }
+
+        .expired {
+            font-weight: bold;
+            color: #b30000;
+        }
+
+        /* No Data */
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #555;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+
+            .sidebar {
+                width: 180px;
+            }
+
+            .main {
+                margin-left: 180px;
+            }
+
+            .date-row {
+                grid-template-columns: 1fr;
+            }
+
+            .recent {
+                overflow-x: auto;
+            }
+
+            .recent table {
+                min-width: 900px;
+            }
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+
+        <h2>Library</h2>
+
+        <a href="admin_home.html">Dashboard</a>
+
+        <a href="my_profile.html">My Profile</a>
+
+        <!-- Manage Books -->
+        <div class="manage" onclick="toggleMenu()">
+
+            Manage Books
+
+            <span class="arrow" id="arrow">+</span>
+
+        </div>
+
+
+        <!-- Manage Books Submenu -->
+        <div class="submenu" id="submenu">
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Return Book
+            </a>
+
+        </div>
+
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+        <a href="announcements.html" class="active">
+            Announcements
+        </a>
+
+
+        <!-- Logout -->
+        <div class="logout">
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- Main Content -->
+    <div class="main">
+
+
+        <!-- Top -->
+        <div class="top">
+
+            <h1>
+                Library Announcements
+            </h1>
+
+        </div>
+
+
+        <!-- Add Announcement -->
+        <div class="announcement-form">
+
+            <h2 id="formTitle">
+                Add New Announcement
+            </h2>
+
+
+            <form id="announcementForm">
+
+
+                <!-- Announcement Title -->
+                <div class="form-group">
+
+                    <label for="title">
+                        Announcement Title
+                    </label>
+
+                    <input
+                        type="text"
+                        id="title"
+                        placeholder="Enter announcement title"
+                        required
+                    >
+
+                </div>
+
+
+                <!-- Announcement Message -->
+                <div class="form-group">
+
+                    <label for="message">
+                        Announcement Message
+                    </label>
+
+                    <textarea
+                        id="message"
+                        placeholder="Enter announcement message..."
+                        required
+                    ></textarea>
+
+                </div>
+
+
+                <!-- Start and End Date -->
+                <div class="date-row">
+
+
+                    <!-- Start Date -->
+                    <div class="form-group">
+
+                        <label for="startDate">
+                            Start Date & Time
+                        </label>
+
+                        <input
+                            type="datetime-local"
+                            id="startDate"
+                            required
+                        >
+
+                    </div>
+
+
+                    <!-- End Date -->
+                    <div class="form-group">
+
+                        <label for="endDate">
+                            End Date & Time
+                        </label>
+
+                        <input
+                            type="datetime-local"
+                            id="endDate"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- Buttons -->
+                <div class="button-area">
+
+                    <button
+                        type="submit"
+                        class="btn publish-btn"
+                        id="submitButton"
+                    >
+                        Publish Announcement
+                    </button>
+
+
+                    <button
+                        type="button"
+                        class="btn clear-btn"
+                        onclick="clearForm()"
+                    >
+                        Clear
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <!-- Existing Announcements -->
+        <div class="recent">
+
+            <h2>
+                Existing Announcements
+            </h2>
+
+
+            <!-- Announcement Table -->
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Title
+                        </th>
+
+                        <th>
+                            Message
+                        </th>
+
+                        <th>
+                            Start Date & Time
+                        </th>
+
+                        <th>
+                            End Date & Time
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                        <th>
+                            Action
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody id="announcementTable">
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <script>
+
+
+        /* ==========================================
+           MANAGE BOOKS MENU
+        ========================================== */
+
+        function toggleMenu() {
+
+            var menu =
+                document.getElementById("submenu");
+
+            var arrow =
+                document.getElementById("arrow");
+
+
+            if (menu.style.display === "block") {
+
+                menu.style.display = "none";
+
+                arrow.innerHTML = "+";
+
+            } else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
+        }
+
+
+        /* ==========================================
+           ANNOUNCEMENT DATA
+        ========================================== */
+
+        var announcements =
+            JSON.parse(
+                localStorage.getItem(
+                    "libraryAnnouncements"
+                )
+            ) || [];
+
+
+        var editIndex = -1;
+
+
+        /* ==========================================
+           SET DEFAULT DATE AND TIME
+        ========================================== */
+
+        function setDefaultDateTime() {
+
+            var now = new Date();
+
+
+            var year =
+                now.getFullYear();
+
+            var month =
+                String(
+                    now.getMonth() + 1
+                ).padStart(2, "0");
+
+            var day =
+                String(
+                    now.getDate()
+                ).padStart(2, "0");
+
+            var hours =
+                String(
+                    now.getHours()
+                ).padStart(2, "0");
+
+            var minutes =
+                String(
+                    now.getMinutes()
+                ).padStart(2, "0");
+
+
+            var currentDateTime =
+                year + "-" +
+                month + "-" +
+                day + "T" +
+                hours + ":" +
+                minutes;
+
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                currentDateTime;
+
+
+            /* Default end date = 7 days */
+
+            var endDate =
+                new Date(now);
+
+
+            endDate.setDate(
+                endDate.getDate() + 7
+            );
+
+
+            var endYear =
+                endDate.getFullYear();
+
+            var endMonth =
+                String(
+                    endDate.getMonth() + 1
+                ).padStart(2, "0");
+
+            var endDay =
+                String(
+                    endDate.getDate()
+                ).padStart(2, "0");
+
+            var endHours =
+                String(
+                    endDate.getHours()
+                ).padStart(2, "0");
+
+            var endMinutes =
+                String(
+                    endDate.getMinutes()
+                ).padStart(2, "0");
+
+
+            document.getElementById(
+                "endDate"
+            ).value =
+                endYear + "-" +
+                endMonth + "-" +
+                endDay + "T" +
+                endHours + ":" +
+                endMinutes;
+
+        }
+
+
+        setDefaultDateTime();
+
+
+        /* ==========================================
+           GET ANNOUNCEMENT STATUS
+        ========================================== */
+
+        function getStatus(announcement) {
+
+            var now =
+                new Date();
+
+
+            var start =
+                new Date(
+                    announcement.startDate
+                );
+
+
+            var end =
+                new Date(
+                    announcement.endDate
+                );
+
+
+            if (now < start) {
+
+                return "Scheduled";
+
+            }
+
+
+            if (
+                now >= start &&
+                now <= end
+            ) {
+
+                return "Published";
+
+            }
+
+
+            if (now > end) {
+
+                return "Expired";
+
+            }
+
+        }
+
+
+        /* ==========================================
+           DISPLAY ANNOUNCEMENTS
+        ========================================== */
+
+        function displayAnnouncements() {
+
+            var table =
+                document.getElementById(
+                    "announcementTable"
+                );
+
+
+            table.innerHTML = "";
+
+
+            if (announcements.length === 0) {
+
+                table.innerHTML =
+                    '<tr>' +
+                    '<td colspan="6" class="no-data">' +
+                    'No announcements found.' +
+                    '</td>' +
+                    '</tr>';
+
+                return;
+
+            }
+
+
+            announcements.forEach(
+                function (announcement, index) {
+
+
+                    var status =
+                        getStatus(
+                            announcement
+                        );
+
+
+                    var statusClass =
+                        "";
+
+
+                    if (status === "Published") {
+
+                        statusClass =
+                            "published";
+
+                    }
+
+                    else if (
+                        status === "Scheduled"
+                    ) {
+
+                        statusClass =
+                            "scheduled";
+
+                    }
+
+                    else {
+
+                        statusClass =
+                            "expired";
+
+                    }
+
+
+                    /*
+                     * Edit/Delete are available
+                     * ONLY during the active
+                     * announcement period.
+                     */
+
+                    var isActive =
+                        status === "Published";
+
+
+                    var actionButtons = "";
+
+
+                    if (isActive) {
+
+                        actionButtons = `
+
+                            <button
+                                class="edit-btn"
+                                onclick="editAnnouncement(${index})"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                class="delete-btn"
+                                onclick="deleteAnnouncement(${index})"
+                            >
+                                Delete
+                            </button>
+
+                        `;
+
+                    }
+
+                    else {
+
+                        actionButtons = `
+
+                            <button
+                                class="edit-btn disabled-btn"
+                                disabled
+                                title="Edit is available only during the announcement period"
+                            >
+                                Edit
+                            </button>
+
+                            <button
+                                class="delete-btn disabled-btn"
+                                disabled
+                                title="Delete is available only during the announcement period"
+                            >
+                                Delete
+                            </button>
+
+                        `;
+
+                    }
+
+
+                    var row =
+                        document.createElement(
+                            "tr"
+                        );
+
+
+                    row.innerHTML = `
+
+                        <td>
+
+                            <strong>
+                                ${escapeHTML(
+                                    announcement.title
+                                )}
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            ${escapeHTML(
+                                announcement.message
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            ${formatDateTime(
+                                announcement.startDate
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            ${formatDateTime(
+                                announcement.endDate
+                            )}
+
+                        </td>
+
+
+                        <td>
+
+                            <span
+                                class="${statusClass}"
+                            >
+
+                                ${status}
+
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            ${actionButtons}
+
+                        </td>
+
+                    `;
+
+
+                    table.appendChild(row);
+
+                }
+            );
+
+        }
+
+
+        /* ==========================================
+           ADD / UPDATE ANNOUNCEMENT
+        ========================================== */
+
+        document
+            .getElementById(
+                "announcementForm"
+            )
+            .addEventListener(
+                "submit",
+                function (event) {
+
+                    event.preventDefault();
+
+
+                    var title =
+                        document.getElementById(
+                            "title"
+                        ).value.trim();
+
+
+                    var message =
+                        document.getElementById(
+                            "message"
+                        ).value.trim();
+
+
+                    var startDate =
+                        document.getElementById(
+                            "startDate"
+                        ).value;
+
+
+                    var endDate =
+                        document.getElementById(
+                            "endDate"
+                        ).value;
+
+
+                    if (
+                        title === "" ||
+                        message === "" ||
+                        startDate === "" ||
+                        endDate === ""
+                    ) {
+
+                        alert(
+                            "Please fill all the fields."
+                        );
+
+                        return;
+
+                    }
+
+
+                    var start =
+                        new Date(
+                            startDate
+                        );
+
+
+                    var end =
+                        new Date(
+                            endDate
+                        );
+
+
+                    /*
+                     * End must be after start
+                     */
+
+                    if (end <= start) {
+
+                        alert(
+                            "End Date & Time must be after Start Date & Time."
+                        );
+
+                        return;
+
+                    }
+
+
+                    /*
+                     * When editing, check that
+                     * the announcement is still
+                     * within its active period.
+                     */
+
+                    if (editIndex !== -1) {
+
+                        var oldAnnouncement =
+                            announcements[
+                                editIndex
+                            ];
+
+
+                        var oldStatus =
+                            getStatus(
+                                oldAnnouncement
+                            );
+
+
+                        if (
+                            oldStatus !==
+                            "Published"
+                        ) {
+
+                            alert(
+                                "This announcement can no longer be edited because it is outside its active period."
+                            );
+
+                            clearForm();
+
+                            return;
+
+                        }
+
+                    }
+
+
+                    var announcement = {
+
+                        title:
+                            title,
+
+                        message:
+                            message,
+
+                        startDate:
+                            startDate,
+
+                        endDate:
+                            endDate
+
+                    };
+
+
+                    /* UPDATE */
+
+                    if (editIndex !== -1) {
+
+                        announcements[
+                            editIndex
+                        ] =
+                            announcement;
+
+
+                        alert(
+                            "Announcement updated successfully."
+                        );
+
+
+                        editIndex = -1;
+
+
+                        document.getElementById(
+                            "formTitle"
+                        ).innerText =
+                            "Add New Announcement";
+
+
+                        document.getElementById(
+                            "submitButton"
+                        ).innerText =
+                            "Publish Announcement";
+
+                    }
+
+
+                    /* ADD */
+
+                    else {
+
+                        announcements.unshift(
+                            announcement
+                        );
+
+
+                        alert(
+                            "Announcement published successfully."
+                        );
+
+                    }
+
+
+                    saveAnnouncements();
+
+
+                    displayAnnouncements();
+
+
+                    clearForm();
+
+                }
+            );
+
+
+        /* ==========================================
+           CLEAR FORM
+        ========================================== */
+
+        function clearForm() {
+
+            document
+                .getElementById(
+                    "announcementForm"
+                )
+                .reset();
+
+
+            setDefaultDateTime();
+
+
+            editIndex = -1;
+
+
+            document.getElementById(
+                "formTitle"
+            ).innerText =
+                "Add New Announcement";
+
+
+            document.getElementById(
+                "submitButton"
+            ).innerText =
+                "Publish Announcement";
+
+        }
+
+
+        /* ==========================================
+           EDIT ANNOUNCEMENT
+        ========================================== */
+
+        function editAnnouncement(index) {
+
+            var announcement =
+                announcements[index];
+
+
+            /*
+             * Check active period
+             */
+
+            var status =
+                getStatus(
+                    announcement
+                );
+
+
+            if (status !== "Published") {
+
+                alert(
+                    "This announcement can only be edited during its active period."
+                );
+
+                return;
+
+            }
+
+
+            document.getElementById(
+                "title"
+            ).value =
+                announcement.title;
+
+
+            document.getElementById(
+                "message"
+            ).value =
+                announcement.message;
+
+
+            document.getElementById(
+                "startDate"
+            ).value =
+                announcement.startDate;
+
+
+            document.getElementById(
+                "endDate"
+            ).value =
+                announcement.endDate;
+
+
+            editIndex =
+                index;
+
+
+            document.getElementById(
+                "formTitle"
+            ).innerText =
+                "Update Announcement";
+
+
+            document.getElementById(
+                "submitButton"
+            ).innerText =
+                "Update Announcement";
+
+
+            window.scrollTo({
+
+                top: 0,
+
+                behavior: "smooth"
+
+            });
+
+        }
+
+
+        /* ==========================================
+           DELETE ANNOUNCEMENT
+        ========================================== */
+
+        function deleteAnnouncement(index) {
+
+            var announcement =
+                announcements[index];
+
+
+            /*
+             * Check active period
+             */
+
+            var status =
+                getStatus(
+                    announcement
+                );
+
+
+            if (status !== "Published") {
+
+                alert(
+                    "This announcement can only be deleted during its active period."
+                );
+
+                return;
+
+            }
+
+
+            var confirmDelete =
+                confirm(
+                    "Are you sure you want to delete this announcement?"
+                );
+
+
+            if (confirmDelete) {
+
+                announcements.splice(
+                    index,
+                    1
+                );
+
+
+                saveAnnouncements();
+
+
+                displayAnnouncements();
+
+
+                alert(
+                    "Announcement deleted successfully."
+                );
+
+            }
+
+        }
+
+
+        /* ==========================================
+           SAVE ANNOUNCEMENTS
+        ========================================== */
+
+        function saveAnnouncements() {
+
+            localStorage.setItem(
+                "libraryAnnouncements",
+                JSON.stringify(
+                    announcements
+                )
+            );
+
+        }
+
+
+        /* ==========================================
+           FORMAT DATE & TIME
+        ========================================== */
+
+        function formatDateTime(
+            dateTime
+        ) {
+
+            var date =
+                new Date(
+                    dateTime
+                );
+
+
+            return date.toLocaleString(
+                "en-IN",
+                {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            );
+
+        }
+
+
+        /* ==========================================
+           ESCAPE HTML
+        ========================================== */
+
+        function escapeHTML(text) {
+
+            var div =
+                document.createElement(
+                    "div"
+                );
+
+
+            div.textContent =
+                text;
+
+
+            return div.innerHTML;
+
+        }
+
+
+        /* ==========================================
+           INITIAL DISPLAY
+        ========================================== */
+
+        displayAnnouncements();
+
+
+        /* ==========================================
+           AUTO REFRESH STATUS
+        ========================================== */
+
+        setInterval(
+            function () {
+
+                displayAnnouncements();
+
+            },
+            30000
+        );
+
+    </script>
+
+</body>
+
+</html>
