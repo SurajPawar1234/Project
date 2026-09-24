@@ -1,103 +1,7 @@
-<!-- <?php
-/*
-require_once "db.php";
-
-$username_err = $password_err = $confirm_password_err = "";
-$successful_msg = "";
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-
-    $username = trim($_POST['username']);
-    $password = trim($_POST['password']);
-    $confirm_password = trim($_POST['confirm_password']);
-
-    // Validate username
-    if (empty($username)) {
-        $username_err = "Please enter a username.";
-    } 
-    elseif (!preg_match("/^[a-zA-Z0-9@.]+$/", $username)) {
-        $username_err = "Username can only contain alphabets, numbers, @ and .";
-    } 
-    else {
-
-        // Check if username already exists
-        $sql = "SELECT User_id FROM login WHERE Username = ?";
-
-        if ($stmt = $conn->prepare($sql)) {
-
-            $stmt->bind_param("s", $username);
-
-            if ($stmt->execute()) {
-
-                $stmt->store_result();
-
-                if ($stmt->num_rows == 1) {
-                    $username_err = "This username already exists.";
-                }
-
-            } else {
-                echo "Oops! Something went wrong. Please try again.";
-            }
-
-            $stmt->close();
-        }
-    }
-
-    // Validate password
-    if (empty($password)) {
-        $password_err = "Please enter a password.";
-    } 
-    elseif (strlen($password) < 6) {
-        $password_err = "Password should contain at least 6 characters.";
-    }
-
-    // Confirm password
-    if (empty($confirm_password)) {
-        $confirm_password_err = "Please confirm your password.";
-    } 
-    elseif ($password != $confirm_password) {
-        $confirm_password_err = "Passwords do not match.";
-    }
-
-    // Insert data into database
-    if (
-        empty($username_err) &&
-        empty($password_err) &&
-        empty($confirm_password_err)
-    ) {
-
-        $sql = "INSERT INTO login (Username, Password) VALUES (?, ?)";
-
-        if ($stmt = $conn->prepare($sql)) {
-
-            $param_password = password_hash($password, PASSWORD_DEFAULT);
-
-            $stmt->bind_param("ss", $username, $param_password);
-
-            if ($stmt->execute()) {
-
-                $successful_msg = "Registration successful. Redirecting to Login...";
-
-                header("refresh:2;url=login_form.html");
-
-            } else {
-                echo "Oops! Something went wrong. Please try again later.";
-            }
-
-            $stmt->close();
-        }
-    }
-
-    $conn->close();
-}
-*/
-?>
--->
 <!DOCTYPE html>
 <html>
 
 <head>
-
 <title>Registration</title>
 
 <style>
@@ -119,8 +23,6 @@ form {
     border-radius: 8px;
 }
 
-
-
 h1 {
     margin-bottom: 30px;
     color: #333;
@@ -133,7 +35,9 @@ label {
     margin-bottom: 5px;
 }
 
-input, select, textarea {
+input,
+select,
+textarea {
     width: 100%;
     padding: 10px;
     font-size: 16px;
@@ -143,8 +47,31 @@ input, select, textarea {
     border-radius: 4px;
 }
 
-input:focus, select:focus, textarea:focus {
+input:focus,
+select:focus,
+textarea:focus {
     border: 1px solid #555;
+}
+
+.error {
+    color: red;
+    font-size: 14px;
+    text-align: left;
+    display: block;
+    margin-top: -10px;
+    margin-bottom: 10px;
+}
+
+input.invalid,
+select.invalid,
+textarea.invalid {
+    border: 2px solid red;
+}
+
+input.valid,
+select.valid,
+textarea.valid {
+    border: 2px solid green;
 }
 
 .show-password {
@@ -177,120 +104,764 @@ input[type="submit"]:hover {
     background-color: #555;
 }
 
+* Back to Login Button */
+
+.back-login {
+    display: inline-block;
+    margin-top: 10px;
+    padding: 10px 25px;
+    font-size: 16px;
+    background-color: #777;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+}
+
+.back-login:hover {
+    background-color: #555;
+}
+
 </style>
 
 </head>
 
 <body>
-<script>
-function showpassword() {
-    var pass = document.getElementById("password");
-
-    if (pass.type === "password") {
-        pass.type = "text";
-    } else {
-        pass.type = "password";
-    }
-}
-</script>
 
 <h1>Registration</h1>
-<form action="login_form.html" method="post">
 
-    <label for="name">Name:</label>
+<form
+    id="registrationForm"
+    action="register.php"
+    method="post"
+    novalidate
+>
+
+    <!-- FIRST NAME -->
+
+    <label for="first_name">First Name:</label>
+
     <input
         type="text"
-        id="name"
-        name="name"
-        maxlength="50"
-        pattern="[A-Za-z ]+"
-        required
-        placeholder="Enter Full Name"
+        id="first_name"
+        name="first_name"
+        maxlength="25"
+        placeholder="Enter First Name"
     >
 
+    <span class="error" id="firstNameError"></span>
+
+
+    <!-- LAST NAME -->
+
+    <label for="last_name">Last Name:</label>
+
+    <input
+        type="text"
+        id="last_name"
+        name="last_name"
+        maxlength="25"
+        placeholder="Enter Last Name"
+    >
+
+    <span class="error" id="lastNameError"></span>
+
+
+    <!-- GENDER -->
+
     <label for="gender">Gender:</label>
-    <select id="gender" name="gender" required>
-        <option value="" disabled selected>Select Gender</option>
-        <option value="Male">Male</option>
-        <option value="Female">Female</option>
+
+    <select id="gender" name="gender">
+
+        <option value="">Select Gender</option>
+
+        <option value="Male">
+            Male
+        </option>
+
+        <option value="Female">
+            Female
+        </option>
+
     </select>
 
+    <span class="error" id="genderError"></span>
+
+
+    <!-- EMAIL -->
+
     <label for="email">Email:</label>
+
     <input
         type="email"
         id="email"
         name="email"
-        minlength="5"
         maxlength="30"
-        required
         placeholder="Enter Email"
     >
 
+    <span class="error" id="emailError"></span>
+
+
+    <!-- PHONE -->
+
     <label for="phoneno">Phone Number:</label>
+
     <input
         type="tel"
         id="phoneno"
         name="phoneno"
-        minlength="10"
         maxlength="10"
-        pattern="[0-9]{10}"
-        required
         placeholder="Enter Mobile Number"
     >
 
+    <span class="error" id="phoneError"></span>
+
+
+    <!-- ADDRESS -->
+
     <label for="address">Address:</label>
+
     <textarea
         id="address"
         name="address"
         rows="3"
-        required
         placeholder="Enter Full Address"
     ></textarea>
 
+    <span class="error" id="addressError"></span>
+
+
+    <!-- USERNAME -->
+
     <label for="username">Username:</label>
+
     <input
         type="text"
         id="username"
         name="username"
         minlength="5"
         maxlength="25"
-        pattern="[A-Za-z0-9@.]+"
-        required
         placeholder="Enter New Username"
     >
 
+    <span class="error" id="usernameError"></span>
+
+
+    <!-- PASSWORD -->
+
     <label for="password">Password:</label>
+
     <input
         type="password"
         id="password"
         name="password"
         minlength="6"
         maxlength="12"
-        pattern="[A-Za-z0-9@.]+"
-        required
         placeholder="Create New Password"
     >
 
-    <label for="confirm_password">Confirm Password:</label>
+    <span class="error" id="passwordError"></span>
+
+
+    <!-- CONFIRM PASSWORD -->
+
+    <label for="confirm_password">
+        Confirm Password:
+    </label>
+
     <input
         type="password"
         id="confirm_password"
         name="confirm_password"
         minlength="6"
         maxlength="12"
-        required
         placeholder="Confirm Password"
     >
 
+    <span
+        class="error"
+        id="confirmPasswordError"
+    ></span>
+
+
+    <!-- SHOW PASSWORD -->
+
     <div class="show-password">
-        <input type="checkbox" id="show" onclick="showpassword()">
-        <label for="show">Show Password</label>
+
+        <input
+            type="checkbox"
+            id="show"
+        >
+
+        <label for="show">
+            Show Password
+        </label>
+
     </div>
 
-    <input type="submit" value="Create Account">
+
+    <input
+        type="submit"
+        value="Create Account"
+    >
+
+        <!-- BACK TO LOGIN -->
+    <br>
+    <a
+    href="login_form.html"
+    class="back-login"
+    >
+    Back to Login
+    </a>
 
 </form>
 
-</body>
 
+<script>
+
+const form = document.getElementById("registrationForm");
+
+const firstNameInput =
+    document.getElementById("first_name");
+
+const lastNameInput =
+    document.getElementById("last_name");
+
+const genderInput =
+    document.getElementById("gender");
+
+const emailInput =
+    document.getElementById("email");
+
+const phoneInput =
+    document.getElementById("phoneno");
+
+const addressInput =
+    document.getElementById("address");
+
+const usernameInput =
+    document.getElementById("username");
+
+const passwordInput =
+    document.getElementById("password");
+
+const confirmPasswordInput =
+    document.getElementById("confirm_password");
+
+
+function setError(input, errorId, message) {
+
+    document.getElementById(errorId).textContent = message;
+
+    input.classList.add("invalid");
+
+    input.classList.remove("valid");
+}
+
+
+function setSuccess(input, errorId) {
+
+    document.getElementById(errorId).textContent = "";
+
+    input.classList.remove("invalid");
+
+    input.classList.add("valid");
+}
+
+
+/* FIRST NAME */
+
+function validateFirstName() {
+
+    const firstName =
+        firstNameInput.value.trim();
+
+    if (firstName === "") {
+
+        setError(
+            firstNameInput,
+            "firstNameError",
+            "Please enter your first name."
+        );
+
+        return false;
+    }
+
+    if (firstName.length < 2) {
+
+        setError(
+            firstNameInput,
+            "firstNameError",
+            "First name must contain at least 2 characters."
+        );
+
+        return false;
+    }
+
+    if (!/^[A-Za-z]+$/.test(firstName)) {
+
+        setError(
+            firstNameInput,
+            "firstNameError",
+            "First name can contain only letters."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        firstNameInput,
+        "firstNameError"
+    );
+
+    return true;
+}
+
+
+/* LAST NAME */
+
+function validateLastName() {
+
+    const lastName =
+        lastNameInput.value.trim();
+
+    if (lastName === "") {
+
+        setError(
+            lastNameInput,
+            "lastNameError",
+            "Please enter your last name."
+        );
+
+        return false;
+    }
+
+    if (lastName.length < 2) {
+
+        setError(
+            lastNameInput,
+            "lastNameError",
+            "Last name must contain at least 2 characters."
+        );
+
+        return false;
+    }
+
+    if (!/^[A-Za-z]+$/.test(lastName)) {
+
+        setError(
+            lastNameInput,
+            "lastNameError",
+            "Last name can contain only letters."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        lastNameInput,
+        "lastNameError"
+    );
+
+    return true;
+}
+
+
+/* GENDER */
+
+function validateGender() {
+
+    if (genderInput.value === "") {
+
+        setError(
+            genderInput,
+            "genderError",
+            "Please select your gender."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        genderInput,
+        "genderError"
+    );
+
+    return true;
+}
+
+
+/* EMAIL */
+
+function validateEmail() {
+
+    const email =
+        emailInput.value.trim();
+
+    const emailPattern =
+        /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+
+    if (email === "") {
+
+        setError(
+            emailInput,
+            "emailError",
+            "Please enter your email."
+        );
+
+        return false;
+    }
+
+    if (!emailPattern.test(email)) {
+
+        setError(
+            emailInput,
+            "emailError",
+            "Please enter a valid email address."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        emailInput,
+        "emailError"
+    );
+
+    return true;
+}
+
+
+/* PHONE */
+
+function validatePhone() {
+
+    const phone =
+        phoneInput.value.trim();
+
+    if (phone === "") {
+
+        setError(
+            phoneInput,
+            "phoneError",
+            "Please enter your phone number."
+        );
+
+        return false;
+    }
+
+    if (!/^[0-9]{10}$/.test(phone)) {
+
+        setError(
+            phoneInput,
+            "phoneError",
+            "Phone number must contain exactly 10 digits."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        phoneInput,
+        "phoneError"
+    );
+
+    return true;
+}
+
+
+/* ADDRESS */
+
+function validateAddress() {
+
+    const address =
+        addressInput.value.trim();
+
+    if (address === "") {
+
+        setError(
+            addressInput,
+            "addressError",
+            "Please enter your address."
+        );
+
+        return false;
+    }
+
+    if (address.length < 10) {
+
+        setError(
+            addressInput,
+            "addressError",
+            "Address must contain at least 10 characters."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        addressInput,
+        "addressError"
+    );
+
+    return true;
+}
+
+
+/* USERNAME */
+
+function validateUsername() {
+
+    const username =
+        usernameInput.value.trim();
+
+    if (username === "") {
+
+        setError(
+            usernameInput,
+            "usernameError",
+            "Please enter a username."
+        );
+
+        return false;
+    }
+
+    if (username.length < 5) {
+
+        setError(
+            usernameInput,
+            "usernameError",
+            "Username must contain at least 5 characters."
+        );
+
+        return false;
+    }
+
+    if (!/^[A-Za-z0-9@.]+$/.test(username)) {
+
+        setError(
+            usernameInput,
+            "usernameError",
+            "Username can contain only letters, numbers, @ and ."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        usernameInput,
+        "usernameError"
+    );
+
+    return true;
+}
+
+
+/* PASSWORD */
+
+function validatePassword() {
+
+    const password =
+        passwordInput.value;
+
+    if (password === "") {
+
+        setError(
+            passwordInput,
+            "passwordError",
+            "Please enter a password."
+        );
+
+        return false;
+    }
+
+    if (password.length < 6) {
+
+        setError(
+            passwordInput,
+            "passwordError",
+            "Password must contain at least 6 characters."
+        );
+
+        return false;
+    }
+
+    if (password.length > 12) {
+
+        setError(
+            passwordInput,
+            "passwordError",
+            "Password cannot contain more than 12 characters."
+        );
+
+        return false;
+    }
+
+    if (!/[A-Za-z]/.test(password)) {
+
+        setError(
+            passwordInput,
+            "passwordError",
+            "Password must contain at least one letter."
+        );
+
+        return false;
+    }
+
+    if (!/[0-9]/.test(password)) {
+
+        setError(
+            passwordInput,
+            "passwordError",
+            "Password must contain at least one number."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        passwordInput,
+        "passwordError"
+    );
+
+    return true;
+}
+
+
+/* CONFIRM PASSWORD */
+
+function validateConfirmPassword() {
+
+    const confirmPassword =
+        confirmPasswordInput.value;
+
+    if (confirmPassword === "") {
+
+        setError(
+            confirmPasswordInput,
+            "confirmPasswordError",
+            "Please confirm your password."
+        );
+
+        return false;
+    }
+
+    if (
+        confirmPassword !==
+        passwordInput.value
+    ) {
+
+        setError(
+            confirmPasswordInput,
+            "confirmPasswordError",
+            "Passwords do not match."
+        );
+
+        return false;
+    }
+
+    setSuccess(
+        confirmPasswordInput,
+        "confirmPasswordError"
+    );
+
+    return true;
+}
+
+
+/* SHOW PASSWORD */
+
+document
+.getElementById("show")
+.addEventListener("change", function () {
+
+    const type =
+        this.checked
+        ? "text"
+        : "password";
+
+    passwordInput.type = type;
+
+    confirmPasswordInput.type = type;
+
+});
+
+
+/* LIVE VALIDATION */
+
+firstNameInput.addEventListener(
+    "input",
+    validateFirstName
+);
+
+lastNameInput.addEventListener(
+    "input",
+    validateLastName
+);
+
+genderInput.addEventListener(
+    "change",
+    validateGender
+);
+
+emailInput.addEventListener(
+    "input",
+    validateEmail
+);
+
+phoneInput.addEventListener(
+    "input",
+    validatePhone
+);
+
+addressInput.addEventListener(
+    "input",
+    validateAddress
+);
+
+usernameInput.addEventListener(
+    "input",
+    validateUsername
+);
+
+passwordInput.addEventListener(
+    "input",
+    validatePassword
+);
+
+confirmPasswordInput.addEventListener(
+    "input",
+    validateConfirmPassword
+);
+
+
+/* FINAL FORM VALIDATION */
+
+form.addEventListener(
+    "submit",
+    function(event) {
+
+        const valid =
+            validateFirstName() &&
+            validateLastName() &&
+            validateGender() &&
+            validateEmail() &&
+            validatePhone() &&
+            validateAddress() &&
+            validateUsername() &&
+            validatePassword() &&
+            validateConfirmPassword();
+
+        if (!valid) {
+            event.preventDefault();
+        }
+
+    }
+);
+
+</script>
+
+</body>
 </html>
