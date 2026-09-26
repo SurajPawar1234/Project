@@ -119,9 +119,6 @@ input[type="submit"]:hover {
     cursor: pointer;
 }
 
-.back-login:hover {
-    background-color: #555;
-}
 
 </style>
 
@@ -148,6 +145,7 @@ input[type="submit"]:hover {
         name="first_name"
         maxlength="25"
         placeholder="Enter First Name"
+        required
     >
 
     <span class="error" id="firstNameError"></span>
@@ -163,6 +161,7 @@ input[type="submit"]:hover {
         name="last_name"
         maxlength="25"
         placeholder="Enter Last Name"
+        required
     >
 
     <span class="error" id="lastNameError"></span>
@@ -172,9 +171,9 @@ input[type="submit"]:hover {
 
     <label for="gender">Gender:</label>
 
-    <select id="gender" name="gender">
+    <select id="gender" name="gender" required>
 
-        <option value="">Select Gender</option>
+        <option value="" selected disabled>Select Gender</option>
 
         <option value="Male">
             Male
@@ -182,6 +181,10 @@ input[type="submit"]:hover {
 
         <option value="Female">
             Female
+        </option>
+
+        <option value="Other">
+            Other
         </option>
 
     </select>
@@ -199,6 +202,7 @@ input[type="submit"]:hover {
         name="email"
         maxlength="30"
         placeholder="Enter Email"
+        required
     >
 
     <span class="error" id="emailError"></span>
@@ -214,6 +218,7 @@ input[type="submit"]:hover {
         name="phoneno"
         maxlength="10"
         placeholder="Enter Mobile Number"
+        required
     >
 
     <span class="error" id="phoneError"></span>
@@ -228,6 +233,7 @@ input[type="submit"]:hover {
         name="address"
         rows="3"
         placeholder="Enter Full Address"
+        required
     ></textarea>
 
     <span class="error" id="addressError"></span>
@@ -243,7 +249,10 @@ input[type="submit"]:hover {
         name="username"
         minlength="5"
         maxlength="25"
+        pattern="(?=.*[A-Za-z])[A-Za-z0-9@.]+"
+        title="Username must contain at least one letter and can contain letters, numbers, @ and ."
         placeholder="Enter New Username"
+        required
     >
 
     <span class="error" id="usernameError"></span>
@@ -257,9 +266,12 @@ input[type="submit"]:hover {
         type="password"
         id="password"
         name="password"
-        minlength="6"
-        maxlength="12"
+        minlength="5"
+        maxlength="25"
+        pattern="[A-Z][A-Za-z0-9@.]*"
+        title="Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
         placeholder="Create New Password"
+        required
     >
 
     <span class="error" id="passwordError"></span>
@@ -275,9 +287,12 @@ input[type="submit"]:hover {
         type="password"
         id="confirm_password"
         name="confirm_password"
-        minlength="6"
-        maxlength="12"
+        minlength="5"
+        maxlength="25"
+        pattern="[A-Z][A-Za-z0-9@.]*"
+        title="Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
         placeholder="Confirm Password"
+        required
     >
 
     <span
@@ -310,7 +325,7 @@ input[type="submit"]:hover {
         <!-- BACK TO LOGIN -->
     <br>
     <a
-    href="login_form.html"
+    href="login_form.php"
     class="back-login"
     >
     Back to Login
@@ -628,23 +643,23 @@ function validateUsername() {
         return false;
     }
 
-    if (username.length < 5) {
+    if (username.length < 5 || username.length > 25) {
 
         setError(
             usernameInput,
             "usernameError",
-            "Username must contain at least 5 characters."
+            "Username must be between 5 and 25 characters."
         );
 
         return false;
     }
 
-    if (!/^[A-Za-z0-9@.]+$/.test(username)) {
+    if (!/^(?=.*[A-Za-z])[A-Za-z0-9@.]+$/.test(username)) {
 
         setError(
             usernameInput,
             "usernameError",
-            "Username can contain only letters, numbers, @ and ."
+            "Username must contain at least one letter and can contain letters, numbers, @ and ."
         );
 
         return false;
@@ -677,45 +692,23 @@ function validatePassword() {
         return false;
     }
 
-    if (password.length < 6) {
+    if (password.length < 5 || password.length > 25) {
 
         setError(
             passwordInput,
             "passwordError",
-            "Password must contain at least 6 characters."
+            "Password must be between 5 and 25 characters."
         );
 
         return false;
     }
 
-    if (password.length > 12) {
+    if (!/^[A-Z][A-Za-z0-9@.]*$/.test(password)) {
 
         setError(
             passwordInput,
             "passwordError",
-            "Password cannot contain more than 12 characters."
-        );
-
-        return false;
-    }
-
-    if (!/[A-Za-z]/.test(password)) {
-
-        setError(
-            passwordInput,
-            "passwordError",
-            "Password must contain at least one letter."
-        );
-
-        return false;
-    }
-
-    if (!/[0-9]/.test(password)) {
-
-        setError(
-            passwordInput,
-            "passwordError",
-            "Password must contain at least one number."
+            "Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
         );
 
         return false;
@@ -743,6 +736,28 @@ function validateConfirmPassword() {
             confirmPasswordInput,
             "confirmPasswordError",
             "Please confirm your password."
+        );
+
+        return false;
+    }
+
+    if (confirmPassword.length < 5 || confirmPassword.length > 25) {
+
+        setError(
+            confirmPasswordInput,
+            "confirmPasswordError",
+            "Password must be between 5 and 25 characters."
+        );
+
+        return false;
+    }
+
+    if (!/^[A-Z][A-Za-z0-9@.]*$/.test(confirmPassword)) {
+
+        setError(
+            confirmPasswordInput,
+            "confirmPasswordError",
+            "Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
         );
 
         return false;
@@ -843,16 +858,26 @@ form.addEventListener(
     "submit",
     function(event) {
 
+        const firstNameValid = validateFirstName();
+        const lastNameValid = validateLastName();
+        const genderValid = validateGender();
+        const emailValid = validateEmail();
+        const phoneValid = validatePhone();
+        const addressValid = validateAddress();
+        const usernameValid = validateUsername();
+        const passwordValid = validatePassword();
+        const confirmPasswordValid = validateConfirmPassword();
+
         const valid =
-            validateFirstName() &&
-            validateLastName() &&
-            validateGender() &&
-            validateEmail() &&
-            validatePhone() &&
-            validateAddress() &&
-            validateUsername() &&
-            validatePassword() &&
-            validateConfirmPassword();
+            firstNameValid &&
+            lastNameValid &&
+            genderValid &&
+            emailValid &&
+            phoneValid &&
+            addressValid &&
+            usernameValid &&
+            passwordValid &&
+            confirmPasswordValid;
 
         if (!valid) {
             event.preventDefault();

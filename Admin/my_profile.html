@@ -1,18 +1,27 @@
-```html
 <!DOCTYPE html>
 <html>
 
 <head>
+
     <title>My Profile - Library Management System</title>
 
     <style>
+
+        /* =========================================
+           BODY
+           ========================================= */
+
         body {
             margin: 0;
             font-family: Arial, sans-serif;
             background-color: #f2f2f2;
         }
 
-        /* Left Sidebar */
+
+        /* =========================================
+           LEFT SIDEBAR
+           ========================================= */
+
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -23,12 +32,14 @@
             color: white;
         }
 
+
         .sidebar h2 {
             text-align: center;
             padding: 20px 0;
             margin: 0;
             background-color: #222;
         }
+
 
         .sidebar a,
         .manage {
@@ -40,23 +51,32 @@
             cursor: pointer;
         }
 
+
         .sidebar a:hover,
         .manage:hover {
-            background-color: rgba(255, 255, 255, .11);
+            background-color: rgba(255, 255, 255, 0.11);
         }
+
 
         .arrow {
             float: right;
         }
+
 
         .submenu {
             display: none;
             background-color: #444;
         }
 
+
         .submenu a {
             padding-left: 40px;
         }
+
+
+        /* =========================================
+           LOGOUT
+           ========================================= */
 
         .logout {
             position: absolute;
@@ -64,16 +84,26 @@
             width: 100%;
         }
 
+
         .logout a {
             background-color: #222;
             text-align: center;
         }
 
-        /* Main Content */
+
+        /* =========================================
+           MAIN CONTENT
+           ========================================= */
+
         .main {
             margin-left: 220px;
             padding: 25px;
         }
+
+
+        /* =========================================
+           TOP HEADER
+           ========================================= */
 
         .top {
             background-color: white;
@@ -82,16 +112,17 @@
             text-align: center;
         }
 
+
         .top h1 {
             margin: 0;
             color: #333;
         }
 
-        .top p {
-            color: #666;
-        }
 
-        /* Profile Card */
+        /* =========================================
+           PROFILE CARD
+           ========================================= */
+
         .profile-card {
             max-width: 700px;
             margin: 25px auto;
@@ -100,6 +131,7 @@
             border: 1px solid #ddd;
         }
 
+
         .profile-card h2 {
             margin-top: 0;
             color: #333;
@@ -107,10 +139,16 @@
             padding-bottom: 12px;
         }
 
+
+        /* =========================================
+           PROFILE TABLE
+           ========================================= */
+
         .profile-table {
             width: 100%;
             border-collapse: collapse;
         }
+
 
         .profile-table th,
         .profile-table td {
@@ -119,11 +157,17 @@
             text-align: left;
         }
 
+
         .profile-table th {
             width: 35%;
             background-color: #eee;
             color: #333;
         }
+
+
+        /* =========================================
+           UPDATE PROFILE BUTTON
+           ========================================= */
 
         .edit-button {
             display: block;
@@ -132,16 +176,291 @@
             padding: 12px 25px;
             background-color: #333;
             color: white;
-            text-decoration: none;
             border: none;
             cursor: pointer;
+            font-size: 16px;
         }
+
 
         .edit-button:hover {
             background-color: #555;
         }
 
+
+        /* =========================================
+           UPDATE PROFILE POPUP OVERLAY
+           ========================================= */
+
+        .popup-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+
+        /* =========================================
+           UPDATE PROFILE POPUP
+           ========================================= */
+
+        .popup-box {
+            width: 430px;
+            max-width: 90%;
+            background-color: white;
+            padding: 25px;
+            border: 2px solid #333;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+
+        .popup-box h2 {
+            margin-top: 0;
+            text-align: center;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 12px;
+        }
+
+
+        /* =========================================
+           CLOSE BUTTON
+           ========================================= */
+
+        .close-button {
+            position: absolute;
+            top: 8px;
+            right: 15px;
+            font-size: 28px;
+            color: #333;
+            cursor: pointer;
+            border: none;
+            background: none;
+        }
+
+
+        .close-button:hover {
+            color: red;
+        }
+
+
+        /* =========================================
+           FORM GROUP
+           ========================================= */
+
+        .form-group {
+            margin-bottom: 14px;
+        }
+
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+
+
+        .required {
+            color: red;
+        }
+
+
+        /* =========================================
+           INPUTS
+           ========================================= */
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            font-size: 15px;
+            border: 1px solid #999;
+            outline: none;
+        }
+
+
+        .form-group textarea {
+            height: 90px;
+            resize: vertical;
+        }
+
+
+        /* =========================================
+           INVALID
+           ========================================= */
+
+        .invalid {
+            border: 2px solid red !important;
+        }
+
+
+        /* =========================================
+           VALID
+           ========================================= */
+
+        .valid {
+            border: 2px solid green !important;
+        }
+
+
+        /* =========================================
+           ERROR MESSAGE
+           ========================================= */
+
+        .error {
+            display: block;
+            color: red;
+            font-size: 13px;
+            margin-top: 4px;
+            min-height: 16px;
+        }
+
+
+        /* =========================================
+           UPDATE BUTTON
+           ========================================= */
+
+        .update-button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+
+        .update-button:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================================
+           SUCCESS POPUP
+           ========================================= */
+
+        .success-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+
+        .success-box {
+            width: 350px;
+            max-width: 90%;
+            background-color: white;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid #333;
+        }
+
+
+        .success-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+
+        .success-box p {
+            color: #444;
+            font-size: 16px;
+        }
+
+
+        .success-button {
+            padding: 10px 25px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+
+        .success-button:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================================
+           NO CHANGE POPUP
+           ========================================= */
+
+        .info-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.55);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+
+        .info-box {
+            width: 350px;
+            max-width: 90%;
+            background-color: white;
+            padding: 30px;
+            text-align: center;
+            border: 2px solid #333;
+        }
+
+
+        .info-box h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+
+        .info-box p {
+            color: #444;
+            font-size: 16px;
+        }
+
+
+        .info-button {
+            padding: 10px 25px;
+            background-color: #333;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+
+        .info-button:hover {
+            background-color: #555;
+        }
+
+
+        /* =========================================
+           MOBILE
+           ========================================= */
+
         @media (max-width: 800px) {
+
             .sidebar {
                 width: 180px;
             }
@@ -149,110 +468,1410 @@
             .main {
                 margin-left: 180px;
             }
+
         }
+
     </style>
+
 </head>
+
 
 <body>
 
-    <!-- Sidebar -->
+
+    <!-- =========================================
+         SIDEBAR
+         ========================================= -->
+
     <div class="sidebar">
 
         <h2>Library</h2>
 
-        <a href="admin_home.html">Dashboard</a>
 
-        <a href="my_profile.html">My Profile</a>
+        <a href="admin_home.html">
+            Dashboard
+        </a>
 
-        <!-- Manage Books Menu -->
-        <div class="manage" onclick="toggleMenu()">
+
+        <a href="my_profile.html">
+            My Profile
+        </a>
+
+
+        <!-- MANAGE BOOKS -->
+
+        <div
+            class="manage"
+            onclick="toggleMenu()"
+        >
+
             Manage Books
-            <span class="arrow" id="arrow">+</span>
+
+            <span
+                class="arrow"
+                id="arrow"
+            >
+                +
+            </span>
+
         </div>
 
-        <!-- Manage Books Submenu -->
-        <div class="submenu" id="submenu">
-            <a href="view_books.html">View All Books</a>
-            <a href="add_book.html">Add Book</a>
-            <a href="update_book.html">Update / Delete Book</a>
-            
+
+        <!-- SUBMENU -->
+
+        <div
+            class="submenu"
+            id="submenu"
+        >
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+
+            <a href="update_book.html">
+                Update / Delete Book
+            </a>
+
         </div>
 
-        <a href="issue_book.html">Issue Book</a>
-        <a href="return_book.html">Return Book</a>
-        <a href="returned_books.html">Recent Returned Books</a>
-        <a href="members.html">Members Details</a>
-        <a href="announcement.html" class="active">
+
+        <a href="issue_book.html">
+            Issue Book
+        </a>
+
+
+        <a href="return_book.html">
+            Return Book
+        </a>
+
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+
+        <a href="announcement.html">
             Announcements
         </a>
 
+
         <div class="logout">
-            <a href="login_form.html">Logout</a>
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
         </div>
 
     </div>
 
-    <!-- Main Content -->
+
+
+    <!-- =========================================
+         MAIN CONTENT
+         ========================================= -->
+
     <div class="main">
 
+
         <div class="top">
-            <h1>My Profile</h1>
+
+            <h1>
+                My Profile
+            </h1>
+
         </div>
+
+
+
+        <!-- PROFILE CARD -->
 
         <div class="profile-card">
 
-            <h2>User Details</h2>
+
+            <h2>
+                User Details
+            </h2>
+
 
             <table class="profile-table">
-                <tr>
-                    <th>Username</th>
-                    <td>-</td>
-                </tr>
+
+
+                <!-- USERNAME -->
 
                 <tr>
-                    <th>Name</th>
-                    <td>-</td>
+
+                    <th>
+                        Username
+                    </th>
+
+                    <td id="displayUsername">
+                        user123
+                    </td>
+
                 </tr>
+
+
+                <!-- NAME -->
 
                 <tr>
-                    <th>Email Address</th>
-                    <td>-</td>
+
+                    <th>
+                        Name
+                    </th>
+
+                    <td id="displayName">
+                        Admin Name
+                    </td>
+
                 </tr>
+
+
+                <!-- EMAIL -->
 
                 <tr>
-                    <th>Phone Number</th>
-                    <td>-</td>
+
+                    <th>
+                        Email Address
+                    </th>
+
+                    <td id="displayEmail">
+                        admin@example.com
+                    </td>
+
                 </tr>
 
-                
+
+                <!-- PHONE -->
+
+                <tr>
+
+                    <th>
+                        Phone Number
+                    </th>
+
+                    <td id="displayPhone">
+                        9876543210
+                    </td>
+
+                </tr>
+
+
+                <!-- ADDRESS -->
+
+                <tr>
+
+                    <th>
+                        Address
+                    </th>
+
+                    <td id="displayAddress">
+                        Baramati, Maharashtra
+                    </td>
+
+                </tr>
+
 
             </table>
+
+
+            <!-- UPDATE PROFILE BUTTON -->
+
+            <button
+                type="button"
+                class="edit-button"
+                onclick="openProfilePopup()"
+            >
+
+                Update Profile
+
+            </button>
+
 
         </div>
 
     </div>
 
+
+
+    <!-- =========================================
+         UPDATE PROFILE POPUP
+         ========================================= -->
+
+    <div
+        class="popup-overlay"
+        id="profilePopup"
+    >
+
+
+        <div class="popup-box">
+
+
+            <!-- CLOSE -->
+
+            <button
+                type="button"
+                class="close-button"
+                onclick="closeProfilePopup()"
+            >
+
+                &times;
+
+            </button>
+
+
+            <h2>
+                Update Profile
+            </h2>
+
+
+            <form id="profileForm">
+
+
+                <!-- =================================
+                     NAME
+                     ================================= -->
+
+                <div class="form-group">
+
+                    <label for="name">
+                        Name
+                    </label>
+
+
+                    <input
+                        type="text"
+                        id="name"
+                        maxlength="50"
+                        placeholder="Enter Name"
+                    >
+
+
+                    <span
+                        class="error"
+                        id="nameError"
+                    ></span>
+
+                </div>
+
+
+
+                <!-- =================================
+                     EMAIL
+                     ================================= -->
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email Address
+                    </label>
+
+
+                    <input
+                        type="email"
+                        id="email"
+                        maxlength="100"
+                        placeholder="Enter Email Address"
+                    >
+
+
+                    <span
+                        class="error"
+                        id="emailError"
+                    ></span>
+
+                </div>
+
+
+
+                <!-- =================================
+                     PHONE
+                     ================================= -->
+
+                <div class="form-group">
+
+                    <label for="phone">
+                        Phone Number
+                    </label>
+
+
+                    <input
+                        type="text"
+                        id="phone"
+                        maxlength="10"
+                        placeholder="Enter 10-digit phone number"
+                    >
+
+
+                    <span
+                        class="error"
+                        id="phoneError"
+                    ></span>
+
+                </div>
+
+
+
+                <!-- =================================
+                     ADDRESS
+                     ================================= -->
+
+                <div class="form-group">
+
+                    <label for="address">
+                        Address
+                    </label>
+
+
+                    <textarea
+                        id="address"
+                        maxlength="200"
+                        placeholder="Enter Address"
+                    ></textarea>
+
+
+                    <span
+                        class="error"
+                        id="addressError"
+                    ></span>
+
+                </div>
+
+
+
+                <!-- =================================
+                     UPDATE
+                     ================================= -->
+
+                <button
+                    type="submit"
+                    class="update-button"
+                >
+
+                    Update Profile
+
+                </button>
+
+
+            </form>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================================
+         SUCCESS POPUP
+         ========================================= -->
+
+    <div
+        class="success-overlay"
+        id="successPopup"
+    >
+
+
+        <div class="success-box">
+
+
+            <h3>
+                Update Successful
+            </h3>
+
+
+            <p>
+                Profile updated successfully!
+            </p>
+
+
+            <button
+                type="button"
+                class="success-button"
+                onclick="closeSuccessPopup()"
+            >
+
+                OK
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+
+    <!-- =========================================
+         NO CHANGE POPUP
+         ========================================= -->
+
+    <div
+        class="info-overlay"
+        id="infoPopup"
+    >
+
+
+        <div class="info-box">
+
+
+            <h3>
+                No Changes
+            </h3>
+
+
+            <p>
+                No profile information was changed.
+            </p>
+
+
+            <button
+                type="button"
+                class="info-button"
+                onclick="closeInfoPopup()"
+            >
+
+                OK
+
+            </button>
+
+
+        </div>
+
+    </div>
+
+
+
     <script>
+
+
+        /* =========================================
+           SIDEBAR MENU
+           ========================================= */
+
         function toggleMenu() {
 
-            var menu = document.getElementById("submenu");
-            var arrow = document.getElementById("arrow");
+            const menu =
+                document.getElementById("submenu");
 
-            if (menu.style.display === "block") {
+            const arrow =
+                document.getElementById("arrow");
+
+
+            if (
+                menu.style.display === "block"
+            ) {
 
                 menu.style.display = "none";
+
                 arrow.innerHTML = "+";
 
-            } else {
+            }
+
+            else {
 
                 menu.style.display = "block";
+
                 arrow.innerHTML = "-";
 
             }
+
         }
+
+
+
+        /* =========================================
+           ELEMENTS
+           ========================================= */
+
+        const profilePopup =
+            document.getElementById(
+                "profilePopup"
+            );
+
+
+        const successPopup =
+            document.getElementById(
+                "successPopup"
+            );
+
+
+        const infoPopup =
+            document.getElementById(
+                "infoPopup"
+            );
+
+
+        const profileForm =
+            document.getElementById(
+                "profileForm"
+            );
+
+
+        const nameInput =
+            document.getElementById(
+                "name"
+            );
+
+
+        const emailInput =
+            document.getElementById(
+                "email"
+            );
+
+
+        const phoneInput =
+            document.getElementById(
+                "phone"
+            );
+
+
+        const addressInput =
+            document.getElementById(
+                "address"
+            );
+
+
+        let formSubmitted = false;
+
+
+        /* =========================================
+           ORIGINAL PROFILE VALUES
+           ========================================= */
+
+        let originalName = "";
+
+        let originalEmail = "";
+
+        let originalPhone = "";
+
+        let originalAddress = "";
+
+
+
+        /* =========================================
+           OPEN PROFILE POPUP
+           ========================================= */
+
+        function openProfilePopup() {
+
+
+            /*
+             * Get the existing values from
+             * the profile table.
+             */
+
+            originalName =
+                document.getElementById(
+                    "displayName"
+                ).textContent.trim();
+
+
+            originalEmail =
+                document.getElementById(
+                    "displayEmail"
+                ).textContent.trim();
+
+
+            originalPhone =
+                document.getElementById(
+                    "displayPhone"
+                ).textContent.trim();
+
+
+            originalAddress =
+                document.getElementById(
+                    "displayAddress"
+                ).textContent.trim();
+
+
+            /*
+             * Put existing values into
+             * the popup.
+             */
+
+            nameInput.value =
+                originalName;
+
+
+            emailInput.value =
+                originalEmail;
+
+
+            phoneInput.value =
+                originalPhone;
+
+
+            addressInput.value =
+                originalAddress;
+
+
+            /*
+             * Reset validation.
+             */
+
+            formSubmitted = false;
+
+            clearValidation();
+
+
+            /*
+             * Open popup.
+             */
+
+            profilePopup.style.display =
+                "flex";
+
+        }
+
+
+
+        /* =========================================
+           CLOSE PROFILE POPUP
+           ========================================= */
+
+        function closeProfilePopup() {
+
+            profilePopup.style.display =
+                "none";
+
+        }
+
+
+
+        /* =========================================
+           SUCCESS POPUP
+           ========================================= */
+
+        function closeSuccessPopup() {
+
+            successPopup.style.display =
+                "none";
+
+        }
+
+
+
+        /* =========================================
+           NO CHANGE POPUP
+           ========================================= */
+
+        function closeInfoPopup() {
+
+            infoPopup.style.display =
+                "none";
+
+        }
+
+
+
+        /* =========================================
+           CLEAR VALIDATION
+           ========================================= */
+
+        function clearValidation() {
+
+
+            nameInput.classList.remove(
+                "invalid",
+                "valid"
+            );
+
+
+            emailInput.classList.remove(
+                "invalid",
+                "valid"
+            );
+
+
+            phoneInput.classList.remove(
+                "invalid",
+                "valid"
+            );
+
+
+            addressInput.classList.remove(
+                "invalid",
+                "valid"
+            );
+
+
+            document.getElementById(
+                "nameError"
+            ).textContent = "";
+
+
+            document.getElementById(
+                "emailError"
+            ).textContent = "";
+
+
+            document.getElementById(
+                "phoneError"
+            ).textContent = "";
+
+
+            document.getElementById(
+                "addressError"
+            ).textContent = "";
+
+        }
+
+
+
+        /* =========================================
+           SHOW ERROR
+           ========================================= */
+
+        function showError(
+            input,
+            errorId,
+            message
+        ) {
+
+            input.classList.add(
+                "invalid"
+            );
+
+
+            input.classList.remove(
+                "valid"
+            );
+
+
+            document.getElementById(
+                errorId
+            ).textContent = message;
+
+        }
+
+
+
+        /* =========================================
+           SHOW VALID
+           ========================================= */
+
+        function showValid(
+            input,
+            errorId
+        ) {
+
+            input.classList.remove(
+                "invalid"
+            );
+
+
+            input.classList.add(
+                "valid"
+            );
+
+
+            document.getElementById(
+                errorId
+            ).textContent = "";
+
+        }
+
+
+
+        /* =========================================
+           VALIDATE NAME
+           ========================================= */
+
+        function validateName() {
+
+            const value =
+                nameInput.value.trim();
+
+
+            /*
+             * If unchanged, it is valid.
+             */
+
+            if (
+                value === originalName
+            ) {
+
+                showValid(
+                    nameInput,
+                    "nameError"
+                );
+
+                return true;
+
+            }
+
+
+            /*
+             * Empty after changing.
+             */
+
+            if (value === "") {
+
+                showError(
+                    nameInput,
+                    "nameError",
+                    "Please enter your name."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+             * Length.
+             */
+
+            if (
+                value.length < 2 ||
+                value.length > 50
+            ) {
+
+                showError(
+                    nameInput,
+                    "nameError",
+                    "Name must be between 2 and 50 characters."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+             * Letters and spaces only.
+             */
+
+            if (
+                !/^[A-Za-z ]+$/.test(value)
+            ) {
+
+                showError(
+                    nameInput,
+                    "nameError",
+                    "Name can contain only letters and spaces."
+                );
+
+                return false;
+
+            }
+
+
+            showValid(
+                nameInput,
+                "nameError"
+            );
+
+            return true;
+
+        }
+
+
+
+        /* =========================================
+           VALIDATE EMAIL
+           ========================================= */
+
+        function validateEmail() {
+
+            const value =
+                emailInput.value.trim();
+
+
+            /*
+             * If unchanged, it is valid.
+             */
+
+            if (
+                value === originalEmail
+            ) {
+
+                showValid(
+                    emailInput,
+                    "emailError"
+                );
+
+                return true;
+
+            }
+
+
+            /*
+             * Empty after changing.
+             */
+
+            if (value === "") {
+
+                showError(
+                    emailInput,
+                    "emailError",
+                    "Please enter your email address."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+             * Email format.
+             */
+
+            if (
+                !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(value)
+            ) {
+
+                showError(
+                    emailInput,
+                    "emailError",
+                    "Please enter a valid email address."
+                );
+
+                return false;
+
+            }
+
+
+            showValid(
+                emailInput,
+                "emailError"
+            );
+
+            return true;
+
+        }
+
+
+
+        /* =========================================
+           VALIDATE PHONE
+           ========================================= */
+
+        function validatePhone() {
+
+            const value =
+                phoneInput.value.trim();
+
+
+            /*
+             * If unchanged, it is valid.
+             */
+
+            if (
+                value === originalPhone
+            ) {
+
+                showValid(
+                    phoneInput,
+                    "phoneError"
+                );
+
+                return true;
+
+            }
+
+
+            /*
+             * Empty after changing.
+             */
+
+            if (value === "") {
+
+                showError(
+                    phoneInput,
+                    "phoneError",
+                    "Please enter your phone number."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+             * Exactly 10 digits,
+             * beginning with 6-9.
+             */
+
+            if (
+                !/^[6-9][0-9]{9}$/.test(value)
+            ) {
+
+                showError(
+                    phoneInput,
+                    "phoneError",
+                    "Phone number must be 10 digits and start with 6, 7, 8 or 9."
+                );
+
+                return false;
+
+            }
+
+
+            showValid(
+                phoneInput,
+                "phoneError"
+            );
+
+            return true;
+
+        }
+
+
+
+        /* =========================================
+           VALIDATE ADDRESS
+           ========================================= */
+
+        function validateAddress() {
+
+            const value =
+                addressInput.value.trim();
+
+
+            /*
+             * If unchanged, it is valid.
+             */
+
+            if (
+                value === originalAddress
+            ) {
+
+                showValid(
+                    addressInput,
+                    "addressError"
+                );
+
+                return true;
+
+            }
+
+
+            /*
+             * Empty after changing.
+             */
+
+            if (value === "") {
+
+                showError(
+                    addressInput,
+                    "addressError",
+                    "Please enter your address."
+                );
+
+                return false;
+
+            }
+
+
+            /*
+             * Length.
+             */
+
+            if (
+                value.length < 5 ||
+                value.length > 200
+            ) {
+
+                showError(
+                    addressInput,
+                    "addressError",
+                    "Address must be between 5 and 200 characters."
+                );
+
+                return false;
+
+            }
+
+
+            showValid(
+                addressInput,
+                "addressError"
+            );
+
+            return true;
+
+        }
+
+
+
+        /* =========================================
+           LIVE VALIDATION
+           ONLY AFTER UPDATE CLICK
+           ========================================= */
+
+        nameInput.addEventListener(
+            "input",
+            function () {
+
+                if (formSubmitted) {
+
+                    validateName();
+
+                }
+
+            }
+        );
+
+
+        emailInput.addEventListener(
+            "input",
+            function () {
+
+                if (formSubmitted) {
+
+                    validateEmail();
+
+                }
+
+            }
+        );
+
+
+        phoneInput.addEventListener(
+            "input",
+            function () {
+
+                if (formSubmitted) {
+
+                    validatePhone();
+
+                }
+
+            }
+        );
+
+
+        addressInput.addEventListener(
+            "input",
+            function () {
+
+                if (formSubmitted) {
+
+                    validateAddress();
+
+                }
+
+            }
+        );
+
+
+
+        /* =========================================
+           PHONE - NUMBERS ONLY
+           ========================================= */
+
+        phoneInput.addEventListener(
+            "input",
+            function () {
+
+                this.value =
+                    this.value.replace(
+                        /[^0-9]/g,
+                        ""
+                    );
+
+            }
+        );
+
+
+
+        /* =========================================
+           FORM SUBMIT
+           ========================================= */
+
+        profileForm.addEventListener(
+            "submit",
+            function (event) {
+
+                event.preventDefault();
+
+
+                /*
+                 * Validation starts after
+                 * Update Profile is clicked.
+                 */
+
+                formSubmitted = true;
+
+
+                /* =================================
+                   CHECK FOR CHANGES
+                   ================================= */
+
+                const changed =
+                    nameInput.value.trim() !==
+                        originalName ||
+
+                    emailInput.value.trim() !==
+                        originalEmail ||
+
+                    phoneInput.value.trim() !==
+                        originalPhone ||
+
+                    addressInput.value.trim() !==
+                        originalAddress;
+
+
+                /*
+                 * No fields changed.
+                 */
+
+                if (!changed) {
+
+                    closeProfilePopup();
+
+                    infoPopup.style.display =
+                        "flex";
+
+                    return;
+
+                }
+
+
+                /* =================================
+                   VALIDATE ALL FIELDS
+                   
+                   Unchanged fields automatically
+                   pass.
+                   ================================= */
+
+                const nameValid =
+                    validateName();
+
+
+                const emailValid =
+                    validateEmail();
+
+
+                const phoneValid =
+                    validatePhone();
+
+
+                const addressValid =
+                    validateAddress();
+
+
+                /*
+                 * Stop if anything is invalid.
+                 */
+
+                if (
+                    !nameValid ||
+                    !emailValid ||
+                    !phoneValid ||
+                    !addressValid
+                ) {
+
+                    return;
+
+                }
+
+
+                /* =================================
+                   UPDATE PROFILE DISPLAY
+                   ================================= */
+
+                document.getElementById(
+                    "displayName"
+                ).textContent =
+                    nameInput.value.trim();
+
+
+                document.getElementById(
+                    "displayEmail"
+                ).textContent =
+                    emailInput.value.trim();
+
+
+                document.getElementById(
+                    "displayPhone"
+                ).textContent =
+                    phoneInput.value.trim();
+
+
+                document.getElementById(
+                    "displayAddress"
+                ).textContent =
+                    addressInput.value.trim();
+
+
+                /*
+                 * Close editing popup.
+                 */
+
+                closeProfilePopup();
+
+
+                /*
+                 * Show success popup.
+                 */
+
+                successPopup.style.display =
+                    "flex";
+
+            }
+        );
+
+
+
+        /* =========================================
+           CLICK OUTSIDE POPUP
+           ========================================= */
+
+        profilePopup.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    event.target ===
+                    profilePopup
+                ) {
+
+                    closeProfilePopup();
+
+                }
+
+            }
+        );
+
+
+
+        /* =========================================
+           ESCAPE TO CLOSE
+           ========================================= */
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (
+                    event.key === "Escape" &&
+                    profilePopup.style.display ===
+                    "flex"
+                ) {
+
+                    closeProfilePopup();
+
+                }
+
+            }
+        );
+
     </script>
 
 </body>
 
 </html>
-```
