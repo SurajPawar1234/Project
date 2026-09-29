@@ -214,6 +214,68 @@
 
 
         /* =================================================
+           MEMBER NAVIGATION
+        ================================================= */
+
+        .member-navigation {
+
+            width: 100%;
+
+            background-color: white;
+
+            border-bottom: 1px solid #ddd;
+
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+
+            display: flex;
+
+            justify-content: center;
+
+            align-items: center;
+
+            gap: 5px;
+
+            padding: 8px 20px;
+
+            position: sticky;
+
+            top: 0;
+
+            z-index: 100;
+
+            overflow-x: auto;
+        }
+
+
+        .member-navigation a {
+
+            color: #43515a;
+
+            text-decoration: none;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            padding: 9px 16px;
+
+            border-radius: 5px;
+
+            transition: 0.2s;
+
+            white-space: nowrap;
+        }
+
+
+        .member-navigation a:hover {
+
+            background-color: #43515a;
+
+            color: white;
+        }
+
+
+        /* =================================================
            MAIN
         ================================================= */
 
@@ -244,6 +306,8 @@
             margin-bottom: 20px;
 
             text-align: center;
+
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
 
 
@@ -274,6 +338,8 @@
             margin-bottom: 20px;
 
             overflow-x: auto;
+
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
         }
 
 
@@ -327,6 +393,12 @@
         }
 
 
+        tbody tr:hover td {
+
+            background-color: #fafafa;
+        }
+
+
         tr:last-child td {
 
             border-bottom: none;
@@ -342,6 +414,34 @@
             padding: 25px;
 
             font-size: 14px;
+        }
+
+
+        /* =================================================
+           SEARCH NOT FOUND
+        ================================================= */
+
+        .search-not-found {
+
+            color: #d93025 !important;
+
+            font-weight: bold;
+
+            text-align: center;
+
+            padding: 18px !important;
+
+            background-color: #fff5f5;
+
+            border-bottom: 1px solid #f1caca !important;
+
+            font-size: 14px !important;
+        }
+
+
+        .search-not-found strong {
+
+            color: #b71c1c;
         }
 
 
@@ -402,6 +502,8 @@
         .search-box:focus {
 
             border-color: #43515a;
+
+            box-shadow: 0 0 0 2px rgba(67,81,90,0.10);
         }
 
 
@@ -417,6 +519,8 @@
             cursor: pointer;
 
             font-size: 14px;
+
+            transition: 0.2s;
         }
 
 
@@ -473,6 +577,8 @@
             justify-content: center;
 
             align-items: center;
+
+            padding: 20px;
         }
 
 
@@ -531,6 +637,14 @@
             background: white;
 
             font-size: 14px;
+
+            outline: none;
+        }
+
+
+        .filter-group select:focus {
+
+            border-color: #43515a;
         }
 
 
@@ -577,6 +691,18 @@
         }
 
 
+        .apply-filter:hover {
+
+            background-color: #344149;
+        }
+
+
+        .clear-filter:hover {
+
+            background-color: #ccc;
+        }
+
+
         /* =================================================
            PROFILE MODAL
         ================================================= */
@@ -602,14 +728,18 @@
             justify-content: center;
 
             align-items: center;
+
+            padding: 20px;
         }
 
 
         .profile-popup {
 
-            width: 450px;
+            width: 500px;
 
-            max-width: 92%;
+            max-width: 95%;
+
+            max-height: 90vh;
 
             background-color: white;
 
@@ -664,6 +794,10 @@
         .profile-content {
 
             padding: 25px;
+
+            overflow-y: auto;
+
+            max-height: calc(90vh - 60px);
         }
 
 
@@ -704,6 +838,8 @@
             border-bottom: 1px solid #eee;
 
             padding: 13px 0;
+
+            gap: 10px;
         }
 
 
@@ -732,87 +868,315 @@
             color: #777;
 
             font-size: 14px;
+
+            word-break: break-word;
         }
 
 
         /* =================================================
-           MEMBER NAVIGATION
+           PROFILE EDIT FORM
         ================================================= */
 
-        .member-navigation {
-            width: 100%;
-            background-color: white;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 5px;
-            padding: 8px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            overflow-x: auto;
+        .profile-field {
+
+            margin-bottom: 16px;
         }
 
-        .member-navigation a {
-            color: #43515a;
-            text-decoration: none;
+
+        .profile-field label {
+
+            display: block;
+
             font-size: 14px;
-            font-weight: 600;
-            padding: 9px 16px;
-            border-radius: 5px;
-            transition: 0.2s;
-            white-space: nowrap;
+
+            font-weight: bold;
+
+            color: #555;
+
+            margin-bottom: 6px;
         }
 
-        .member-navigation a:hover {
+
+        .profile-field input,
+        .profile-field textarea {
+
+            width: 100%;
+
+            padding: 10px 11px;
+
+            border: 1px solid #ccc;
+
+            border-radius: 5px;
+
+            font-size: 14px;
+
+            font-family: Arial, sans-serif;
+
+            outline: none;
+
+            transition: 0.2s;
+        }
+
+
+        .profile-field textarea {
+
+            min-height: 80px;
+
+            resize: vertical;
+        }
+
+
+        .profile-field input:focus,
+        .profile-field textarea:focus {
+
+            border-color: #43515a;
+
+            box-shadow: 0 0 0 2px rgba(67,81,90,0.10);
+        }
+
+
+        .profile-field input:disabled {
+
+            background-color: #f1f1f1;
+
+            color: #777;
+
+            cursor: not-allowed;
+        }
+
+
+        .field-error {
+
+            display: block;
+
+            min-height: 17px;
+
+            margin-top: 5px;
+
+            color: #d93025;
+
+            font-size: 12px;
+        }
+
+
+        .input-error {
+
+            border-color: #d93025 !important;
+
+            background-color: #fff8f8;
+        }
+
+
+        .input-valid {
+
+            border-color: #2e7d32 !important;
+        }
+
+
+        .profile-edit-note {
+
+            background-color: #f7f9fa;
+
+            border: 1px solid #e2e6e8;
+
+            color: #666;
+
+            border-radius: 5px;
+
+            padding: 10px 12px;
+
+            margin-bottom: 18px;
+
+            font-size: 13px;
+
+            line-height: 1.5;
+        }
+
+
+        .profile-actions {
+
+            display: flex;
+
+            justify-content: flex-end;
+
+            gap: 10px;
+
+            margin-top: 20px;
+
+            padding-top: 18px;
+
+            border-top: 1px solid #eee;
+        }
+
+
+        .edit-profile-btn,
+        .save-profile-btn,
+        .cancel-profile-btn {
+
+            border: none;
+
+            border-radius: 5px;
+
+            padding: 10px 17px;
+
+            cursor: pointer;
+
+            font-size: 14px;
+
+            transition: 0.2s;
+        }
+
+
+        .edit-profile-btn {
+
+            display: block;
+
+            margin: 22px auto 0 auto;
+
             background-color: #43515a;
+
             color: white;
         }
+
+
+        .edit-profile-btn:hover {
+
+            background-color: #344149;
+        }
+
+
+        .save-profile-btn {
+
+            background-color: #2e7d32;
+
+            color: white;
+        }
+
+
+        .save-profile-btn:hover {
+
+            background-color: #256628;
+        }
+
+
+        .cancel-profile-btn {
+
+            background-color: #ddd;
+
+            color: #333;
+        }
+
+
+        .cancel-profile-btn:hover {
+
+            background-color: #ccc;
+        }
+
+
+        .profile-message {
+
+            display: none;
+
+            padding: 10px 12px;
+
+            border-radius: 5px;
+
+            font-size: 13px;
+
+            margin-bottom: 15px;
+        }
+
+
+        .profile-message.success {
+
+            display: block;
+
+            background-color: #edf7ed;
+
+            color: #2e7d32;
+
+            border: 1px solid #c8e6c9;
+        }
+
+
+        .profile-message.error {
+
+            display: block;
+
+            background-color: #fff5f5;
+
+            color: #d93025;
+
+            border: 1px solid #f1caca;
+        }
+
 
         /* =================================================
            LIBRARY DETAILS
         ================================================= */
 
         .library-details {
-            width: 92%;
-            max-width: 1200px;
-            margin: 20px auto 30px auto;
+
+            width: 100%;
+
+            max-width: none;
+
+            margin: 0 0 20px 0;
         }
 
-        .library-details h3 {
-            margin-top: 0;
-            margin-bottom: 18px;
-        }
 
         .library-detail-row {
+
             display: flex;
+
             border-bottom: 1px solid #eee;
+
             padding: 12px 0;
         }
 
+
         .library-detail-row:last-child {
+
             border-bottom: none;
         }
 
+
         .library-detail-label {
+
             width: 30%;
+
             font-weight: bold;
+
             color: #555;
+
             font-size: 14px;
         }
+
 
         .library-detail-value {
+
             width: 70%;
+
             color: #777;
+
             font-size: 14px;
+
+            word-break: break-word;
         }
 
+
+        /* =================================================
+           FOOTER
+        ================================================= */
+
         .footer {
+
             text-align: center;
+
             color: #777;
+
             font-size: 12px;
+
             padding: 0 20px 25px 20px;
         }
 
@@ -828,10 +1192,12 @@
                 width: 50%;
             }
 
+
             .search-filter {
 
                 flex-wrap: wrap;
             }
+
 
             .search-box {
 
@@ -902,6 +1268,8 @@
                 flex: 1;
 
                 width: auto;
+
+                min-width: 0;
             }
 
 
@@ -909,6 +1277,12 @@
             .filter-btn {
 
                 padding: 9px 11px;
+            }
+
+
+            .profile-popup {
+
+                width: 100%;
             }
 
 
@@ -932,22 +1306,37 @@
                 margin-top: 5px;
             }
 
-            .library-details,
-            .bottom-navigation {
-                width: 94%;
+
+            .profile-actions {
+
+                flex-direction: column;
             }
 
+
+            .save-profile-btn,
+            .cancel-profile-btn {
+
+                width: 100%;
+            }
+
+
             .library-detail-row {
+
                 display: block;
             }
+
 
             .library-detail-label,
             .library-detail-value {
+
                 width: 100%;
+
                 display: block;
             }
 
+
             .library-detail-value {
+
                 margin-top: 5px;
             }
 
@@ -992,8 +1381,6 @@
                 class="announcement-track"
                 id="announcementTrack">
 
-                <!-- Active announcements will appear here -->
-
             </div>
 
         </div>
@@ -1009,7 +1396,9 @@
         <div
             class="profile-icon"
             onclick="openProfile()"
-            title="Member Details">
+            title="Member Details"
+            role="button"
+            tabindex="0">
 
             👤
 
@@ -1034,10 +1423,23 @@
 ================================================= -->
 
 <nav class="member-navigation" aria-label="Member Navigation">
-    <a href="#top">Home</a>
-    <a href="#issued-books">My Issued Books</a>
-    <a href="#all-books">All Books</a>
-    <a href="#library-details">About Library</a>
+
+    <a href="#top">
+        Home
+    </a>
+
+    <a href="#issued-books">
+        My Issued Books
+    </a>
+
+    <a href="#all-books">
+        All Books
+    </a>
+
+    <a href="#library-details">
+        About Library
+    </a>
+
 </nav>
 
 
@@ -1045,7 +1447,7 @@
      MAIN CONTENT
 ================================================= -->
 
-<main id="top">
+<main id="main-content">
 
 
     <!-- =================================================
@@ -1059,7 +1461,6 @@
         </h2>
 
     </div>
-
 
 
     <!-- =================================================
@@ -1100,14 +1501,11 @@
 
             <tbody id="issuedBooksTable">
 
-                <!-- Real issued-book records will be loaded here -->
-
             </tbody>
 
         </table>
 
     </div>
-
 
 
     <!-- =================================================
@@ -1132,12 +1530,15 @@
                     type="text"
                     id="searchInput"
                     class="search-box"
-                    placeholder="Search by name, author or ISBN">
+                    placeholder="Search by name, author or ISBN"
+                    maxlength="100"
+                    autocomplete="off">
 
 
                 <button
+                    type="button"
                     class="search-btn"
-                    onclick="searchBooks()">
+                    id="searchButton">
 
                     Search
 
@@ -1145,8 +1546,9 @@
 
 
                 <button
+                    type="button"
                     class="filter-btn"
-                    onclick="openFilter()">
+                    id="filterButton">
 
                     Filter
 
@@ -1155,7 +1557,6 @@
             </div>
 
         </div>
-
 
 
         <table>
@@ -1181,8 +1582,6 @@
 
             <tbody id="booksTable">
 
-                <!-- Real book records will be loaded here -->
-
             </tbody>
 
         </table>
@@ -1196,46 +1595,122 @@
 
     <div class="card library-details" id="library-details">
 
-        <h3>About Library</h3>
+        <h3>
+            About Library
+        </h3>
+
 
         <div class="library-detail-row">
-            <div class="library-detail-label">Library Name</div>
-            <div class="library-detail-value" id="libraryName"></div>
+
+            <div class="library-detail-label">
+                Library Name
+            </div>
+
+            <div
+                class="library-detail-value"
+                id="libraryName">
+
+            </div>
+
         </div>
 
-        <div class="library-detail-row">
-            <div class="library-detail-label">Address</div>
-            <div class="library-detail-value" id="libraryAddress"></div>
-        </div>
 
         <div class="library-detail-row">
-            <div class="library-detail-label">Opening Time</div>
-            <div class="library-detail-value" id="openingTime"></div>
+
+            <div class="library-detail-label">
+                Address
+            </div>
+
+            <div
+                class="library-detail-value"
+                id="libraryAddress">
+
+            </div>
+
         </div>
 
-        <div class="library-detail-row">
-            <div class="library-detail-label">Closing Time</div>
-            <div class="library-detail-value" id="closingTime"></div>
-        </div>
 
         <div class="library-detail-row">
-            <div class="library-detail-label">Working Days</div>
-            <div class="library-detail-value">Monday to Saturday</div>
+
+            <div class="library-detail-label">
+                Opening Time
+            </div>
+
+            <div
+                class="library-detail-value"
+                id="openingTime">
+
+            </div>
+
         </div>
 
-        <div class="library-detail-row">
-            <div class="library-detail-label">Sunday</div>
-            <div class="library-detail-value">Closed</div>
-        </div>
 
         <div class="library-detail-row">
-            <div class="library-detail-label">Holidays</div>
-            <div class="library-detail-value">Closed</div>
+
+            <div class="library-detail-label">
+                Closing Time
+            </div>
+
+            <div
+                class="library-detail-value"
+                id="closingTime">
+
+            </div>
+
         </div>
 
+
         <div class="library-detail-row">
-            <div class="library-detail-label">Contact Number</div>
-            <div class="library-detail-value" id="contactNumber"></div>
+
+            <div class="library-detail-label">
+                Working Days
+            </div>
+
+            <div class="library-detail-value">
+                Monday to Saturday
+            </div>
+
+        </div>
+
+
+        <div class="library-detail-row">
+
+            <div class="library-detail-label">
+                Sunday
+            </div>
+
+            <div class="library-detail-value">
+                Closed
+            </div>
+
+        </div>
+
+
+        <div class="library-detail-row">
+
+            <div class="library-detail-label">
+                Holidays
+            </div>
+
+            <div class="library-detail-value">
+                Closed
+            </div>
+
+        </div>
+
+
+        <div class="library-detail-row">
+
+            <div class="library-detail-label">
+                Contact Number
+            </div>
+
+            <div
+                class="library-detail-value"
+                id="contactNumber">
+
+            </div>
+
         </div>
 
     </div>
@@ -1244,20 +1719,22 @@
 </main>
 
 
-
 <!-- =================================================
      FILTER POPUP
 ================================================= -->
 
 <div
     class="filter-overlay"
-    id="filterOverlay">
+    id="filterOverlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="filterTitle">
 
 
     <div class="filter-popup">
 
 
-        <h3>
+        <h3 id="filterTitle">
             Filter Books
         </h3>
 
@@ -1266,7 +1743,7 @@
 
         <div class="filter-group">
 
-            <label>
+            <label for="categoryFilter">
                 Category
             </label>
 
@@ -1285,7 +1762,7 @@
 
         <div class="filter-group">
 
-            <label>
+            <label for="sortFilter">
                 Sort By
             </label>
 
@@ -1320,7 +1797,7 @@
 
         <div class="filter-group">
 
-            <label>
+            <label for="statusFilter">
                 Status
             </label>
 
@@ -1349,8 +1826,9 @@
 
 
             <button
+                type="button"
                 class="apply-filter"
-                onclick="applyFilter()">
+                id="applyFilterButton">
 
                 Apply Filter
 
@@ -1358,8 +1836,9 @@
 
 
             <button
+                type="button"
                 class="clear-filter"
-                onclick="clearFilter()">
+                id="clearFilterButton">
 
                 Clear
 
@@ -1372,14 +1851,16 @@
 </div>
 
 
-
 <!-- =================================================
      MEMBER DETAILS POPUP
 ================================================= -->
 
 <div
     class="profile-overlay"
-    id="profileOverlay">
+    id="profileOverlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="profileTitle">
 
 
     <div class="profile-popup">
@@ -1390,14 +1871,16 @@
         <div class="profile-popup-header">
 
 
-            <h3>
+            <h3 id="profileTitle">
                 Member Details
             </h3>
 
 
             <button
+                type="button"
                 class="close-profile"
-                onclick="closeProfile()">
+                id="closeProfileButton"
+                aria-label="Close profile">
 
                 ×
 
@@ -1406,10 +1889,13 @@
         </div>
 
 
+        <!-- =================================================
+             VIEW PROFILE
+        ================================================= -->
 
-        <!-- Profile Content -->
-
-        <div class="profile-content">
+        <div
+            class="profile-content"
+            id="profileView">
 
 
             <div class="profile-avatar">
@@ -1421,8 +1907,6 @@
 
             <div class="profile-details">
 
-
-                <!-- Username -->
 
                 <div class="profile-row">
 
@@ -1439,8 +1923,6 @@
                 </div>
 
 
-                <!-- Name -->
-
                 <div class="profile-row">
 
                     <div class="profile-label">
@@ -1455,8 +1937,6 @@
 
                 </div>
 
-
-                <!-- Email -->
 
                 <div class="profile-row">
 
@@ -1473,8 +1953,6 @@
                 </div>
 
 
-                <!-- Mobile Number -->
-
                 <div class="profile-row">
 
                     <div class="profile-label">
@@ -1490,8 +1968,6 @@
                 </div>
 
 
-                <!-- Address -->
-
                 <div class="profile-row">
 
                     <div class="profile-label">
@@ -1506,6 +1982,176 @@
 
                 </div>
 
+            </div>
+
+
+            <button
+                type="button"
+                class="edit-profile-btn"
+                id="editProfileButton">
+
+                Edit Profile
+
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             EDIT PROFILE
+        ================================================= -->
+
+        <div
+            class="profile-content"
+            id="profileEdit"
+            style="display:none;">
+
+
+            <div class="profile-avatar">
+
+                👤
+
+            </div>
+
+
+            
+
+
+            <div
+                class="profile-message"
+                id="profileMessage">
+            </div>
+
+
+            <!-- Username -->
+
+            <div class="profile-field">
+
+                <label for="editUsername">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="editUsername"
+                    disabled>
+
+            </div>
+
+
+            <!-- Name -->
+
+            <div class="profile-field">
+
+                <label for="editName">
+                    Name
+                </label>
+
+                <input
+                    type="text"
+                    id="editName"
+                    maxlength="50"
+                    autocomplete="name"
+                    placeholder="Enter your name">
+
+                <span
+                    class="field-error"
+                    id="nameError">
+                </span>
+
+            </div>
+
+
+            <!-- Email -->
+
+            <div class="profile-field">
+
+                <label for="editEmail">
+                    Email
+                </label>
+
+                <input
+                    type="email"
+                    id="editEmail"
+                    maxlength="100"
+                    autocomplete="email"
+                    placeholder="Enter your email">
+
+                <span
+                    class="field-error"
+                    id="emailError">
+                </span>
+
+            </div>
+
+
+            <!-- Mobile -->
+
+            <div class="profile-field">
+
+                <label for="editMobile">
+                    Mobile Number
+                </label>
+
+                <input
+                    type="tel"
+                    id="editMobile"
+                    maxlength="15"
+                    autocomplete="tel"
+                    placeholder="Enter mobile number">
+
+                <span
+                    class="field-error"
+                    id="mobileError">
+                </span>
+
+            </div>
+
+
+            <!-- Address -->
+
+            <div class="profile-field">
+
+                <label for="editAddress">
+                    Address
+                </label>
+
+                <textarea
+                    id="editAddress"
+                    maxlength="250"
+                    autocomplete="street-address"
+                    placeholder="Enter your address"></textarea>
+
+                <span
+                    class="field-error"
+                    id="addressError">
+                </span>
+
+            </div>
+
+
+            <!-- Actions -->
+
+            <div class="profile-actions">
+
+                <button
+                    type="button"
+                    class="cancel-profile-btn"
+                    id="cancelProfileButton">
+
+                    Cancel
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="save-profile-btn"
+                    id="saveProfileButton">
+
+                    Save Changes
+
+                </button>
 
             </div>
 
@@ -1516,10 +2162,18 @@
 </div>
 
 
+<!-- =================================================
+     FOOTER
+================================================= -->
 
 <div class="footer">
-    Library Management System &nbsp;|&nbsp; Member Portal
+
+    Library Management System
+    &nbsp;|&nbsp;
+    Member Portal
+
 </div>
+
 
 <script>
 
@@ -1529,15 +2183,81 @@
 ================================================= */
 
 /*
-   No dummy data is included.
-
    These arrays are intentionally empty.
-   Replace them later with data from your database/backend.
+
+   Replace these later with data from your
+   backend/database.
 */
 
 let books = [];
 
 let issuedBooks = [];
+
+
+/*
+   Member information.
+
+   In your actual application these values should
+   come from your logged-in member/backend session.
+*/
+
+let memberProfile = {
+
+    username: "",
+
+    name: "",
+
+    email: "",
+
+    mobile: "",
+
+    address: ""
+
+};
+
+
+/*
+   Library details.
+
+   Replace these values with your backend/database
+   values when the system is connected.
+*/
+
+const libraryDetails = {
+
+    name: "",
+
+    address: "",
+
+    openingTime: "",
+
+    closingTime: "",
+
+    contactNumber: ""
+
+};
+
+
+
+/* =================================================
+   SAFE HTML ESCAPE
+================================================= */
+
+function escapeHTML(value) {
+
+    return String(value)
+
+        .replace(/&/g, "&amp;")
+
+        .replace(/</g, "&lt;")
+
+        .replace(/>/g, "&gt;")
+
+        .replace(/"/g, "&quot;")
+
+        .replace(/'/g, "&#039;");
+
+}
 
 
 
@@ -1554,17 +2274,26 @@ function loadBooks(bookList = books) {
     table.innerHTML = "";
 
 
-    if (bookList.length === 0) {
+    if (!Array.isArray(bookList) || bookList.length === 0) {
 
         table.innerHTML = `
+
             <tr>
-                <td colspan="5" class="no-records">
+
+                <td
+                    colspan="5"
+                    class="no-records">
+
                     No books available.
+
                 </td>
+
             </tr>
+
         `;
 
         return;
+
     }
 
 
@@ -1576,15 +2305,101 @@ function loadBooks(bookList = books) {
 
         row.innerHTML = `
 
-            <td>${escapeHTML(book.name || "")}</td>
+            <td>
+                ${escapeHTML(book.name || "")}
+            </td>
 
-            <td>${escapeHTML(book.author || "")}</td>
+            <td>
+                ${escapeHTML(book.author || "")}
+            </td>
 
-            <td>${escapeHTML(book.isbn || "")}</td>
+            <td>
+                ${escapeHTML(book.isbn || "")}
+            </td>
 
-            <td>${escapeHTML(book.category || "")}</td>
+            <td>
+                ${escapeHTML(book.category || "")}
+            </td>
 
-            <td>${escapeHTML(book.status || "")}</td>
+            <td>
+                ${escapeHTML(book.status || "")}
+            </td>
+
+        `;
+
+
+        table.appendChild(row);
+
+    });
+
+}
+
+
+
+/* =================================================
+   LOAD SEARCH RESULTS
+================================================= */
+
+function loadSearchResults(bookList, searchValue) {
+
+    const table =
+        document.getElementById("booksTable");
+
+
+    table.innerHTML = "";
+
+
+    if (!Array.isArray(bookList) || bookList.length === 0) {
+
+        table.innerHTML = `
+
+            <tr>
+
+                <td
+                    colspan="5"
+                    class="search-not-found">
+
+                    No books found for
+                    "<strong>${escapeHTML(searchValue)}</strong>"
+
+                </td>
+
+            </tr>
+
+        `;
+
+        return;
+
+    }
+
+
+    bookList.forEach(book => {
+
+        const row =
+            document.createElement("tr");
+
+
+        row.innerHTML = `
+
+            <td>
+                ${escapeHTML(book.name || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(book.author || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(book.isbn || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(book.category || "")}
+            </td>
+
+            <td>
+                ${escapeHTML(book.status || "")}
+            </td>
 
         `;
 
@@ -1610,17 +2425,29 @@ function loadIssuedBooks() {
     table.innerHTML = "";
 
 
-    if (issuedBooks.length === 0) {
+    if (
+        !Array.isArray(issuedBooks) ||
+        issuedBooks.length === 0
+    ) {
 
         table.innerHTML = `
+
             <tr>
-                <td colspan="7" class="no-records">
+
+                <td
+                    colspan="7"
+                    class="no-records">
+
                     No issued books.
+
                 </td>
+
             </tr>
+
         `;
 
         return;
+
     }
 
 
@@ -1632,19 +2459,33 @@ function loadIssuedBooks() {
 
         row.innerHTML = `
 
-            <td>${escapeHTML(book.name || "")}</td>
+            <td>
+                ${escapeHTML(book.name || "")}
+            </td>
 
-            <td>${escapeHTML(book.author || "")}</td>
+            <td>
+                ${escapeHTML(book.author || "")}
+            </td>
 
-            <td>${escapeHTML(book.isbn || "")}</td>
+            <td>
+                ${escapeHTML(book.isbn || "")}
+            </td>
 
-            <td>${escapeHTML(book.issueDate || "")}</td>
+            <td>
+                ${escapeHTML(book.issueDate || "")}
+            </td>
 
-            <td>${escapeHTML(book.dueDate || "")}</td>
+            <td>
+                ${escapeHTML(book.dueDate || "")}
+            </td>
 
-            <td>${escapeHTML(book.fine || "")}</td>
+            <td>
+                ${escapeHTML(book.fine || "")}
+            </td>
 
-            <td>${escapeHTML(book.status || "")}</td>
+            <td>
+                ${escapeHTML(book.status || "")}
+            </td>
 
         `;
 
@@ -1663,45 +2504,91 @@ function loadIssuedBooks() {
 
 function searchBooks() {
 
-    const searchValue =
-        document
-        .getElementById("searchInput")
-        .value
-        .trim()
-        .toLowerCase();
+    const input =
+        document.getElementById("searchInput");
 
+
+    const searchValue =
+        input.value
+            .trim()
+            .replace(/\s+/g, " ");
+
+
+    /*
+       Empty search:
+       show all books.
+    */
 
     if (!searchValue) {
 
         loadBooks();
 
         return;
+
     }
 
 
+    /*
+       Limit search value to prevent
+       unnecessarily large input.
+    */
+
+    if (searchValue.length > 100) {
+
+        return;
+
+    }
+
+
+    const searchLower =
+        searchValue.toLowerCase();
+
+
     const filteredBooks =
-        books.filter(book =>
+        books.filter(book => {
 
-            String(book.name || "")
-                .toLowerCase()
-                .includes(searchValue)
-
-            ||
-
-            String(book.author || "")
-                .toLowerCase()
-                .includes(searchValue)
-
-            ||
-
-            String(book.isbn || "")
-                .toLowerCase()
-                .includes(searchValue)
-
-        );
+            const name =
+                String(book.name || "")
+                    .toLowerCase();
 
 
-    loadBooks(filteredBooks);
+            const author =
+                String(book.author || "")
+                    .toLowerCase();
+
+
+            const isbn =
+                String(book.isbn || "")
+                    .toLowerCase();
+
+
+            return (
+
+                name.includes(searchLower)
+
+                ||
+
+                author.includes(searchLower)
+
+                ||
+
+                isbn.includes(searchLower)
+
+            );
+
+        });
+
+
+    /*
+       Important:
+       Search message is placed INSIDE the table,
+       directly below the table headings.
+    */
+
+    loadSearchResults(
+        filteredBooks,
+        searchValue
+    );
 
 }
 
@@ -1713,15 +2600,33 @@ function searchBooks() {
 
 document
     .getElementById("searchInput")
-    .addEventListener("keydown", function(event) {
+    .addEventListener(
+        "keydown",
+        function(event) {
 
-        if (event.key === "Enter") {
+            if (event.key === "Enter") {
 
-            searchBooks();
+                event.preventDefault();
+
+                searchBooks();
+
+            }
 
         }
+    );
 
-    });
+
+
+/* =================================================
+   SEARCH BUTTON
+================================================= */
+
+document
+    .getElementById("searchButton")
+    .addEventListener(
+        "click",
+        searchBooks
+    );
 
 
 
@@ -1754,6 +2659,19 @@ function closeFilter() {
 
 
 /* =================================================
+   FILTER BUTTON
+================================================= */
+
+document
+    .getElementById("filterButton")
+    .addEventListener(
+        "click",
+        openFilter
+    );
+
+
+
+/* =================================================
    LOAD CATEGORIES
 ================================================= */
 
@@ -1764,11 +2682,17 @@ function loadCategories() {
 
 
     const categories =
-        [...new Set(
-            books
-                .map(book => book.category)
-                .filter(category => category)
-        )];
+        [
+            ...new Set(
+                books
+                    .map(book => book.category)
+                    .filter(category =>
+                        category !== undefined &&
+                        category !== null &&
+                        String(category).trim() !== ""
+                    )
+            )
+        ];
 
 
     categorySelect.innerHTML = `
@@ -1807,20 +2731,20 @@ function applyFilter() {
 
     const category =
         document
-        .getElementById("categoryFilter")
-        .value;
+            .getElementById("categoryFilter")
+            .value;
 
 
     const status =
         document
-        .getElementById("statusFilter")
-        .value;
+            .getElementById("statusFilter")
+            .value;
 
 
     const sort =
         document
-        .getElementById("sortFilter")
-        .value;
+            .getElementById("sortFilter")
+            .value;
 
 
     let filteredBooks =
@@ -1833,7 +2757,8 @@ function applyFilter() {
 
         filteredBooks =
             filteredBooks.filter(
-                book => book.category === category
+                book =>
+                    String(book.category || "") === category
             );
 
     }
@@ -1845,7 +2770,8 @@ function applyFilter() {
 
         filteredBooks =
             filteredBooks.filter(
-                book => book.status === status
+                book =>
+                    String(book.status || "") === status
             );
 
     }
@@ -1858,7 +2784,9 @@ function applyFilter() {
         filteredBooks.sort(
             (a, b) =>
                 String(a.name || "")
-                .localeCompare(String(b.name || ""))
+                    .localeCompare(
+                        String(b.name || "")
+                    )
         );
 
     }
@@ -1869,7 +2797,9 @@ function applyFilter() {
         filteredBooks.sort(
             (a, b) =>
                 String(b.name || "")
-                .localeCompare(String(a.name || ""))
+                    .localeCompare(
+                        String(a.name || "")
+                    )
         );
 
     }
@@ -1880,7 +2810,9 @@ function applyFilter() {
         filteredBooks.sort(
             (a, b) =>
                 String(a.author || "")
-                .localeCompare(String(b.author || ""))
+                    .localeCompare(
+                        String(b.author || "")
+                    )
         );
 
     }
@@ -1891,7 +2823,9 @@ function applyFilter() {
         filteredBooks.sort(
             (a, b) =>
                 String(b.author || "")
-                .localeCompare(String(a.author || ""))
+                    .localeCompare(
+                        String(a.author || "")
+                    )
         );
 
     }
@@ -1899,15 +2833,22 @@ function applyFilter() {
 
     loadBooks(filteredBooks);
 
-
-    /*
-       Automatically close the filter popup
-       after applying.
-    */
-
     closeFilter();
 
 }
+
+
+
+/* =================================================
+   APPLY FILTER BUTTON
+================================================= */
+
+document
+    .getElementById("applyFilterButton")
+    .addEventListener(
+        "click",
+        applyFilter
+    );
 
 
 
@@ -1939,10 +2880,22 @@ function clearFilter() {
 
     loadBooks();
 
-
     closeFilter();
 
 }
+
+
+
+/* =================================================
+   CLEAR FILTER BUTTON
+================================================= */
+
+document
+    .getElementById("clearFilterButton")
+    .addEventListener(
+        "click",
+        clearFilter
+    );
 
 
 
@@ -1968,26 +2921,64 @@ document
 
 
 /* =================================================
-   PROFILE
+   PROFILE - SHOW DATA
+================================================= */
+
+function displayProfile() {
+
+    document
+        .getElementById("profileUsername")
+        .textContent =
+        memberProfile.username || "";
+
+
+    document
+        .getElementById("profileName")
+        .textContent =
+        memberProfile.name || "";
+
+
+    document
+        .getElementById("profileEmail")
+        .textContent =
+        memberProfile.email || "";
+
+
+    document
+        .getElementById("profileMobile")
+        .textContent =
+        memberProfile.mobile || "";
+
+
+    document
+        .getElementById("profileAddress")
+        .textContent =
+        memberProfile.address || "";
+
+}
+
+
+
+/* =================================================
+   OPEN PROFILE
 ================================================= */
 
 function openProfile() {
 
-    /*
-       No dummy profile values are used.
-       These values should later come from
-       the logged-in member/database.
-    */
+    displayProfile();
 
-    document.getElementById("profileUsername").textContent = "";
 
-    document.getElementById("profileName").textContent = "";
+    document
+        .getElementById("profileView")
+        .style.display = "block";
 
-    document.getElementById("profileEmail").textContent = "";
 
-    document.getElementById("profileMobile").textContent = "";
+    document
+        .getElementById("profileEdit")
+        .style.display = "none";
 
-    document.getElementById("profileAddress").textContent = "";
+
+    clearProfileMessage();
 
 
     document
@@ -1998,13 +2989,864 @@ function openProfile() {
 
 
 
+/* =================================================
+   CLOSE PROFILE
+================================================= */
+
 function closeProfile() {
 
     document
         .getElementById("profileOverlay")
         .style.display = "none";
 
+
+    cancelProfileEdit();
+
 }
+
+
+
+/* =================================================
+   CLOSE PROFILE BUTTON
+================================================= */
+
+document
+    .getElementById("closeProfileButton")
+    .addEventListener(
+        "click",
+        closeProfile
+    );
+
+
+
+/* =================================================
+   EDIT PROFILE
+================================================= */
+
+function editProfile() {
+
+    /*
+       Username is copied but remains disabled.
+    */
+
+    document
+        .getElementById("editUsername")
+        .value =
+        memberProfile.username || "";
+
+
+    document
+        .getElementById("editName")
+        .value =
+        memberProfile.name || "";
+
+
+    document
+        .getElementById("editEmail")
+        .value =
+        memberProfile.email || "";
+
+
+    document
+        .getElementById("editMobile")
+        .value =
+        memberProfile.mobile || "";
+
+
+    document
+        .getElementById("editAddress")
+        .value =
+        memberProfile.address || "";
+
+
+    clearAllProfileValidation();
+
+    clearProfileMessage();
+
+
+    document
+        .getElementById("profileView")
+        .style.display = "none";
+
+
+    document
+        .getElementById("profileEdit")
+        .style.display = "block";
+
+
+    document
+        .getElementById("editName")
+        .focus();
+
+}
+
+
+
+/* =================================================
+   EDIT PROFILE BUTTON
+================================================= */
+
+document
+    .getElementById("editProfileButton")
+    .addEventListener(
+        "click",
+        editProfile
+    );
+
+
+
+/* =================================================
+   CANCEL PROFILE EDIT
+================================================= */
+
+function cancelProfileEdit() {
+
+    document
+        .getElementById("profileView")
+        .style.display = "block";
+
+
+    document
+        .getElementById("profileEdit")
+        .style.display = "none";
+
+
+    clearAllProfileValidation();
+
+    clearProfileMessage();
+
+}
+
+
+
+/* =================================================
+   CANCEL BUTTON
+================================================= */
+
+document
+    .getElementById("cancelProfileButton")
+    .addEventListener(
+        "click",
+        cancelProfileEdit
+    );
+
+
+
+/* =================================================
+   PROFILE VALIDATION HELPERS
+================================================= */
+
+function setFieldError(
+    inputId,
+    errorId,
+    message
+) {
+
+    const input =
+        document.getElementById(inputId);
+
+
+    const error =
+        document.getElementById(errorId);
+
+
+    input.classList.remove("input-valid");
+
+    input.classList.add("input-error");
+
+    error.textContent = message;
+
+}
+
+
+
+function setFieldValid(
+    inputId,
+    errorId
+) {
+
+    const input =
+        document.getElementById(inputId);
+
+
+    const error =
+        document.getElementById(errorId);
+
+
+    input.classList.remove("input-error");
+
+    input.classList.add("input-valid");
+
+    error.textContent = "";
+
+}
+
+
+
+function clearFieldValidation(
+    inputId,
+    errorId
+) {
+
+    const input =
+        document.getElementById(inputId);
+
+
+    const error =
+        document.getElementById(errorId);
+
+
+    input.classList.remove("input-error");
+
+    input.classList.remove("input-valid");
+
+    error.textContent = "";
+
+}
+
+
+
+/* =================================================
+   NAME VALIDATION
+================================================= */
+
+function validateName() {
+
+    const input =
+        document.getElementById("editName");
+
+
+    const value =
+        input.value.trim();
+
+
+    /*
+       Name is optional during partial editing.
+       If blank, the existing value will be retained.
+    */
+
+    if (value === "") {
+
+        clearFieldValidation(
+            "editName",
+            "nameError"
+        );
+
+        return true;
+
+    }
+
+
+    if (value.length < 2) {
+
+        setFieldError(
+            "editName",
+            "nameError",
+            "Name must contain at least 2 characters."
+        );
+
+        return false;
+
+    }
+
+
+    if (value.length > 50) {
+
+        setFieldError(
+            "editName",
+            "nameError",
+            "Name cannot exceed 50 characters."
+        );
+
+        return false;
+
+    }
+
+
+    /*
+       Allows letters, spaces, apostrophes,
+       periods and hyphens.
+    */
+
+    const namePattern =
+        /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ .'-]*$/;
+
+
+    if (!namePattern.test(value)) {
+
+        setFieldError(
+            "editName",
+            "nameError",
+            "Name can contain letters, spaces, apostrophes, periods and hyphens only."
+        );
+
+        return false;
+
+    }
+
+
+    setFieldValid(
+        "editName",
+        "nameError"
+    );
+
+
+    return true;
+
+}
+
+
+
+/* =================================================
+   EMAIL VALIDATION
+================================================= */
+
+function validateEmail() {
+
+    const input =
+        document.getElementById("editEmail");
+
+
+    const value =
+        input.value.trim();
+
+
+    /*
+       Blank means:
+       keep existing email.
+    */
+
+    if (value === "") {
+
+        clearFieldValidation(
+            "editEmail",
+            "emailError"
+        );
+
+        return true;
+
+    }
+
+
+    if (value.length > 100) {
+
+        setFieldError(
+            "editEmail",
+            "emailError",
+            "Email cannot exceed 100 characters."
+        );
+
+        return false;
+
+    }
+
+
+    /*
+       Basic interface-level email validation.
+    */
+
+    const emailPattern =
+        /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+$/;
+
+
+    if (!emailPattern.test(value)) {
+
+        setFieldError(
+            "editEmail",
+            "emailError",
+            "Please enter a valid email address."
+        );
+
+        return false;
+
+    }
+
+
+    if (value.includes("..")) {
+
+        setFieldError(
+            "editEmail",
+            "emailError",
+            "Email address cannot contain consecutive dots."
+        );
+
+        return false;
+
+    }
+
+
+    setFieldValid(
+        "editEmail",
+        "emailError"
+    );
+
+
+    return true;
+
+}
+
+
+
+/* =================================================
+   MOBILE VALIDATION
+================================================= */
+
+function validateMobile() {
+
+    const input =
+        document.getElementById("editMobile");
+
+
+    const value =
+        input.value.trim();
+
+
+    /*
+       Blank means:
+       keep existing mobile number.
+    */
+
+    if (value === "") {
+
+        clearFieldValidation(
+            "editMobile",
+            "mobileError"
+        );
+
+        return true;
+
+    }
+
+
+    /*
+       Accepts optional + and spaces,
+       hyphens and parentheses.
+    */
+
+    const mobilePattern =
+        /^\+?[0-9][0-9\s()-]{7,14}$/;
+
+
+    if (!mobilePattern.test(value)) {
+
+        setFieldError(
+            "editMobile",
+            "mobileError",
+            "Please enter a valid mobile number."
+        );
+
+        return false;
+
+    }
+
+
+    /*
+       Count actual digits.
+    */
+
+    const digits =
+        value.replace(/\D/g, "");
+
+
+    if (
+        digits.length < 8 ||
+        digits.length > 15
+    ) {
+
+        setFieldError(
+            "editMobile",
+            "mobileError",
+            "Mobile number must contain 8 to 15 digits."
+        );
+
+        return false;
+
+    }
+
+
+    setFieldValid(
+        "editMobile",
+        "mobileError"
+    );
+
+
+    return true;
+
+}
+
+
+
+/* =================================================
+   ADDRESS VALIDATION
+================================================= */
+
+function validateAddress() {
+
+    const input =
+        document.getElementById("editAddress");
+
+
+    const value =
+        input.value.trim();
+
+
+    /*
+       Blank means:
+       keep existing address.
+    */
+
+    if (value === "") {
+
+        clearFieldValidation(
+            "editAddress",
+            "addressError"
+        );
+
+        return true;
+
+    }
+
+
+    if (value.length < 5) {
+
+        setFieldError(
+            "editAddress",
+            "addressError",
+            "Address must contain at least 5 characters."
+        );
+
+        return false;
+
+    }
+
+
+    if (value.length > 250) {
+
+        setFieldError(
+            "editAddress",
+            "addressError",
+            "Address cannot exceed 250 characters."
+        );
+
+        return false;
+
+    }
+
+
+    setFieldValid(
+        "editAddress",
+        "addressError"
+    );
+
+
+    return true;
+
+}
+
+
+
+/* =================================================
+   VALIDATE ALL PROFILE FIELDS
+================================================= */
+
+function validateProfileForm() {
+
+    const nameValid =
+        validateName();
+
+
+    const emailValid =
+        validateEmail();
+
+
+    const mobileValid =
+        validateMobile();
+
+
+    const addressValid =
+        validateAddress();
+
+
+    return (
+        nameValid &&
+        emailValid &&
+        mobileValid &&
+        addressValid
+    );
+
+}
+
+
+
+/* =================================================
+   CLEAR PROFILE VALIDATION
+================================================= */
+
+function clearAllProfileValidation() {
+
+    clearFieldValidation(
+        "editName",
+        "nameError"
+    );
+
+
+    clearFieldValidation(
+        "editEmail",
+        "emailError"
+    );
+
+
+    clearFieldValidation(
+        "editMobile",
+        "mobileError"
+    );
+
+
+    clearFieldValidation(
+        "editAddress",
+        "addressError"
+    );
+
+}
+
+
+
+/* =================================================
+   PROFILE MESSAGE
+================================================= */
+
+function showProfileMessage(
+    message,
+    type
+) {
+
+    const box =
+        document.getElementById("profileMessage");
+
+
+    box.textContent = message;
+
+    box.className =
+        "profile-message " + type;
+
+}
+
+
+
+function clearProfileMessage() {
+
+    const box =
+        document.getElementById("profileMessage");
+
+
+    box.textContent = "";
+
+    box.className =
+        "profile-message";
+
+}
+
+
+
+/* =================================================
+   SAVE PROFILE
+================================================= */
+
+function saveProfile() {
+
+    /*
+       Validate all entered fields.
+
+       Blank fields are allowed because the member
+       may want to update only one field.
+
+       Existing values are retained for blank fields.
+    */
+
+    if (!validateProfileForm()) {
+
+        showProfileMessage(
+            "Please correct the highlighted fields before saving.",
+            "error"
+        );
+
+        return;
+
+    }
+
+
+    const newName =
+        document
+            .getElementById("editName")
+            .value
+            .trim();
+
+
+    const newEmail =
+        document
+            .getElementById("editEmail")
+            .value
+            .trim();
+
+
+    const newMobile =
+        document
+            .getElementById("editMobile")
+            .value
+            .trim();
+
+
+    const newAddress =
+        document
+            .getElementById("editAddress")
+            .value
+            .trim();
+
+
+    /*
+       IMPORTANT:
+       Only fields that the member entered are changed.
+
+       Blank fields retain their old values.
+    */
+
+    if (newName !== "") {
+
+        memberProfile.name =
+            newName;
+
+    }
+
+
+    if (newEmail !== "") {
+
+        memberProfile.email =
+            newEmail;
+
+    }
+
+
+    if (newMobile !== "") {
+
+        memberProfile.mobile =
+            newMobile;
+
+    }
+
+
+    if (newAddress !== "") {
+
+        memberProfile.address =
+            newAddress;
+
+    }
+
+
+    /*
+       Update the displayed profile.
+    */
+
+    displayProfile();
+
+
+    /*
+       Show success message before switching
+       back to view mode.
+    */
+
+    document
+        .getElementById("profileView")
+        .style.display = "block";
+
+
+    document
+        .getElementById("profileEdit")
+        .style.display = "none";
+
+
+    /*
+       In a real application this is where
+       you would send the updated memberProfile
+       to your backend/database.
+    */
+
+}
+
+
+
+/* =================================================
+   SAVE BUTTON
+================================================= */
+
+document
+    .getElementById("saveProfileButton")
+    .addEventListener(
+        "click",
+        saveProfile
+    );
+
+
+
+/* =================================================
+   LIVE VALIDATION
+================================================= */
+
+document
+    .getElementById("editName")
+    .addEventListener(
+        "input",
+        validateName
+    );
+
+
+document
+    .getElementById("editEmail")
+    .addEventListener(
+        "input",
+        validateEmail
+    );
+
+
+document
+    .getElementById("editMobile")
+    .addEventListener(
+        "input",
+        validateMobile
+    );
+
+
+document
+    .getElementById("editAddress")
+    .addEventListener(
+        "input",
+        validateAddress
+    );
+
+
+
+/* =================================================
+   PREVENT INVALID MOBILE CHARACTERS
+================================================= */
+
+document
+    .getElementById("editMobile")
+    .addEventListener(
+        "input",
+        function() {
+
+            /*
+               Remove characters that are clearly
+               invalid for a phone number.
+            */
+
+            this.value =
+                this.value.replace(
+                    /[^0-9+\s()-]/g,
+                    ""
+                );
+
+        }
+    );
 
 
 
@@ -2030,22 +3872,123 @@ document
 
 
 /* =================================================
+   PROFILE ICON KEYBOARD SUPPORT
+================================================= */
+
+document
+    .querySelector(".profile-icon")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (
+                event.key === "Enter" ||
+                event.key === " "
+            ) {
+
+                event.preventDefault();
+
+                openProfile();
+
+            }
+
+        }
+    );
+
+
+
+/* =================================================
+   ESC KEY - CLOSE POPUPS
+================================================= */
+
+document
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key !== "Escape") {
+
+                return;
+
+            }
+
+
+            const filterOverlay =
+                document.getElementById(
+                    "filterOverlay"
+                );
+
+
+            const profileOverlay =
+                document.getElementById(
+                    "profileOverlay"
+                );
+
+
+            if (
+                filterOverlay.style.display === "flex"
+            ) {
+
+                closeFilter();
+
+                return;
+
+            }
+
+
+            if (
+                profileOverlay.style.display === "flex"
+            ) {
+
+                closeProfile();
+
+            }
+
+        }
+    );
+
+
+
+/* =================================================
    ANNOUNCEMENTS
 ================================================= */
 
 function loadAnnouncements() {
 
     const track =
-        document.getElementById("announcementTrack");
+        document.getElementById(
+            "announcementTrack"
+        );
 
 
     track.innerHTML = "";
 
 
-    const announcements =
-        JSON.parse(
-            localStorage.getItem("libraryAnnouncements") || "[]"
-        );
+    let announcements = [];
+
+
+    try {
+
+        announcements =
+            JSON.parse(
+                localStorage.getItem(
+                    "libraryAnnouncements"
+                ) || "[]"
+            );
+
+    }
+    catch (error) {
+
+        announcements = [];
+
+    }
+
+
+    if (!Array.isArray(announcements)) {
+
+        announcements = [];
+
+    }
 
 
     const now =
@@ -2053,48 +3996,88 @@ function loadAnnouncements() {
 
 
     const activeAnnouncements =
-        announcements.filter(announcement => {
+        announcements.filter(
+            announcement => {
 
-            const start =
-                new Date(announcement.startDate);
+                if (
+                    !announcement ||
+                    !announcement.startDate ||
+                    !announcement.endDate
+                ) {
 
-            const end =
-                new Date(announcement.endDate);
+                    return false;
 
-
-            return (
-                now >= start &&
-                now <= end
-            );
-
-        });
+                }
 
 
-    if (activeAnnouncements.length === 0) {
+                const start =
+                    new Date(
+                        announcement.startDate
+                    );
+
+
+                const end =
+                    new Date(
+                        announcement.endDate
+                    );
+
+
+                if (
+                    Number.isNaN(
+                        start.getTime()
+                    )
+                    ||
+                    Number.isNaN(
+                        end.getTime()
+                    )
+                ) {
+
+                    return false;
+
+                }
+
+
+                return (
+                    now >= start &&
+                    now <= end
+                );
+
+            }
+        );
+
+
+    if (
+        activeAnnouncements.length === 0
+    ) {
 
         track.innerHTML = "";
 
         return;
+
     }
 
 
-    activeAnnouncements.forEach(announcement => {
+    activeAnnouncements.forEach(
+        announcement => {
 
-        const item =
-            document.createElement("div");
-
-
-        item.className =
-            "announcement-item";
-
-
-        item.textContent =
-            `${announcement.title}: ${announcement.message}`;
+            const item =
+                document.createElement(
+                    "div"
+                );
 
 
-        track.appendChild(item);
+            item.className =
+                "announcement-item";
 
-    });
+
+            item.textContent =
+                `${announcement.title || ""}: ${announcement.message || ""}`;
+
+
+            track.appendChild(item);
+
+        }
+    );
 
 }
 
@@ -2104,44 +4087,36 @@ function loadAnnouncements() {
    LIBRARY DETAILS
 ================================================= */
 
-/*
-   Keep these values blank until they are connected
-   to your library_details database table.
-*/
-const libraryDetails = {
-    name: "",
-    address: "",
-    openingTime: "",
-    closingTime: "",
-    contactNumber: ""
-};
-
 function loadLibraryDetails() {
-    document.getElementById("libraryName").textContent = libraryDetails.name;
-    document.getElementById("libraryAddress").textContent = libraryDetails.address;
-    document.getElementById("openingTime").textContent = libraryDetails.openingTime;
-    document.getElementById("closingTime").textContent = libraryDetails.closingTime;
-    document.getElementById("contactNumber").textContent = libraryDetails.contactNumber;
-}
+
+    document
+        .getElementById("libraryName")
+        .textContent =
+        libraryDetails.name || "";
 
 
-/* =================================================
-   ESCAPE HTML
-================================================= */
+    document
+        .getElementById("libraryAddress")
+        .textContent =
+        libraryDetails.address || "";
 
-function escapeHTML(value) {
 
-    return String(value)
+    document
+        .getElementById("openingTime")
+        .textContent =
+        libraryDetails.openingTime || "";
 
-        .replace(/&/g, "&amp;")
 
-        .replace(/</g, "&lt;")
+    document
+        .getElementById("closingTime")
+        .textContent =
+        libraryDetails.closingTime || "";
 
-        .replace(/>/g, "&gt;")
 
-        .replace(/"/g, "&quot;")
-
-        .replace(/'/g, "&#039;");
+    document
+        .getElementById("contactNumber")
+        .textContent =
+        libraryDetails.contactNumber || "";
 
 }
 
@@ -2158,6 +4133,7 @@ loadIssuedBooks();
 loadCategories();
 
 loadAnnouncements();
+
 loadLibraryDetails();
 
 
