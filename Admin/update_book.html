@@ -1,1350 +1,446 @@
-```html
 <!DOCTYPE html>
 <html>
-
 <head>
-
-    <title>Update Book</title>
-
+    <title>Update Book Record</title>
     <style>
-
-        body {
-            margin: 0;
-            font-family: Arial;
-            background-color: #f2f2f2;
-        }
-
-        /* =========================
-           ORIGINAL SIDEBAR
-        ========================== */
-
-        .sidebar {
-            width: 220px;
-            height: 100vh;
-            background-color: #333;
-            position: fixed;
-            left: 0;
-            top: 0;
-            color: white;
-        }
-
-        .sidebar h2 {
-            text-align: center;
-            padding: 20px 0;
-            margin: 0;
-            background-color: #222;
-        }
-
-        .sidebar a {
-            display: block;
-            color: white;
-            text-decoration: none;
-            padding: 14px 20px;
-            border-bottom: 1px solid #555;
-        }
-
-        .sidebar a:hover {
-            background-color: #555;
-        }
-
-        .manage {
-            padding: 14px 20px;
-            border-bottom: 1px solid #555;
-            cursor: pointer;
-        }
-
-        .manage:hover {
-            background-color: #555;
-        }
-
-        .arrow {
-            float: right;
-        }
-
-        .submenu {
-            display: block;
-            background-color: #444;
-        }
-
-        .submenu a {
-            padding-left: 40px;
-            font-size: 13px;
-        }
-
-
-        /* =========================
-           MAIN CONTENT
-        ========================== */
-
-        .main {
-            margin-left: 220px;
-            padding: 25px;
-        }
-
-        .top {
-            background-color: white;
-            padding: 20px;
-            border: 1px solid #ddd;
-        }
-
-        .top h1 {
-            text-align: center;
-            margin: 0;
-            color: #333;
-        }
-
-
-        /* =========================
-           SEARCH
-        ========================== */
-
-        .search {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .search input {
-            width: 350px;
-            padding: 10px;
-            border: 1px solid #aaa;
-        }
-
-        .search button {
-            padding: 10px 20px;
-            background-color: #333;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-left: 5px;
-        }
-
-        .search button:hover {
-            background-color: #555;
-        }
-
-
-        /* =========================
-           BOOK TABLE
-        ========================== */
-
-        .books {
-            background-color: white;
-            margin-top: 25px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            overflow-x: auto;
-        }
-
-        .books h2 {
-            margin-top: 0;
-            color: #333;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 1050px;
-        }
-
-        th,
-        td {
-            padding: 12px;
-            border: 1px solid #ccc;
-            text-align: left;
-        }
-
-        th {
-            background-color: #eee;
-        }
-
-
-        /* =========================
-           ACTION BUTTONS
-        ========================== */
-
-        .action-buttons {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            white-space: nowrap;
-        }
-
-        .update-btn {
-            background-color: #333;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .update-btn:hover {
-            background-color: #555;
-        }
-
-        .delete-btn {
-            background-color: #c0392b;
-            color: white;
-            padding: 8px 15px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .delete-btn:hover {
-            background-color: #a93226;
-        }
-
-
-        /* =========================
-           ORIGINAL LOGOUT
-        ========================== */
-
-        .logout {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-        }
-
-        .logout a {
-            background-color: #222;
-            text-align: center;
-        }
-
-
-        /* =========================
-           UPDATE POPUP
-        ========================== */
-
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.55);
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .modal.show {
-            display: flex;
-        }
-
-        .modal-box {
-            width: 600px;
-            max-width: 95%;
-            max-height: 90vh;
-            overflow-y: auto;
-            background-color: white;
-            padding: 25px;
-            border: 1px solid #ddd;
-            box-sizing: border-box;
-        }
-
-        .modal-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .modal-header h2 {
-            margin: 0;
-            color: #333;
-        }
-
-        .close-btn {
-            border: none;
-            background: transparent;
-            font-size: 28px;
-            color: #555;
-            cursor: pointer;
-        }
-
-        .close-btn:hover {
-            color: #000;
-        }
-
-
-        /* =========================
-           FORM
-        ========================== */
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #aaa;
-            box-sizing: border-box;
-            font-family: Arial;
-            font-size: 14px;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            outline: none;
-            border-color: #555;
-        }
-
-        .form-group input[readonly] {
-            background-color: #eee;
-        }
-
-
-        /* =========================
-           POPUP BUTTONS
-        ========================== */
-
-        .form-buttons {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        .save-btn {
-            background-color: #333;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-        }
-
-        .save-btn:hover {
-            background-color: #555;
-        }
-
-        .cancel-btn {
-            background-color: #777;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-
-        .cancel-btn:hover {
-            background-color: #555;
-        }
-
-
-        /* =========================
-           RESPONSIVE
-        ========================== */
-
-        @media (max-width: 900px) {
-
-            .main {
-                margin-left: 220px;
-                padding: 15px;
-            }
-
-            .search input {
-                width: 250px;
-            }
-
-        }
-
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial; background-color: #f2f2f2; }
+        .sidebar { width: 220px; height: 100vh; background:#333; position:fixed; left:0; top:0; color:#fff; overflow-y:auto; }
+        .sidebar h2 { text-align:center; padding:20px 0; margin:0; background:#222; }
+        .sidebar a { display:block; color:#fff; text-decoration:none; padding:14px 20px; border-bottom:1px solid #555; }
+        .sidebar a:hover { background:#555; }
+        .manage { padding:14px 20px; border-bottom:1px solid #555; cursor:pointer; }
+        .manage:hover { background:#555; }
+        .arrow { float:right; }
+        .submenu { display:block; background:#444; }
+        .submenu a { padding-left:40px; font-size:13px; }
+        .logout { position:absolute; bottom:10px; width:100%; }
+        .logout a { background:#222; text-align:center; }
+
+        .main { margin-left:220px; padding:0 25px 25px; }
+        .top { background:#fff; padding:20px; border:1px solid #ddd; margin-top:10px; }
+        .top h1 { margin:0; text-align:center; color:#333; }
+        .search-container { display:flex; flex-direction:column; align-items:center; margin-top:20px; }
+        .search { display:flex; align-items:center; justify-content:center; gap:10px; width:100%; flex-wrap:nowrap; }
+        .search input { width:325px; padding:12px; border:1px solid #aaa; border-radius:4px; font-size:16px; }
+        .search button { padding:12px 22px; background:#465660; color:#fff; border:0; border-radius:4px; cursor:pointer; font-size:16px; white-space:nowrap; }
+        .search button:hover { background:#37434a; }
+        .filter-btn { background:#666 !important; }
+        .filter-btn:hover { background:#555 !important; }
+        .search-validation { display:none; width:325px; align-self:center; margin-top:6px; color:red; font-size:14px; line-height:1.4; }
+        .search-input-invalid { border:2px solid red !important; }
+
+        .books { background:#fff; margin-top:10px; padding:20px; border:1px solid #ddd; min-height:calc(100vh - 170px); }
+        .books-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+        .books h2 { margin:0; color:#333; }
+        .undo-btn { padding:9px 18px; border:1px solid #aaa; background:#777; color:#fff; border-radius:4px; cursor:pointer; font-size:14px; }
+        .undo-btn:hover { background:#666; }
+        .table-wrapper { width:100%; max-width:100%; overflow-x:auto; overflow-y:hidden; }
+        table { width:max-content; min-width:100%; border-collapse:collapse; }
+        th,td { padding:12px; border:1px solid #ccc; text-align:left; white-space:nowrap; height:45px; }
+        th { background:#eee; color:#333; }
+        .action-buttons { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+        .update-btn,.delete-btn { border:0; color:#fff; padding:8px 15px; cursor:pointer; border-radius:3px; }
+        .update-btn { background:#333; }
+        .update-btn:hover { background:#555; }
+        .delete-btn { background:#c0392b; }
+        .delete-btn:hover { background:#a93226; }
+        .empty-state { display:block; text-align:center; color:#666; font-size:15px; padding:22px 10px; border:1px solid #ddd; border-top:0; }
+        .no-books-message { display:none; text-align:center; color:red; font-size:17px; font-weight:bold; margin:20px 0 5px; }
+        .pagination { display:flex; align-items:center; justify-content:center; gap:8px; margin-top:18px; min-height:38px; flex-wrap:wrap; }
+        .pagination button { min-width:38px; padding:9px 12px; border:1px solid #ccc; background:#fff; color:#333; border-radius:4px; cursor:pointer; font-size:14px; }
+        .pagination button:hover:not(:disabled) { background:#eee; }
+        .pagination button.active { background:#465660; color:#fff; border-color:#465660; }
+        .pagination button:disabled { color:#aaa; cursor:not-allowed; background:#f5f5f5; }
+
+        .filter-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); align-items:center; justify-content:center; z-index:900; }
+        .filter-popup { width:620px; max-width:calc(100% - 40px); background:#fff; border-radius:10px; padding:32px; box-shadow:0 10px 35px rgba(0,0,0,.25); }
+        .filter-popup h2 { margin:0 0 28px; color:#465660; font-size:30px; }
+        .filter-group { margin-bottom:22px; }
+        .filter-group label { display:block; font-size:20px; font-weight:bold; margin-bottom:10px; color:#333; }
+        .filter-group select { width:100%; padding:14px 18px; font-size:18px; border:1px solid #ccc; border-radius:6px; background:#fff; }
+        .filter-actions { display:flex; gap:15px; margin-top:28px; }
+        .filter-actions button { flex:1; padding:14px; border:0; border-radius:6px; font-size:18px; cursor:pointer; }
+        .apply-filter { background:#465660; color:#fff; }
+        .clear-filter { background:#ddd; color:#333; }
+
+        .modal { display:none; position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.55); align-items:center; justify-content:center; padding:20px; }
+        .modal.show { display:flex; }
+        .modal-box { width:950px; max-width:96%; max-height:92vh; overflow-y:auto; background:#fff; padding:25px 30px 30px; border:1px solid #ddd; }
+        .modal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:12px; border-bottom:1px solid #ddd; }
+        .modal-header h2 { margin:0; color:#333; }
+        .close-btn { border:0; background:transparent; font-size:28px; color:#555; cursor:pointer; line-height:1; }
+        .book-form-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:24px; row-gap:0; align-items:start; }
+        .form-group { margin-bottom:14px; min-width:0; }
+        .form-group label { display:block; margin-bottom:6px; color:#333; font-weight:bold; }
+        .form-group input,.form-group select,.form-group textarea { width:100%; padding:11px; border:1px solid #aaa; border-radius:3px; font-size:15px; font-family:Arial; }
+        .form-group input:focus,.form-group select:focus,.form-group textarea:focus { outline:none; border-color:#555; }
+        .form-group input[readonly] { background:#eee; }
+        .book-location-textarea { height:60px; min-height:60px; resize:vertical; }
+        .category-row { display:flex; align-items:flex-start; gap:14px; width:100%; }
+        .category-row > select { width:100%; min-width:0; }
+        .category-row.other-open { display:grid; grid-template-columns:42% minmax(0,1fr); gap:14px; align-items:start; }
+        .other-category { display:none; min-width:0; margin:0 !important; padding:0; }
+        .other-category input { width:100%; }
+        .category-row.other-open .other-category { display:block; width:100%; margin-top:0 !important; }
+        .error { display:block; color:red; font-size:14px; margin-top:5px; line-height:1.3; }
+        .required-star { color:red; font-weight:bold; margin-left:3px; }
+        .invalid { border:2px solid red !important; }
+        .valid { border:2px solid green !important; }
+        .form-buttons { grid-column:1/-1; text-align:center; margin-top:20px; }
+        .save-btn,.cancel-btn { color:#fff; padding:10px 22px; border:0; cursor:pointer; }
+        .save-btn { background:#333; }
+        .cancel-btn { background:#777; margin-left:10px; }
+
+        @media(max-width:900px){ .main{margin-left:220px;padding:0 15px 20px;} .search{flex-wrap:wrap;} }
+        @media(max-width:850px){ .modal-box{padding:20px;} .book-form-grid{grid-template-columns:1fr;} .form-buttons{grid-column:1;} .category-row,.category-row.other-open{display:flex;flex-direction:column;gap:10px;} .category-row>select,.category-row.other-open>select,.category-row.other-open .other-category{width:100%;} }
+        @media(max-width:800px){ .filter-popup{padding:24px;} .filter-popup h2{font-size:26px;} .filter-group label{font-size:18px;} .filter-group select{font-size:16px;} .filter-actions{flex-direction:column;} }
     </style>
-
 </head>
-
-
 <body>
 
-
-    <!-- =========================
-         ORIGINAL SIDEBAR
-    ========================== -->
-
     <div class="sidebar">
-
         <h2>Library</h2>
-
-        <a href="admin_home.html">
-            Dashboard
-        </a>
-
-        <a href="my_profile.html">
-            My Profile
-        </a>
-
-        <div class="manage" onclick="toggleMenu()">
-
-            Manage Books
-
-            <span class="arrow" id="arrow">+</span>
-
-        </div>
-
-
+        <a href="admin_home.html">Dashboard</a>
+        <a href="my_profile.html">My Profile</a>
+        <div class="manage" onclick="toggleMenu()">Manage Books <span class="arrow" id="arrow">-</span></div>
         <div class="submenu" id="submenu">
-
-            <a href="view_books.html">
-                View All Books
-            </a>
-
-            <a href="add_book.html">
-                Add Book
-            </a>
-
-            <a href="update_book.html">
-                Update / Return Book
-            </a>
-
+            <a href="view_books.html">View All Books</a>
+            <a href="add_book.html">Add Book</a>
+            <a href="update_book.html">Update / Delete Book</a>
         </div>
-
-
-        <a href="issue_book.html">
-            Issue Book
-        </a>
-
-        <a href="return_book.html">
-            Return Book
-        </a>
-
-        <a href="returned_books.html">
-            Recent Returned Books
-        </a>
-
-        <a href="members.html">
-            Members Details
-        </a>
-
-        <a href="announcement.html" class="active">
-            Announcements
-        </a>
-
-
-        <div class="logout">
-
-            <a href="login_form.html">
-                Logout
-            </a>
-
-        </div>
-
+        <a href="issue_book.html">Issue Book</a>
+        <a href="return_book.html">Return Book</a>
+        <a href="returned_books.html">Recent Returned Books</a>
+        <a href="members.html">Members Details</a>
+        <a href="announcement.html" class="active">Announcements</a>
+        <div class="logout"><a href="login_form.html">Logout</a></div>
     </div>
-
-
-    <!-- =========================
-         MAIN CONTENT
-    ========================== -->
 
     <div class="main">
-
-
         <div class="top">
-
-            <h1>
-                Update Book
-            </h1>
-
-
-            <div class="search">
-
-                <input
-                    type="text"
-                    id="searchInput"
-                    placeholder="Search by Book ID, Name, Author or Category"
-                    onkeypress="searchOnEnter(event)"
-                >
-
-                <button onclick="searchBooks()">
-                    Search
-                </button>
-
+            <h1>Update Book Record</h1>
+            <div class="search-container">
+                <div class="search">
+                    <input type="text" id="searchInput" placeholder="Search by Book ID, Title or ISBN" maxlength="100" autocomplete="off">
+                    <button type="button" onclick="searchBooks()">Search</button>
+                    <button type="button" class="filter-btn" onclick="openFilter()">Filter</button>
+                </div>
+                <div id="searchValidation" class="search-validation"></div>
             </div>
-
         </div>
-
-
-        <!-- =========================
-             BOOK TABLE
-        ========================== -->
 
         <div class="books">
-
-            <h2>
-                All Books
-            </h2>
-
-
-            <table id="bookTable">
-
-                <tr>
-
-                    <th>Book ID</th>
-
-                    <th>Book Title</th>
-
-                    <th>Author</th>
-
-                    <th>ISBN</th>
-
-                    <th>Category</th>
-
-                    <th>Publisher</th>
-
-                    <th>Quantity</th>
-
-                    <th>Price</th>
-
-                    <th>Action</th>
-
-                </tr>
-
-
-                <!-- EMPTY BOOK ROW 1 -->
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>0</td>
-
-                    <td>
-
-                        <div class="action-buttons">
-
-                            <button
-                                class="update-btn"
-                                onclick="showForm(this)"
-                            >
-                                Update
-                            </button>
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteBook(this)"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-
-                <!-- EMPTY BOOK ROW 2 -->
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>0</td>
-
-                    <td>
-
-                        <div class="action-buttons">
-
-                            <button
-                                class="update-btn"
-                                onclick="showForm(this)"
-                            >
-                                Update
-                            </button>
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteBook(this)"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-
-                <!-- EMPTY BOOK ROW 3 -->
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>0</td>
-
-                    <td>
-
-                        <div class="action-buttons">
-
-                            <button
-                                class="update-btn"
-                                onclick="showForm(this)"
-                            >
-                                Update
-                            </button>
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteBook(this)"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-
-                <!-- EMPTY BOOK ROW 4 -->
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>0</td>
-
-                    <td>
-
-                        <div class="action-buttons">
-
-                            <button
-                                class="update-btn"
-                                onclick="showForm(this)"
-                            >
-                                Update
-                            </button>
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteBook(this)"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-
-                <!-- EMPTY BOOK ROW 5 -->
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>0</td>
-
-                    <td>
-
-                        <div class="action-buttons">
-
-                            <button
-                                class="update-btn"
-                                onclick="showForm(this)"
-                            >
-                                Update
-                            </button>
-
-                            <button
-                                class="delete-btn"
-                                onclick="deleteBook(this)"
-                            >
-                                Delete
-                            </button>
-
-                        </div>
-
-                    </td>
-
-                </tr>
-
-            </table>
-
+            <div class="books-header">
+                <h2>Book Details</h2>
+                <button type="button" class="undo-btn" id="undoBtn" onclick="undoLastAction()" disabled>Undo</button>
+            </div>
+            <div class="table-wrapper">
+                <table id="bookTable">
+                    <thead><tr><th>Book ID</th><th>Book Title</th><th>Author</th><th>ISBN</th><th>Category</th><th>Publisher</th><th>Release Year</th><th>Quantity</th><th>Price</th><th>Location</th><th>Action</th></tr></thead>
+                    <tbody id="bookTableBody"></tbody>
+                </table>
+            </div>
+            <div id="emptyState" class="empty-state">Search for a Book ID, Title or ISBN to display matching records.</div>
+            <p id="noBooksMessage" class="no-books-message"></p>
+            <div id="pagination" class="pagination"></div>
         </div>
-
     </div>
 
-
-    <!-- =========================
-         UPDATE POPUP
-    ========================== -->
-
-    <div class="modal" id="updateModal">
-
-
-        <div class="modal-box">
-
-
-            <div class="modal-header">
-
-                <h2>
-                    Update Book Details
-                </h2>
-
-                <button
-                    class="close-btn"
-                    onclick="closeForm()"
-                >
-                    ×
-                </button>
-
-            </div>
-
-
-            <!-- BOOK ID -->
-
-            <div class="form-group">
-
-                <label>
-                    Book ID
-                </label>
-
-                <input
-                    type="text"
-                    id="editBookId"
-                    readonly
-                    value="-"
-                >
-
-            </div>
-
-
-            <!-- BOOK TITLE -->
-
-            <div class="form-group">
-
-                <label>
-                    Book Title
-                </label>
-
-                <input
-                    type="text"
-                    id="editTitle"
-                    maxlength="100"
-                >
-
-            </div>
-
-
-            <!-- AUTHOR -->
-
-            <div class="form-group">
-
-                <label>
-                    Author
-                </label>
-
-                <input
-                    type="text"
-                    id="editAuthor"
-                    maxlength="100"
-                >
-
-            </div>
-
-
-            <!-- ISBN -->
-
-            <div class="form-group">
-
-                <label>
-                    ISBN
-                </label>
-
-                <input
-                    type="text"
-                    id="editISBN"
-                    maxlength="20"
-                >
-
-            </div>
-
-
-            <!-- CATEGORY -->
-
-            <div class="form-group">
-
-                <label>
-                    Category
-                </label>
-
-                <select id="editCategory">
-
-                    <option value="">
-                        Select Category
-                    </option>
-
-                    <option value="Computer Science">
-                        Computer Science
-                    </option>
-
-                    <option value="Programming">
-                        Programming
-                    </option>
-
-                    <option value="Networking">
-                        Networking
-                    </option>
-
-                    <option value="Database">
-                        Database
-                    </option>
-
-                    <option value="Other">
-                        Other
-                    </option>
-
-                </select>
-
-            </div>
-
-
-            <!-- PUBLISHER -->
-
-            <div class="form-group">
-
-                <label>
-                    Publisher
-                </label>
-
-                <input
-                    type="text"
-                    id="editPublisher"
-                    maxlength="100"
-                >
-
-            </div>
-
-
-            <!-- QUANTITY -->
-
-            <div class="form-group">
-
-                <label>
-                    Quantity
-                </label>
-
-                <input
-                    type="number"
-                    id="editQuantity"
-                    min="1"
-                    value="0"
-                >
-
-            </div>
-
-
-            <!-- PRICE -->
-
-            <div class="form-group">
-
-                <label>
-                    Price
-                </label>
-
-                <input
-                    type="number"
-                    id="editPrice"
-                    min="0"
-                    value="0"
-                >
-
-            </div>
-
-
-            <!-- BUTTONS -->
-
-            <div class="form-buttons">
-
-                <button
-                    class="save-btn"
-                    onclick="updateBook()"
-                >
-                    Update Book
-                </button>
-
-                <button
-                    class="cancel-btn"
-                    onclick="closeForm()"
-                >
-                    Cancel
-                </button>
-
-            </div>
-
-
+    <div class="filter-overlay" id="filterOverlay" onclick="closeFilterOnOverlay(event)">
+        <div class="filter-popup" onclick="event.stopPropagation()">
+            <h2>Filter Books</h2>
+            <div class="filter-group"><label for="categoryFilter">Category</label><select id="categoryFilter">
+                <option value="all">All Categories</option>
+                <option value="Adventure">Adventure</option>
+                <option value="Artificial Intelligence">Artificial Intelligence</option>
+                <option value="Autobiography">Autobiography</option>
+                <option value="Biography">Biography</option>
+                <option value="Business">Business</option>
+                <option value="Children">Children</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Cooking">Cooking</option>
+                <option value="Cybersecurity">Cybersecurity</option>
+                <option value="Data Science">Data Science</option>
+                <option value="Database">Database</option>
+                <option value="Economics">Economics</option>
+                <option value="Education">Education</option>
+                <option value="Fantasy">Fantasy</option>
+                <option value="Finance">Finance</option>
+                <option value="Fiction">Fiction</option>
+                <option value="Health">Health</option>
+                <option value="History">History</option>
+                <option value="Horror">Horror</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Law">Law</option>
+                <option value="Management">Management</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Medicine">Medicine</option>
+                <option value="Mystery">Mystery</option>
+                <option value="Networking">Networking</option>
+                <option value="Non-Fiction">Non-Fiction</option>
+                <option value="Other">Other</option>
+                <option value="Philosophy">Philosophy</option>
+                <option value="Poetry">Poetry</option>
+                <option value="Politics">Politics</option>
+                <option value="Programming">Programming</option>
+                <option value="Psychology">Psychology</option>
+                <option value="Religion">Religion</option>
+                <option value="Romance">Romance</option>
+                <option value="Science">Science</option>
+                <option value="Science Fiction">Science Fiction</option>
+                <option value="Self-Help">Self-Help</option>
+                <option value="Software Engineering">Software Engineering</option>
+                <option value="Thriller">Thriller</option>
+                <option value="Travel">Travel</option>
+                <option value="Web Development">Web Development</option>
+            </select></div>
+            <div class="filter-group"><label for="sortFilter">Sort By</label><select id="sortFilter">
+                <option value="default">Default</option>
+                <option value="id_asc">Book ID Ascending</option>
+                <option value="id_desc">Book ID Descending</option>
+                <option value="title_asc">Title A-Z</option>
+                <option value="title_desc">Title Z-A</option>
+                <option value="year_desc">Release Year Newest</option>
+                <option value="year_asc">Release Year Oldest</option>
+            </select></div>
+            <div class="filter-group"><label for="statusFilter">Status</label><select id="statusFilter"><option value="all">All Status</option><option value="Available">Available</option><option value="Issued">Issued</option></select></div>
+            <div class="filter-actions"><button type="button" class="apply-filter" onclick="applyFilter()">Apply Filter</button><button type="button" class="clear-filter" onclick="clearFilter()">Clear</button></div>
         </div>
-
     </div>
 
-
-    <!-- =========================
-         JAVASCRIPT
-    ========================== -->
+    <div class="modal" id="updateModal" onclick="closeFormOnOverlay(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-header"><h2>Update Book</h2><button type="button" class="close-btn" onclick="closeForm()">×</button></div>
+            <form id="updateBookForm" novalidate>
+                <div class="book-form-grid">
+                    <div class="form-group"><label for="editBookId">Book ID</label><input type="text" id="editBookId" readonly><span class="error" id="editBookIdError"></span></div>
+                    <div class="form-group"><label for="editTitle">Book Title</label><input type="text" id="editTitle" maxlength="100" placeholder="Enter book title"><span class="error" id="editTitleError"></span></div>
+                    <div class="form-group"><label for="editAuthor">Author</label><input type="text" id="editAuthor" maxlength="100" placeholder="Enter author name"><span class="error" id="editAuthorError"></span></div>
+                    <div class="form-group"><label for="editISBN">ISBN</label><input type="text" id="editISBN" maxlength="13" inputmode="numeric" autocomplete="off" placeholder="Enter 13 digit ISBN"><span class="error" id="editISBNError"></span></div>
+                    <div class="form-group"><label for="editCategory">Category</label><div class="category-row" id="editCategoryRow"><select id="editCategory"><option value="" selected disabled>Select Category</option><option value="Adventure">Adventure</option><option value="Artificial Intelligence">Artificial Intelligence</option><option value="Autobiography">Autobiography</option><option value="Biography">Biography</option><option value="Business">Business</option><option value="Children">Children</option><option value="Computer Science">Computer Science</option><option value="Cooking">Cooking</option><option value="Cybersecurity">Cybersecurity</option><option value="Data Science">Data Science</option><option value="Database">Database</option><option value="Economics">Economics</option><option value="Education">Education</option><option value="Fantasy">Fantasy</option><option value="Finance">Finance</option><option value="Fiction">Fiction</option><option value="Health">Health</option><option value="History">History</option><option value="Horror">Horror</option><option value="Information Technology">Information Technology</option><option value="Law">Law</option><option value="Management">Management</option><option value="Mathematics">Mathematics</option><option value="Medicine">Medicine</option><option value="Mystery">Mystery</option><option value="Networking">Networking</option><option value="Non-Fiction">Non-Fiction</option><option value="Other">Other</option><option value="Philosophy">Philosophy</option><option value="Poetry">Poetry</option><option value="Politics">Politics</option><option value="Programming">Programming</option><option value="Psychology">Psychology</option><option value="Religion">Religion</option><option value="Romance">Romance</option><option value="Science">Science</option><option value="Science Fiction">Science Fiction</option><option value="Self-Help">Self-Help</option><option value="Software Engineering">Software Engineering</option><option value="Thriller">Thriller</option><option value="Travel">Travel</option><option value="Web Development">Web Development</option></select><div class="other-category" id="editOtherCategoryGroup"><input type="text" id="editOtherCategory" maxlength="50" placeholder="Enter new category"><span class="error" id="editOtherCategoryError"></span></div></div><span class="error" id="editCategoryError"></span></div>
+                    <div class="form-group"><label for="editPublisher">Publisher</label><input type="text" id="editPublisher" maxlength="100" placeholder="Enter publisher name"><span class="error" id="editPublisherError"></span></div>
+                    <div class="form-group"><label for="editReleaseYear">Release Year</label><input type="text" id="editReleaseYear" maxlength="4" inputmode="numeric" autocomplete="off" placeholder="Enter release year"><span class="error" id="editReleaseYearError"></span></div>
+                    <div class="form-group"><label for="editQuantity">Quantity</label><input type="text" id="editQuantity" maxlength="6" inputmode="numeric" placeholder="Enter quantity"><span class="error" id="editQuantityError"></span></div>
+                    <div class="form-group"><label for="editPrice">Price</label><input type="text" id="editPrice" maxlength="15" inputmode="decimal" placeholder="Enter book price"><span class="error" id="editPriceError"></span></div>
+                    <div class="form-group"><label for="editLocation">Book Location</label><textarea id="editLocation" class="book-location-textarea" rows="2" maxlength="50" placeholder="Example: Floor 2, Rack A, Shelf 3"></textarea><span class="error" id="editLocationError"></span></div>
+                    <div class="form-buttons"><button type="submit" class="save-btn">Update Book</button><button type="button" class="cancel-btn" onclick="closeForm()">Cancel</button></div>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script>
+        function toggleMenu(){var m=document.getElementById('submenu'),a=document.getElementById('arrow');if(m.style.display==='block'){m.style.display='none';a.innerHTML='+';}else{m.style.display='block';a.innerHTML='-';}}
 
+        /* Test data is kept hidden. Records appear only after a search. */
+        var bookRecords=[
+          {id:'1',title:'Java Programming',author:'Herbert Schildt',isbn:'9780071808552',category:'Programming',publisher:'McGraw Hill',year:'2022',quantity:'5',price:'650',location:'Floor 1, Rack A, Shelf 2',status:'Available'},
+          {id:'2',title:'Database System Concepts',author:'Abraham Silberschatz',isbn:'9780078022159',category:'Database',publisher:'McGraw Hill',year:'2020',quantity:'4',price:'720',location:'Floor 1, Rack B, Shelf 1',status:'Issued'},
+          {id:'3',title:'Clean Code',author:'Robert Martin',isbn:'9780132350884',category:'Software Engineering',publisher:'Prentice Hall',year:'2008',quantity:'3',price:'800',location:'Floor 1, Rack C, Shelf 4',status:'Available'},
+          {id:'4',title:'Computer Networks',author:'Andrew Tanenbaum',isbn:'9780132126953',category:'Networking',publisher:'Pearson',year:'2011',quantity:'6',price:'900',location:'Floor 2, Rack A, Shelf 2',status:'Available'},
+          {id:'5',title:'Artificial Intelligence: A Modern Approach',author:'Stuart Russell',isbn:'9780134610993',category:'Artificial Intelligence',publisher:'Pearson',year:'2021',quantity:'2',price:'1100',location:'Floor 2, Rack B, Shelf 3',status:'Issued'},
+          {id:'6',title:'The Great Gatsby',author:'F. Scott Fitzgerald',isbn:'9780743273565',category:'Fiction',publisher:'Scribner',year:'1925',quantity:'7',price:'450',location:'Floor 3, Rack A, Shelf 1',status:'Available'},
+          {id:'7',title:'A Brief History of Time',author:'Stephen Hawking',isbn:'9780553380163',category:'Science',publisher:'Bantam',year:'1988',quantity:'5',price:'500',location:'Floor 3, Rack B, Shelf 2',status:'Available'},
+          {id:'8',title:'The Psychology of Money',author:'Morgan Housel',isbn:'9780857197689',category:'Finance',publisher:'Harriman House',year:'2020',quantity:'8',price:'550',location:'Floor 3, Rack C, Shelf 1',status:'Issued'},
+          {id:'9',title:'Pride and Prejudice',author:'Jane Austen',isbn:'9780141439518',category:'Romance',publisher:'Penguin Classics',year:'1813',quantity:'5',price:'350',location:'Floor 4, Rack A, Shelf 3',status:'Available'},
+          {id:'10',title:'History of Modern India',author:'Bipan Chandra',isbn:'9788125032735',category:'History',publisher:'Orient BlackSwan',year:'2019',quantity:'4',price:'700',location:'Floor 4, Rack B, Shelf 2',status:'Available'},
+          {id:'11',title:'The Selfish Gene',author:'Richard Dawkins',isbn:'9780199291151',category:'Science',publisher:'Oxford',year:'2016',quantity:'3',price:'600',location:'Floor 4, Rack C, Shelf 1',status:'Available'},
+          {id:'12',title:'The Art of Computer Programming',author:'Donald Knuth',isbn:'9780201896831',category:'Computer Science',publisher:'Addison-Wesley',year:'2011',quantity:'2',price:'1500',location:'Floor 5, Rack A, Shelf 2',status:'Issued'}
+        ];
+        var currentResults=[],currentPage=1,rowsPerPage=8,selectedRecord=null,undoSnapshot=null;
 
-        /* =========================
-           SIDEBAR MENU
-        ========================== */
-
-        function toggleMenu() {
-
-            var menu =
-                document.getElementById("submenu");
-
-            var arrow =
-                document.getElementById("arrow");
-
-
-            if (menu.style.display == "block") {
-
-                menu.style.display = "none";
-
-                arrow.innerHTML = "+";
-
+        function showSearchError(m){var i=document.getElementById('searchInput'),e=document.getElementById('searchValidation');e.textContent=m;e.style.display='block';i.classList.add('search-input-invalid');}
+        function clearSearchError(){var i=document.getElementById('searchInput'),e=document.getElementById('searchValidation');e.textContent='';e.style.display='none';i.classList.remove('search-input-invalid');}
+        function validateSearch(){
+            var v=document.getElementById('searchInput').value.trim();
+            clearSearchError();
+            if(v==='') return true;
+            if(v.length>100){
+                showSearchError('Search text cannot be more than 100 characters.');
+                document.getElementById('searchInput').focus();
+                return false;
             }
-
-            else {
-
-                menu.style.display = "block";
-
-                arrow.innerHTML = "-";
-
+            if(/^\d+$/.test(v) && /^(978|979)/.test(v) && v.length!==13){
+                showSearchError('ISBN must contain exactly 13 digits.');
+                document.getElementById('searchInput').focus();
+                return false;
             }
-
+            return true;
         }
-
-
-        /* =========================
-           SELECTED ROW
-        ========================== */
-
-        var selectedRow = null;
-
-
-        /* =========================
-           SHOW UPDATE POPUP
-        ========================== */
-
-        function showForm(button) {
-
-            selectedRow =
-                button.closest("tr");
-
-
-            var cells =
-                selectedRow.getElementsByTagName("td");
-
-
-            document.getElementById("editBookId").value =
-                cells[0].innerText.trim();
-
-
-            document.getElementById("editTitle").value =
-                cells[1].innerText.trim() === "-"
-                ? ""
-                : cells[1].innerText.trim();
-
-
-            document.getElementById("editAuthor").value =
-                cells[2].innerText.trim() === "-"
-                ? ""
-                : cells[2].innerText.trim();
-
-
-            document.getElementById("editISBN").value =
-                cells[3].innerText.trim() === "-"
-                ? ""
-                : cells[3].innerText.trim();
-
-
-            document.getElementById("editCategory").value =
-                cells[4].innerText.trim() === "-"
-                ? ""
-                : cells[4].innerText.trim();
-
-
-            document.getElementById("editPublisher").value =
-                cells[5].innerText.trim() === "-"
-                ? ""
-                : cells[5].innerText.trim();
-
-
-            document.getElementById("editQuantity").value =
-                cells[6].innerText.trim();
-
-
-            document.getElementById("editPrice").value =
-                cells[7].innerText.trim();
-
-
-            document
-                .getElementById("updateModal")
-                .classList.add("show");
-
+        function getFilters(){return{category:document.getElementById('categoryFilter').value,sort:document.getElementById('sortFilter').value,status:document.getElementById('statusFilter').value};}
+        function validateFilters(){
+            var f=getFilters();
+            var c=['all','Adventure','Artificial Intelligence','Autobiography','Biography','Business','Children','Computer Science','Cooking','Cybersecurity','Data Science','Database','Economics','Education','Fantasy','Finance','Fiction','Health','History','Horror','Information Technology','Law','Management','Mathematics','Medicine','Mystery','Networking','Non-Fiction','Other','Philosophy','Poetry','Politics','Programming','Psychology','Religion','Romance','Science','Science Fiction','Self-Help','Software Engineering','Thriller','Travel','Web Development'];
+            var s=['default','id_asc','id_desc','title_asc','title_desc','year_desc','year_asc'];
+            var st=['all','Available','Issued'];
+            if(!c.includes(f.category)){alert('Please select a valid category.');return false;}
+            if(!s.includes(f.sort)){alert('Please select a valid sorting option.');return false;}
+            if(!st.includes(f.status)){alert('Please select a valid status.');return false;}
+            return true;
         }
-
-
-        /* =========================
-           CLOSE POPUP
-        ========================== */
-
-        function closeForm() {
-
-            document
-                .getElementById("updateModal")
-                .classList.remove("show");
-
-            selectedRow = null;
-
+        function getSearchMatches(){
+            var q=document.getElementById('searchInput').value.trim();
+            if(q==='') return bookRecords.slice();
+            var lower=q.toLowerCase();
+            if(/^\d+$/.test(q)){
+                if(q.length===13) return bookRecords.filter(function(b){return b.isbn===q;});
+                return bookRecords.filter(function(b){return b.id===q;});
+            }
+            return bookRecords.filter(function(b){return b.title.toLowerCase().includes(lower);});
         }
-
-
-        /* =========================
-           UPDATE BOOK
-        ========================== */
-
-        function updateBook() {
-
-            if (selectedRow === null) {
-
-                return;
-
-            }
-
-
-            var title =
-                document
-                    .getElementById("editTitle")
-                    .value
-                    .trim();
-
-
-            var author =
-                document
-                    .getElementById("editAuthor")
-                    .value
-                    .trim();
-
-
-            var isbn =
-                document
-                    .getElementById("editISBN")
-                    .value
-                    .trim();
-
-
-            var category =
-                document
-                    .getElementById("editCategory")
-                    .value;
-
-
-            var publisher =
-                document
-                    .getElementById("editPublisher")
-                    .value
-                    .trim();
-
-
-            var quantity =
-                document
-                    .getElementById("editQuantity")
-                    .value;
-
-
-            var price =
-                document
-                    .getElementById("editPrice")
-                    .value;
-
-
-            if (
-                title === "" ||
-                author === "" ||
-                isbn === "" ||
-                category === "" ||
-                publisher === "" ||
-                quantity === ""
-            ) {
-
-                alert("Please fill all book details.");
-
-                return;
-
-            }
-
-
-            if (quantity < 1) {
-
-                alert("Quantity must be at least 1.");
-
-                return;
-
-            }
-
-
-            if (price === "" || price < 0) {
-
-                alert("Please enter a valid price.");
-
-                return;
-
-            }
-
-
-            var cells =
-                selectedRow.getElementsByTagName("td");
-
-
-            cells[1].innerText = title;
-
-            cells[2].innerText = author;
-
-            cells[3].innerText = isbn;
-
-            cells[4].innerText = category;
-
-            cells[5].innerText = publisher;
-
-            cells[6].innerText = quantity;
-
-            cells[7].innerText = price;
-
-
-            alert("Book updated successfully!");
-
-
-            closeForm();
-
+        function applyFiltersToResults(results){
+            var f=getFilters(),o=results.filter(function(b){
+                var cm=f.category==='all'||b.category===f.category;
+                var sm=f.status==='all'||b.status===f.status;
+                return cm&&sm;
+            });
+            o.sort(function(a,b){
+                if(f.sort==='id_asc')return Number(a.id)-Number(b.id);
+                if(f.sort==='id_desc')return Number(b.id)-Number(a.id);
+                if(f.sort==='title_asc')return a.title.localeCompare(b.title);
+                if(f.sort==='title_desc')return b.title.localeCompare(a.title);
+                if(f.sort==='year_desc')return Number(b.year)-Number(a.year);
+                if(f.sort==='year_asc')return Number(a.year)-Number(b.year);
+                return Number(a.id)-Number(b.id);
+            });
+            return o;
         }
+        function escapeHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
 
-
-        /* =========================
-           DELETE BOOK
-        ========================== */
-
-        function deleteBook(button) {
-
-            var row =
-                button.closest("tr");
-
-
-            var bookId =
-                row.cells[0].innerText.trim();
-
-
-            var bookTitle =
-                row.cells[1].innerText.trim();
-
-
-            var confirmDelete =
-                confirm(
-                    "Are you sure you want to delete Book ID " +
-                    bookId +
-                    " - " +
-                    bookTitle +
-                    "?"
-                );
-
-
-            if (confirmDelete) {
-
-                row.remove();
-
-                alert("Book deleted successfully!");
-
-            }
-
-        }
-
-
-        /* =========================
-           SEARCH BOOKS
-        ========================== */
-
-        function searchBooks() {
-
-            var input =
-                document
-                    .getElementById("searchInput")
-                    .value
-                    .toLowerCase()
-                    .trim();
-
-
-            var table =
-                document.getElementById("bookTable");
-
-
-            var rows =
-                table.getElementsByTagName("tr");
-
-
-            var found = false;
-
-
-            for (var i = 1; i < rows.length; i++) {
-
-                var row = rows[i];
-
-
-                var cells =
-                    row.getElementsByTagName("td");
-
-
-                if (cells.length > 0) {
-
-                    var rowText =
-                        row.innerText.toLowerCase();
-
-
-                    if (
-                        input === "" ||
-                        rowText.includes(input)
-                    ) {
-
-                        row.style.display = "";
-
-                        found = true;
-
-                    }
-
-                    else {
-
-                        row.style.display = "none";
-
-                    }
-
+        function renderResults(){var tb=document.getElementById('bookTableBody'),empty=document.getElementById('emptyState'),msg=document.getElementById('noBooksMessage');tb.innerHTML='';document.getElementById('pagination').innerHTML='';if(!currentResults.length){
+                empty.style.display='none';
+                msg.style.display='block';
+                var q=document.getElementById('searchInput').value.trim();
+                var f=getFilters();
+                var filtersUsed=(f.category!=='all'||f.sort!=='default'||f.status!=='all');
+                if(q==='' && filtersUsed){
+                    msg.textContent='No books found for the selected filters.';
+                }else if(q!=='' && filtersUsed){
+                    msg.textContent='No books found for "'+q+'" with the selected filters.';
+                }else if(q!==''){
+                    msg.textContent='No books found for "'+q+'". Please check the Book ID, Title, or ISBN.';
+                }else{
+                    msg.textContent='No books found.';
                 }
+                return;
+            }empty.style.display='none';msg.style.display='none';var total=Math.ceil(currentResults.length/rowsPerPage);if(currentPage>total)currentPage=total;var start=(currentPage-1)*rowsPerPage,current=currentResults.slice(start,start+rowsPerPage);current.forEach(function(b){var r=document.createElement('tr');var statusClass=b.status==='Available'?'available':(b.status==='Issued'?'issued':'');r.innerHTML='<td>'+escapeHtml(b.id)+'</td><td>'+escapeHtml(b.title)+'</td><td>'+escapeHtml(b.author)+'</td><td>'+escapeHtml(b.isbn)+'</td><td>'+escapeHtml(b.category)+'</td><td>'+escapeHtml(b.publisher||'-')+'</td><td>'+escapeHtml(b.year||'-')+'</td><td>'+escapeHtml(b.quantity)+'</td><td>'+escapeHtml(b.price||'-')+'</td><td>'+escapeHtml(b.location)+'</td><td><div class="action-buttons"><button type="button" class="update-btn" onclick="showForm(\''+String(b.id).replace(/'/g,"\\'")+'\')">Update</button><button type="button" class="delete-btn" onclick="deleteBook(\''+String(b.id).replace(/'/g,"\\'")+'\')">Delete</button></div></td>';tb.appendChild(r);});renderPagination(total);}
+        function renderPagination(total){var p=document.getElementById('pagination');p.innerHTML='';if(total<=1)return;var prev=document.createElement('button');prev.type='button';prev.textContent='Previous';prev.disabled=currentPage===1;prev.onclick=function(){if(currentPage>1){currentPage--;renderResults();}};p.appendChild(prev);for(var i=1;i<=total;i++){var b=document.createElement('button');b.type='button';b.textContent=i;if(i===currentPage)b.classList.add('active');b.onclick=(function(page){return function(){currentPage=page;renderResults();};})(i);p.appendChild(b);}var next=document.createElement('button');next.type='button';next.textContent='Next';next.disabled=currentPage===total;next.onclick=function(){if(currentPage<total){currentPage++;renderResults();}};p.appendChild(next);}
+        function searchBooks(){
+            if(!validateSearch()) return;
+            var q=document.getElementById('searchInput').value.trim();
+            currentResults=applyFiltersToResults(getSearchMatches());
+            currentPage=1;
+            renderResults();
+            if(q==='') clearSearchError();
+        }
+        document.getElementById('searchInput').addEventListener('input',function(){
+            var v=this.value.trim();
+            clearSearchError();
+            if(v==='') return;
+            if(v.length>100){showSearchError('Search text cannot be more than 100 characters.');return;}
+            if(/^\d+$/.test(v) && /^(978|979)/.test(v) && v.length!==13){showSearchError('ISBN must contain exactly 13 digits.');}
+        });
+        document.getElementById('searchInput').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();searchBooks();}});
 
-            }
-
-
-            if (!found && input !== "") {
-
-                alert("No book found.");
-
-            }
-
+        function openFilter(){document.getElementById('filterOverlay').style.display='flex';}
+        function closeFilter(){document.getElementById('filterOverlay').style.display='none';}
+        function closeFilterOnOverlay(e){if(e.target===document.getElementById('filterOverlay'))closeFilter();}
+        function applyFilter(){
+            if(!validateFilters()) return;
+            if(!validateSearch()) return;
+            currentResults=applyFiltersToResults(getSearchMatches());
+            currentPage=1;
+            renderResults();
+            closeFilter();
+        }
+        function clearFilter(){
+            document.getElementById('categoryFilter').value='all';
+            document.getElementById('sortFilter').value='default';
+            document.getElementById('statusFilter').value='all';
+            clearSearchError();
+            currentResults=applyFiltersToResults(getSearchMatches());
+            currentPage=1;
+            renderResults();
+            closeFilter();
         }
 
-
-        /* =========================
-           SEARCH WITH ENTER
-        ========================== */
-
-        function searchOnEnter(event) {
-
-            if (event.key === "Enter") {
-
-                searchBooks();
-
-            }
-
+        /* Update form validation: same rules as Add Book. */
+        var form=document.getElementById('updateBookForm'),editBookId=document.getElementById('editBookId'),editTitle=document.getElementById('editTitle'),editAuthor=document.getElementById('editAuthor'),editISBN=document.getElementById('editISBN'),editCategory=document.getElementById('editCategory'),editCategoryRow=document.getElementById('editCategoryRow'),editOtherCategoryGroup=document.getElementById('editOtherCategoryGroup'),editOtherCategory=document.getElementById('editOtherCategory'),editPublisher=document.getElementById('editPublisher'),editReleaseYear=document.getElementById('editReleaseYear'),editQuantity=document.getElementById('editQuantity'),editPrice=document.getElementById('editPrice'),editLocation=document.getElementById('editLocation');
+        function fieldLabel(i){return document.querySelector('label[for="'+i.id+'"]');}
+        function addRequiredStar(i){var l=fieldLabel(i);if(l&&!l.querySelector('.required-star')){var s=document.createElement('span');s.className='required-star';s.textContent='*';l.appendChild(s);}}
+        function removeRequiredStar(i){var l=fieldLabel(i),s=l&&l.querySelector('.required-star');if(s)s.remove();}
+        function removeInvalidStateOnly(i){i.classList.remove('invalid','valid');}
+        function setError(i,id,m){document.getElementById(id).textContent=m;i.classList.add('invalid');i.classList.remove('valid');}
+        function setSuccess(i,id){document.getElementById(id).textContent='';i.classList.remove('invalid');i.classList.add('valid');removeRequiredStar(i);}
+        function clearFieldError(i,id){document.getElementById(id).textContent='';i.classList.remove('invalid','valid');removeRequiredStar(i);}
+        function setRequiredError(i,id,m){removeInvalidStateOnly(i);addRequiredStar(i);document.getElementById(id).textContent=m;}
+        function validateEditTitle(){var v=editTitle.value.trim();if(v===''){setRequiredError(editTitle,'editTitleError','Please enter book title.');return false;}if(v.length>100){setError(editTitle,'editTitleError','Book title cannot exceed 100 characters.');return false;}setSuccess(editTitle,'editTitleError');return true;}
+        function validateEditAuthor(){var v=editAuthor.value.trim();if(v===''){setRequiredError(editAuthor,'editAuthorError','Please enter author name.');return false;}if(v.length<2||v.length>100){setError(editAuthor,'editAuthorError','Author name must be between 2 and 100 characters.');return false;}if(!/^[A-Za-z][A-Za-z .'-]*$/.test(v)){setError(editAuthor,'editAuthorError','Author name can contain only letters, spaces, apostrophe, dot and hyphen.');return false;}setSuccess(editAuthor,'editAuthorError');return true;}
+        function validateEditISBN(){var v=editISBN.value.trim();if(v===''){setRequiredError(editISBN,'editISBNError','Please enter ISBN.');return false;}if(!/^\d{13}$/.test(v)){setError(editISBN,'editISBNError','ISBN must contain exactly 13 digits.');return false;}setSuccess(editISBN,'editISBNError');return true;}
+        function validateEditCategory(){var v=editCategory.value;if(v===''){setRequiredError(editCategory,'editCategoryError','Please select a category.');return false;}if(v==='Other')return validateEditOtherCategory();setSuccess(editCategory,'editCategoryError');clearFieldError(editOtherCategory,'editOtherCategoryError');return true;}
+        function validateEditOtherCategory(){var v=editOtherCategory.value.trim();if(v===''){setRequiredError(editOtherCategory,'editOtherCategoryError','Please enter a category.');return false;}if(v.length<2||v.length>50){setError(editOtherCategory,'editOtherCategoryError','Category must be between 2 and 50 characters.');return false;}if(!/^[A-Za-z]+(?: [A-Za-z]+)*$/.test(v)){setError(editOtherCategory,'editOtherCategoryError','Category can contain only letters and spaces.');return false;}setSuccess(editOtherCategory,'editOtherCategoryError');return true;}
+        editCategory.addEventListener('change',function(){var other=this.value==='Other';editCategoryRow.classList.toggle('other-open',other);editOtherCategoryGroup.style.display=other?'block':'none';if(other){clearFieldError(editCategory,'editCategoryError');editOtherCategory.focus();}else{editOtherCategory.value='';clearFieldError(editOtherCategory,'editOtherCategoryError');}validateEditCategory();});
+        function validateEditPublisher(){var v=editPublisher.value.trim();if(v===''){clearFieldError(editPublisher,'editPublisherError');return true;}if(v.length<2||v.length>100){setError(editPublisher,'editPublisherError','Publisher name must be between 2 and 100 characters.');return false;}if(!/^[A-Za-z][A-Za-z &'.,()\-]*$/.test(v)){setError(editPublisher,'editPublisherError','Publisher name can contain only letters, spaces, &, apostrophe, dot, comma, hyphen and parentheses.');return false;}setSuccess(editPublisher,'editPublisherError');return true;}
+        function validateEditReleaseYear(){var v=editReleaseYear.value.trim();if(v===''){setRequiredError(editReleaseYear,'editReleaseYearError','Please enter release year.');return false;}if(!/^\d{4}$/.test(v)){setError(editReleaseYear,'editReleaseYearError','Release year must contain exactly 4 digits.');return false;}var y=Number(v),cy=new Date().getFullYear();if(y<1000||y>cy){setError(editReleaseYear,'editReleaseYearError','Release year must be between 1000 and '+cy+'.');return false;}setSuccess(editReleaseYear,'editReleaseYearError');return true;}
+        function validateEditQuantity(){var v=editQuantity.value.trim();if(v===''){setRequiredError(editQuantity,'editQuantityError','Please enter quantity.');return false;}if(!/^[1-9]\d*$/.test(v)){setError(editQuantity,'editQuantityError','Quantity must be a positive whole number only.');return false;}setSuccess(editQuantity,'editQuantityError');return true;}
+        function validateEditPrice(){var v=editPrice.value.trim();if(v===''){clearFieldError(editPrice,'editPriceError');return true;}if(!/^\d+(\.\d+)?$/.test(v)){setError(editPrice,'editPriceError','Price must be a non-negative number and may contain decimals.');return false;}if(Number(v)<0){setError(editPrice,'editPriceError','Price cannot be negative.');return false;}setSuccess(editPrice,'editPriceError');return true;}
+        function validateEditLocation(){var v=editLocation.value.replace(/\s+/g,' ').trim();if(v===''){setRequiredError(editLocation,'editLocationError','Please enter book location.');return false;}if(v.length>50){setError(editLocation,'editLocationError','Book location cannot exceed 50 characters.');return false;}if(!/^[A-Za-z0-9][A-Za-z0-9 ,/_\-]*$/.test(v)){setError(editLocation,'editLocationError','Book location can contain letters, numbers, spaces, comma, /, _ and -.');return false;}setSuccess(editLocation,'editLocationError');return true;}
+        editISBN.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,13);validateEditISBN();});
+        editReleaseYear.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').slice(0,4);validateEditReleaseYear();});
+        editQuantity.addEventListener('input',function(){this.value=this.value.replace(/\D/g,'').replace(/^0+/,'');validateEditQuantity();});
+        editPrice.addEventListener('input',function(){this.value=this.value.replace(/[^0-9.]/g,'');var d=this.value.indexOf('.');if(d!==-1)this.value=this.value.substring(0,d+1)+this.value.substring(d+1).replace(/\./g,'');validateEditPrice();});
+        editLocation.addEventListener('input',function(){if(this.value.length>50)this.value=this.value.slice(0,50);validateEditLocation();});
+        editTitle.addEventListener('input',validateEditTitle);editAuthor.addEventListener('input',validateEditAuthor);editPublisher.addEventListener('input',validateEditPublisher);editOtherCategory.addEventListener('input',validateEditOtherCategory);
+        [editTitle,editAuthor,editISBN,editPublisher,editReleaseYear,editQuantity,editPrice,editLocation,editOtherCategory].forEach(function(i){i.addEventListener('input',function(){removeRequiredStar(i);});});
+        editCategory.addEventListener('change',function(){removeRequiredStar(editCategory);});
+        form.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var t=e.target;if(t.tagName==='TEXTAREA')return;if(t.tagName==='BUTTON'){e.preventDefault();return;}e.preventDefault();var fields=Array.from(form.querySelectorAll('input:not([type="submit"]),select,textarea')).filter(function(f){return !f.disabled&&f.offsetParent!==null;});var idx=fields.indexOf(t);if(idx>=0&&idx<fields.length-1)fields[idx+1].focus();else form.querySelector('button[type="submit"]').focus();});
+        function clearUpdateErrors(){document.querySelectorAll('#updateBookForm .error').forEach(function(e){e.textContent='';});document.querySelectorAll('#updateBookForm input,#updateBookForm select,#updateBookForm textarea').forEach(function(i){i.classList.remove('invalid','valid');removeRequiredStar(i);});}
+        function resetBookView(){
+            document.getElementById('searchInput').value='';
+            document.getElementById('categoryFilter').value='all';
+            document.getElementById('sortFilter').value='default';
+            document.getElementById('statusFilter').value='all';
+            clearSearchError();
+            currentResults=[];
+            currentPage=1;
+            renderResults();
         }
 
+        function saveUndoSnapshot(){
+            undoSnapshot={
+                records:JSON.parse(JSON.stringify(bookRecords)),
+                search:document.getElementById('searchInput').value,
+                category:document.getElementById('categoryFilter').value,
+                sort:document.getElementById('sortFilter').value,
+                status:document.getElementById('statusFilter').value,
+                page:currentPage
+            };
+            var u=document.getElementById('undoBtn');
+            if(u)u.disabled=false;
+        }
 
-        /* =========================
-           CLOSE POPUP WHEN CLICKING
-           OUTSIDE
-        ========================== */
+        function undoLastAction(){
+            if(!undoSnapshot)return;
+            bookRecords=undoSnapshot.records;
+            document.getElementById('searchInput').value=undoSnapshot.search;
+            document.getElementById('categoryFilter').value=undoSnapshot.category;
+            document.getElementById('sortFilter').value=undoSnapshot.sort;
+            document.getElementById('statusFilter').value=undoSnapshot.status;
+            clearSearchError();
+            currentPage=undoSnapshot.page;
+            currentResults=applyFiltersToResults(getSearchMatches());
+            renderResults();
+            undoSnapshot=null;
+            var u=document.getElementById('undoBtn');
+            if(u)u.disabled=true;
+        }
 
-        document
-            .getElementById("updateModal")
-            .addEventListener(
-                "click",
-                function(event) {
-
-                    if (event.target === this) {
-
-                        closeForm();
-
-                    }
-
-                }
-            );
-
+        function showForm(bookId){selectedRecord=bookRecords.find(function(b){return b.id===String(bookId);});if(!selectedRecord)return;clearUpdateErrors();editBookId.value=selectedRecord.id;editTitle.value=selectedRecord.title;editAuthor.value=selectedRecord.author;editISBN.value=selectedRecord.isbn;editPublisher.value=selectedRecord.publisher||'';editReleaseYear.value=selectedRecord.year||'';editQuantity.value=selectedRecord.quantity;editPrice.value=selectedRecord.price||'';editLocation.value=selectedRecord.location||'';var exists=Array.from(editCategory.options).some(function(o){return o.value===selectedRecord.category;});if(exists){editCategory.value=selectedRecord.category;editOtherCategory.value='';editCategoryRow.classList.remove('other-open');editOtherCategoryGroup.style.display='none';}else{editCategory.value='Other';editCategoryRow.classList.add('other-open');editOtherCategoryGroup.style.display='block';editOtherCategory.value=selectedRecord.category;}document.getElementById('updateModal').classList.add('show');}
+        function closeForm(){document.getElementById('updateModal').classList.remove('show');selectedRecord=null;}
+        function closeFormOnOverlay(e){if(e.target===document.getElementById('updateModal'))closeForm();}
+        form.addEventListener('submit',function(e){e.preventDefault();if(!selectedRecord)return;var ok=validateEditTitle()&&validateEditAuthor()&&validateEditISBN()&&validateEditCategory()&&validateEditPublisher()&&validateEditReleaseYear()&&validateEditQuantity()&&validateEditPrice()&&validateEditLocation();if(!ok)return;saveUndoSnapshot();selectedRecord.title=editTitle.value.trim();selectedRecord.author=editAuthor.value.trim();selectedRecord.isbn=editISBN.value.trim();selectedRecord.category=editCategory.value==='Other'?editOtherCategory.value.trim():editCategory.value;selectedRecord.publisher=editPublisher.value.trim();selectedRecord.year=editReleaseYear.value.trim();selectedRecord.quantity=editQuantity.value.trim();selectedRecord.price=editPrice.value.trim();selectedRecord.location=editLocation.value.replace(/\s+/g,' ').trim();currentResults=applyFiltersToResults(getSearchMatches());renderResults();alert('Book updated successfully.');closeForm();});
+        function deleteBook(bookId){var b=bookRecords.find(function(x){return x.id===String(bookId);});if(!b)return;if(!confirm('Are you sure you want to delete Book ID '+b.id+' - '+b.title+'?'))return;saveUndoSnapshot();bookRecords=bookRecords.filter(function(x){return x.id!==String(bookId);});currentResults=applyFiltersToResults(getSearchMatches());currentPage=Math.min(currentPage,Math.max(1,Math.ceil(currentResults.length/rowsPerPage)));renderResults();alert('Book deleted successfully!');}
     </script>
-
-
 </body>
-
 </html>
-```
-

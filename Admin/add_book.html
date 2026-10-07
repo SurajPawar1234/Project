@@ -125,7 +125,7 @@
             margin-bottom: 20px;
         }
 
-        /* Form Layout */
+        /* Form Layout - 5 rows x 2 columns */
         .book-form-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -137,10 +137,6 @@
         .form-group {
             margin-bottom: 14px;
             min-width: 0;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
         }
 
         .form-group label {
@@ -170,8 +166,9 @@
         }
 
         .book-location-textarea {
-            min-height: 90px;
-            resize: vertical;
+            min-height: 40px;
+            resize: none;
+            height:40px;
         }
 
         .form-actions {
@@ -229,7 +226,6 @@
                 grid-template-columns: 1fr;
             }
 
-            .form-group.full-width,
             .form-actions {
                 grid-column: 1;
             }
@@ -349,7 +345,7 @@
         </a>
 
         <div class="logout">
-            <a href="login_form.html">Logout</a>
+            <a href="login_form.php">Logout</a>
         </div>
     </div>
 
@@ -490,7 +486,6 @@
                             <option value="Thriller">Thriller</option>
                             <option value="Travel">Travel</option>
                             <option value="Web Development">Web Development</option>
-                            <option value="Young Adult">Young Adult</option>
                         </select>
 
                         <div class="other-category" id="otherCategoryGroup">
@@ -521,6 +516,24 @@
                     >
 
                     <span class="error" id="publisherError"></span>
+                </div>
+
+                <!-- Release Year -->
+                <div class="form-group">
+                    <label for="release_year">Release Year</label>
+
+                    <input
+                        type="text"
+                        id="release_year"
+                        name="Release_Year"
+                        placeholder="Enter release year"
+                        maxlength="4"
+                        inputmode="numeric"
+                        autocomplete="off"
+                        required
+                    >
+
+                    <span class="error" id="releaseYearError"></span>
                 </div>
 
                 <!-- Quantity -->
@@ -557,7 +570,7 @@
                 </div>
 
                 <!-- Book Location -->
-                <div class="form-group full-width">
+                <div class="form-group">
                     <label for="book_location">Book Location</label>
 
                     <textarea
@@ -619,6 +632,7 @@
         const categoryRow = document.getElementById("categoryRow");
         const otherCategoryInput = document.getElementById("otherCategory");
         const publisherInput = document.getElementById("publisher");
+        const releaseYearInput = document.getElementById("release_year");
         const quantityInput = document.getElementById("quantity");
         const priceInput = document.getElementById("price");
         const bookLocationInput = document.getElementById("book_location");
@@ -966,6 +980,45 @@
             return true;
         }
 
+        /* RELEASE YEAR - 4 DIGITS, NOT IN THE FUTURE */
+        function validateReleaseYear() {
+            const value = releaseYearInput.value.trim();
+
+            if (value === "") {
+                setRequiredError(
+                    releaseYearInput,
+                    "releaseYearError",
+                    "Please enter release year."
+                );
+                return false;
+            }
+
+            if (!/^\d{4}$/.test(value)) {
+                setError(
+                    releaseYearInput,
+                    "releaseYearError",
+                    "Release year must contain exactly 4 digits."
+                );
+                return false;
+            }
+
+            const year = Number(value);
+            const currentYear = new Date().getFullYear();
+
+            if (year < 1000 || year > currentYear) {
+                setError(
+                    releaseYearInput,
+                    "releaseYearError",
+                    "Release year must be between 1000 and " + currentYear + "."
+                );
+                return false;
+            }
+
+            setSuccess(releaseYearInput, "releaseYearError");
+            return true;
+        }
+
+
         /* QUANTITY - POSITIVE INTEGER ONLY */
         function validateQuantity() {
             const value = quantityInput.value.trim();
@@ -1059,6 +1112,12 @@
             validateISBN();
         });
 
+        releaseYearInput.addEventListener("input", function() {
+            this.value = this.value.replace(/\D/g, "").slice(0, 4);
+            validateReleaseYear();
+        });
+
+
         quantityInput.addEventListener("input", function() {
             this.value = this.value.replace(/\D/g, "").replace(/^0+/, "");
             validateQuantity();
@@ -1084,7 +1143,7 @@
             validateBookLocation();
         });
 
-        [titleInput, authorInput, isbnInput, publisherInput, quantityInput, priceInput, bookLocationInput, otherCategoryInput].forEach(
+        [titleInput, authorInput, isbnInput, publisherInput, releaseYearInput, quantityInput, priceInput, bookLocationInput, otherCategoryInput].forEach(
             function(input) {
                 input.addEventListener("input", function() {
                     removeRequiredStar(input);
@@ -1173,6 +1232,7 @@
                 authorInput,
                 isbnInput,
                 categoryInput,
+                releaseYearInput,
                 quantityInput,
                 bookLocationInput
             ];
@@ -1267,6 +1327,7 @@
             const isbnValid = validateISBN();
             const categoryValid = validateCategory();
             const publisherValid = validatePublisher();
+            const releaseYearValid = validateReleaseYear();
             const quantityValid = validateQuantity();
             const priceValid = validatePrice();
             const bookLocationValid = validateBookLocation();
@@ -1278,6 +1339,7 @@
                 isbnValid &&
                 categoryValid &&
                 publisherValid &&
+                releaseYearValid &&
                 quantityValid &&
                 priceValid &&
                 bookLocationValid;
