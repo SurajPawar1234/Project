@@ -1,3 +1,49 @@
+<?php
+
+include("./Databse/db.php");
+
+$emailError = "";
+
+if (isset($_POST['signup'])) {
+
+    $firstname = $_POST['firstname'];
+    $email = $_POST['email'];
+    $password = $_POST['password'];
+    $confirmpassword = $_POST['confirmPassword'];
+
+    /* CHECK DUPLICATE EMAIL */
+
+    $checkEmail = "SELECT * FROM adminsignup WHERE emailid='$email'";
+    $result = mysqli_query($conn, $checkEmail);
+
+    if (mysqli_num_rows($result) > 0) {
+
+        $emailError = "This Email Id is already registered. Please use another Email Id.";
+
+    } else {
+
+        $sql = "INSERT INTO adminsignup
+                (`Full name`, emailid, password, `confirm password`)
+                VALUES
+                ('$fullname', '$email', '$password', '$confirmpassword')";
+
+        if (mysqli_query($conn, $sql)) {
+
+            echo "<script>
+                    alert('Account Created Successfully!');
+                    window.location.href='B_login1.php';
+                  </script>";
+
+        } else {
+
+            echo "Error: " . mysqli_error($conn);
+
+        }
+    }
+}
+
+?>
+
 <!DOCTYPE html>
 <html>
 
@@ -320,6 +366,7 @@ input[type="submit"]:hover {
     <input
         type="submit"
         value="Create Account"
+        name="signup"
     >
 
         <!-- BACK TO LOGIN -->

@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html>
 
@@ -75,12 +74,13 @@
 
         .main {
             margin-left: 220px;
-            padding: 25px;
+            padding: 0 25px 25px 25px;
         }
 
         /* Page Header */
 
         .top {
+            margin-top: 10px;
             background-color: white;
             padding: 20px;
             border: 1px solid #ddd;
@@ -97,36 +97,202 @@
             color: #666;
         }
 
-        /* Search */
+        /* Search and Filter */
 
-        .search {
-            text-align: center;
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin-top: 20px;
         }
 
+        .search {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            flex-wrap: nowrap;
+        }
+
         .search input {
-            width: 350px;
-            padding: 10px;
+            width: 325px;
+            padding: 12px;
             border: 1px solid #aaa;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
         }
 
         .search button {
-            padding: 10px 20px;
-            background-color: #333;
+            padding: 12px 22px;
+            background-color: #465660;
             color: white;
             border: none;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+            white-space: nowrap;
         }
 
         .search button:hover {
-            background-color: #555;
+            background-color: #37434a;
+        }
+
+        .search-validation {
+            display: none;
+            width: 325px;
+            align-self: center;
+            margin-top: 6px;
+            color: red;
+            font-size: 14px;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        .search-input-invalid {
+            border: 2px solid red !important;
+        }
+
+        .filter-btn {
+            background-color: #666 !important;
+        }
+
+        .filter-btn:hover {
+            background-color: #555 !important;
+        }
+
+        /* Filter Popup */
+
+        .filter-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .filter-popup {
+            width: 620px;
+            max-width: calc(100% - 40px);
+            background: white;
+            border-radius: 10px;
+            padding: 32px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+        }
+
+        .filter-popup h2 {
+            margin: 0 0 28px 0;
+            color: #465660;
+            font-size: 30px;
+        }
+
+        .filter-group {
+            margin-bottom: 22px;
+        }
+
+        .filter-group label {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .filter-group select {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: white;
+            box-sizing: border-box;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 28px;
+        }
+
+        .filter-actions button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+
+        .apply-filter {
+            background-color: #465660;
+            color: white;
+        }
+
+        .apply-filter:hover {
+            background-color: #37434a;
+        }
+
+        .clear-filter {
+            background-color: #ddd;
+            color: #333;
+        }
+
+        .clear-filter:hover {
+            background-color: #ccc;
+        }
+
+        @media (max-width: 800px) {
+
+            .search {
+                flex-wrap: wrap;
+            }
+
+            .search {
+                flex-wrap: wrap;
+            }
+
+            .search input {
+                width: min(100%, 325px);
+            }
+
+            .search button {
+                padding: 11px 18px;
+            }
+
+            .search-validation {
+                width: min(100%, 325px);
+            }
+
+            .filter-popup {
+                padding: 24px;
+            }
+
+            .filter-popup h2 {
+                font-size: 26px;
+            }
+
+            .filter-group label {
+                font-size: 18px;
+            }
+
+            .filter-group select {
+                font-size: 16px;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+            }
         }
 
         /* Books */
 
         .books {
             background-color: white;
-            margin-top: 25px;
+            margin-top: 20px;
             padding: 20px;
             border: 1px solid #ddd;
         }
@@ -136,8 +302,19 @@
             margin-top: 0;
         }
 
-        table {
+        /* Table area */
+
+        .table-wrapper {
             width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: max-content;
+            min-width: 100%;
             border-collapse: collapse;
         }
 
@@ -146,6 +323,14 @@
             padding: 12px;
             border: 1px solid #ccc;
             text-align: left;
+            white-space: nowrap;
+            height: 45px;
+            box-sizing: border-box;
+        }
+
+        .empty-row td {
+            color: transparent;
+            background-color: white;
         }
 
         th {
@@ -161,6 +346,52 @@
         .issued {
             color: red;
             font-weight: bold;
+        }
+
+        .no-books-message {
+            display: none;
+            text-align: center;
+            color: red;
+            font-size: 17px;
+            font-weight: bold;
+            margin: 20px 0 5px;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 18px;
+            min-height: 38px;
+            flex-wrap: wrap;
+        }
+
+        .pagination button {
+            min-width: 38px;
+            padding: 9px 12px;
+            border: 1px solid #ccc;
+            background-color: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background-color: #eee;
+        }
+
+        .pagination button.active {
+            background-color: #465660;
+            color: white;
+            border-color: #465660;
+        }
+
+        .pagination button:disabled {
+            color: #aaa;
+            cursor: not-allowed;
+            background-color: #f5f5f5;
         }
 
         /* Logout */
@@ -186,10 +417,15 @@
 
             .main {
                 margin-left: 180px;
+                padding: 0 15px 20px 15px;
             }
 
             .search input {
-                width: 60%;
+                width: min(100%, 325px);
+            }
+
+            .search button {
+                padding: 11px 18px;
             }
 
         }
@@ -198,9 +434,7 @@
 
 </head>
 
-
 <body>
-
 
     <!-- Sidebar -->
 
@@ -222,7 +456,6 @@
 
         </div>
 
-
         <!-- Manage Books Submenu -->
 
         <div class="submenu" id="submenu">
@@ -241,7 +474,6 @@
 
         </div>
 
-
         <a href="issue_book.html">
             Issue Book
         </a>
@@ -249,7 +481,6 @@
         <a href="return_book.html">
             Return Book
         </a>
-
 
         <a href="returned_books.html">
             Recent Returned Books
@@ -263,9 +494,6 @@
             Announcements
         </a>
 
-        
-
-
         <div class="logout">
 
             <a href="login_form.html">
@@ -276,11 +504,9 @@
 
     </div>
 
-
     <!-- Main Content -->
 
     <div class="main">
-
 
         <!-- Page Header -->
 
@@ -292,25 +518,43 @@
                 View complete details of books in the library.
             </p>
 
-
             <!-- Search -->
 
-            <div class="search">
+            <div class="search-container">
 
-                <input
-                    id="search"
-                    type="text"
-                    placeholder="Search book by title or author"
-                >
+                <div class="search">
 
-                <button onclick="searchBook()">
-                    Search
-                </button>
+                    <input
+                        id="search"
+                        type="text"
+                        placeholder="Search by book ID, title or ISBN"
+                    >
+
+                    <button
+                        type="button"
+                        onclick="searchBook()"
+                    >
+                        Search
+                    </button>
+
+                    <button
+                        type="button"
+                        class="filter-btn"
+                        onclick="openFilter()"
+                    >
+                        Filter
+                    </button>
+
+                </div>
+
+                <div
+                    id="searchValidation"
+                    class="search-validation"
+                ></div>
 
             </div>
 
         </div>
-
 
         <!-- Book Details -->
 
@@ -318,16 +562,19 @@
 
             <h2>Book Details</h2>
 
+            <div class="table-wrapper">
 
-            <table id="bookTable">
+                <table id="bookTable">
 
-                <tr>
+                    <tr>
 
                     <th>Book ID</th>
 
-                    <th>Book Name</th>
+                    <th>Title</th>
 
                     <th>Author</th>
+
+                    <th>ISBN</th>
 
                     <th>Category</th>
 
@@ -339,10 +586,13 @@
 
                     <th>Status</th>
 
+                    <th>Location</th>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -360,10 +610,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -381,10 +634,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -402,10 +658,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -423,10 +682,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -444,10 +706,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -465,10 +730,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -486,10 +754,13 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
                 </tr>
 
-
                 <tr>
+
+                    <td>-</td>
 
                     <td>-</td>
 
@@ -507,15 +778,130 @@
 
                     <td>-</td>
 
+                    <td>-</td>
+
+                    </tr>
+
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
+                </tr>
+                <tr>
+                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
                 </tr>
 
+                </table>
 
-            </table>
+            </div>
+
+            <p
+                id="noBooksMessage"
+                class="no-books-message"
+            >
+                
+            </p>
+
+            <div
+                id="pagination"
+                class="pagination"
+            ></div>
+
 
         </div>
 
     </div>
 
+    <!-- Filter Popup -->
+
+    <div
+        class="filter-overlay"
+        id="filterOverlay"
+        onclick="closeFilterOnOverlay(event)"
+    >
+
+        <div
+            class="filter-popup"
+            onclick="event.stopPropagation()"
+        >
+
+            <h2>Filter Books</h2>
+
+            <div class="filter-group">
+                <label for="categoryFilter">Category</label>
+
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="Fiction">Fiction</option>
+                    <option value="Non-Fiction">Non-Fiction</option>
+                    <option value="Science">Science</option>
+                    <option value="Technology">Technology</option>
+                    <option value="History">History</option>
+                    <option value="Biography">Biography</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="sortFilter">Sort By</label>
+
+                <select id="sortFilter">
+                    <option value="default">Default</option>
+                    <option value="title_asc">Title A-Z</option>
+                    <option value="title_desc">Title Z-A</option>
+                    <option value="year_desc">Year Newest</option>
+                    <option value="year_asc">Year Oldest</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label for="statusFilter">Status</label>
+
+                <select id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Issued">Issued</option>
+                </select>
+            </div>
+
+            <div class="filter-actions">
+
+                <button
+                    type="button"
+                    class="apply-filter"
+                    onclick="applyFilter()"
+                >
+                    Apply Filter
+                </button>
+
+                <button
+                    type="button"
+                    class="clear-filter"
+                    onclick="clearFilter()"
+                >
+                    Clear
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
 
     <!-- Toggle JavaScript -->
 
@@ -526,7 +912,6 @@
             var menu = document.getElementById("submenu");
 
             var arrow = document.getElementById("arrow");
-
 
             if (menu.style.display == "block") {
 
@@ -546,41 +931,625 @@
 
         }
 
-
-        function searchBook() {
+        function showSearchError(message) {
 
             var input =
-                document.getElementById("search").value.toLowerCase();
+                document.getElementById("search");
 
-            var rows =
-                document.querySelectorAll("#bookTable tr");
+            var error =
+                document.getElementById("searchValidation");
 
+            error.textContent = message;
+            error.style.display = "block";
 
-            for (var i = 1; i < rows.length; i++) {
+            input.classList.add("search-input-invalid");
 
-                var text =
-                    rows[i].innerText.toLowerCase();
+        }
 
-                if (text.includes(input)) {
+        function clearSearchError() {
 
-                    rows[i].style.display = "";
+            var input =
+                document.getElementById("search");
 
-                }
+            var error =
+                document.getElementById("searchValidation");
 
-                else {
+            error.textContent = "";
+            error.style.display = "none";
 
-                    rows[i].style.display = "none";
+            input.classList.remove("search-input-invalid");
 
-                }
+        }
 
+        function validateSearch() {
+
+            var input =
+                document.getElementById("search").value.trim();
+
+            clearSearchError();
+
+            /*
+             * Empty search is allowed.
+             */
+            if (input === "") {
+                return true;
+            }
+
+            /*
+             * Only maximum length is validated.
+             * Book titles and ISBNs may contain punctuation.
+             */
+            if (input.length > 100) {
+
+                showSearchError(
+                    "Search text cannot be more than 100 characters."
+                );
+
+                document.getElementById("search").focus();
+
+                return false;
+            }
+
+            return true;
+
+        }
+
+        var currentPage = 1;
+        var rowsPerPage = 8;
+
+        function removeEmptyRows() {
+
+            var emptyRows = document.querySelectorAll(
+                "#bookTable tr.empty-row"
+            );
+
+            for (var i = 0; i < emptyRows.length; i++) {
+                emptyRows[i].remove();
             }
 
         }
 
-    </script>
+        function getBookRows() {
 
+            return Array.from(
+                document.querySelectorAll("#bookTable tr")
+            ).filter(function(row) {
+                return !row.classList.contains("empty-row");
+            }).slice(1);
+
+        }
+
+        function addEmptyRows(displayedCount) {
+
+            var table = document.getElementById("bookTable");
+            var emptyCount = Math.max(0, rowsPerPage - displayedCount);
+
+            for (var i = 0; i < emptyCount; i++) {
+
+                var row = document.createElement("tr");
+                row.className = "empty-row";
+
+                for (var j = 0; j < 10; j++) {
+                    var cell = document.createElement("td");
+                    cell.innerHTML = "&nbsp;";
+                    row.appendChild(cell);
+                }
+
+                table.appendChild(row);
+            }
+
+        }
+
+        function searchBook() {
+
+            if (!validateSearch()) {
+                return;
+            }
+
+            var input =
+                document.getElementById("search").value.trim().toLowerCase();
+
+            var rows = getBookRows();
+
+            currentPage = 1;
+
+            for (var i = 0; i < rows.length; i++) {
+
+                var cells = rows[i].children;
+
+                var bookId =
+                    (cells[0] ? cells[0].innerText : "")
+                    .trim()
+                    .toLowerCase();
+
+                var title =
+                    (cells[1] ? cells[1].innerText : "")
+                    .trim()
+                    .toLowerCase();
+
+                var isbn =
+                    (cells[3] ? cells[3].innerText : "")
+                    .trim()
+                    .toLowerCase();
+
+                var matches =
+                    input === "" ||
+                    bookId.includes(input) ||
+                    title.includes(input) ||
+                    isbn.includes(input);
+
+                rows[i].dataset.searchMatch =
+                    matches ? "true" : "false";
+
+            }
+
+            renderTable();
+
+            if (input === "") {
+                hideNoBooksMessage();
+            } else {
+                updateNoBooksMessage(document.getElementById("search").value.trim());
+            }
+
+        }
+
+        function handleSearchKey(event) {
+
+            if (event.key === "Enter") {
+                event.preventDefault();
+                searchBook();
+            }
+
+        }
+
+        function openFilter() {
+
+            document.getElementById("filterOverlay").style.display = "flex";
+
+        }
+
+        function closeFilter() {
+
+            document.getElementById("filterOverlay").style.display = "none";
+
+        }
+
+        function closeFilterOnOverlay(event) {
+
+            if (event.target === document.getElementById("filterOverlay")) {
+                closeFilter();
+            }
+
+        }
+
+        function getCurrentSearchMatch(row) {
+
+            if (row.dataset.searchMatch === undefined) {
+                return true;
+            }
+
+            return row.dataset.searchMatch === "true";
+
+        }
+
+        function getCurrentFilterMatch(row) {
+
+            var category =
+                document.getElementById("categoryFilter").value;
+
+            var status =
+                document.getElementById("statusFilter").value;
+
+            var categoryCell = row.children[4];
+            var statusCell = row.children[8];
+
+            var categoryText =
+                categoryCell ? categoryCell.innerText.trim() : "";
+
+            var statusText =
+                statusCell ? statusCell.innerText.trim() : "";
+
+            var categoryMatches =
+                category === "all" ||
+                categoryText === category;
+
+            var statusMatches =
+                status === "all" ||
+                statusText === status;
+
+            return getCurrentSearchMatch(row) &&
+                   categoryMatches &&
+                   statusMatches;
+
+        }
+
+        function updateRowVisibility(row) {
+
+            row.dataset.filterMatch =
+                getCurrentFilterMatch(row) ? "true" : "false";
+
+        }
+
+        function getFilteredRows() {
+
+            var rows = getBookRows();
+            var filtered = [];
+
+            for (var i = 0; i < rows.length; i++) {
+
+                updateRowVisibility(rows[i]);
+
+                if (rows[i].dataset.filterMatch === "true") {
+                    filtered.push(rows[i]);
+                }
+
+            }
+
+            return filtered;
+
+        }
+
+        function renderTable() {
+
+            removeEmptyRows();
+
+            var rows = getBookRows();
+            var filteredRows = getFilteredRows();
+            var totalPages = Math.max(
+                1,
+                Math.ceil(filteredRows.length / rowsPerPage)
+            );
+
+            if (currentPage > totalPages) {
+                currentPage = totalPages;
+            }
+
+            var start = (currentPage - 1) * rowsPerPage;
+            var end = start + rowsPerPage;
+            var displayedCount = Math.max(
+                0,
+                Math.min(end, filteredRows.length) - start
+            );
+
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].style.display = "none";
+            }
+
+            for (var j = start; j < end && j < filteredRows.length; j++) {
+                filteredRows[j].style.display = "";
+            }
+
+            /*
+             * Keep exactly 8 visible row spaces so the table and
+             * pagination never jump vertically on the last page.
+             */
+            addEmptyRows(displayedCount);
+
+            renderPagination(filteredRows.length);
+
+        }
+
+        function renderPagination(totalRows) {
+
+            var pagination = document.getElementById("pagination");
+
+            pagination.innerHTML = "";
+
+            var totalPages = Math.ceil(totalRows / rowsPerPage);
+
+            /*
+             * Pagination is shown only when more than one page exists.
+             * Each page contains exactly 8 book rows.
+             */
+            if (totalPages <= 1) {
+                return;
+            }
+
+            var previousButton = document.createElement("button");
+            previousButton.type = "button";
+            previousButton.textContent = "Previous";
+            previousButton.disabled = currentPage === 1;
+            previousButton.onclick = function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            };
+            pagination.appendChild(previousButton);
+
+            for (let page = 1; page <= totalPages; page++) {
+                let pageButton = document.createElement("button");
+                pageButton.type = "button";
+                pageButton.textContent = page;
+
+                if (page === currentPage) {
+                    pageButton.classList.add("active");
+                }
+
+                pageButton.onclick = function() {
+                    currentPage = page;
+                    renderTable();
+                };
+
+                pagination.appendChild(pageButton);
+            }
+
+            var nextButton = document.createElement("button");
+            nextButton.type = "button";
+            nextButton.textContent = "Next";
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = function() {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            };
+            pagination.appendChild(nextButton);
+
+        }
+
+        function updateNoBooksMessage(searchText = "") {
+
+            var rows = getBookRows();
+            var found = false;
+
+            for (var i = 0; i < rows.length; i++) {
+                if (getCurrentFilterMatch(rows[i])) {
+                    found = true;
+                    break;
+                }
+            }
+
+            var message =
+                document.getElementById("noBooksMessage");
+
+            if (found) {
+                message.style.display = "none";
+                message.textContent = "";
+                return;
+            }
+
+            if (searchText !== "") {
+
+                message.textContent =
+                    'No books found for "' +
+                    searchText +
+                    '". Please try another Book ID, Title, or ISBN.';
+
+            } else {
+
+                message.textContent =
+                    "No books found matching the selected filters.";
+
+            }
+
+            message.style.display = "block";
+
+        }
+
+        function hideNoBooksMessage() {
+
+            document.getElementById("noBooksMessage")
+                .style.display = "none";
+
+        }
+
+        function validateFilters() {
+
+            var category =
+                document.getElementById("categoryFilter").value;
+
+            var sort =
+                document.getElementById("sortFilter").value;
+
+            var status =
+                document.getElementById("statusFilter").value;
+
+            var validCategories = [
+                "all",
+                "Fiction",
+                "Non-Fiction",
+                "Science",
+                "Technology",
+                "History",
+                "Biography"
+            ];
+
+            var validSorts = [
+                "default",
+                "title_asc",
+                "title_desc",
+                "year_desc",
+                "year_asc"
+            ];
+
+            var validStatuses = [
+                "all",
+                "Available",
+                "Issued"
+            ];
+
+            if (!validCategories.includes(category)) {
+                alert("Please select a valid category.");
+                return false;
+            }
+
+            if (!validSorts.includes(sort)) {
+                alert("Please select a valid sorting option.");
+                return false;
+            }
+
+            if (!validStatuses.includes(status)) {
+                alert("Please select a valid status.");
+                return false;
+            }
+
+            return true;
+
+        }
+
+        function applyFilter() {
+
+            if (!validateFilters()) {
+                return;
+            }
+
+            if (!validateSearch()) {
+                return;
+            }
+
+            var sort =
+                document.getElementById("sortFilter").value;
+
+            sortRows(sort);
+
+            currentPage = 1;
+            renderTable();
+
+            var currentSearch =
+                document.getElementById("search").value.trim();
+
+            updateNoBooksMessage(currentSearch);
+
+            closeFilter();
+
+        }
+
+        function clearFilter() {
+
+            document.getElementById("categoryFilter").value = "all";
+            document.getElementById("sortFilter").value = "default";
+            document.getElementById("statusFilter").value = "all";
+            document.getElementById("search").value = "";
+
+            var rows = getBookRows();
+
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].dataset.searchMatch = "true";
+                rows[i].dataset.filterMatch = "true";
+            }
+
+            currentPage = 1;
+            renderTable();
+            hideNoBooksMessage();
+            closeFilter();
+
+        }
+
+        function sortRows(sortValue) {
+
+            removeEmptyRows();
+
+            var table =
+                document.getElementById("bookTable");
+
+            var rows =
+                Array.from(table.querySelectorAll("tr:not(.empty-row)"));
+
+            var header = rows.shift();
+
+            if (sortValue === "default") {
+                rows.forEach(function(row) {
+                    table.appendChild(row);
+                });
+                table.insertBefore(header, table.firstChild);
+                return;
+            }
+
+            rows.sort(function(a, b) {
+
+                var titleA =
+                    a.children[1]
+                    ? a.children[1].innerText.trim().toLowerCase()
+                    : "";
+
+                var titleB =
+                    b.children[1]
+                    ? b.children[1].innerText.trim().toLowerCase()
+                    : "";
+
+                var yearA =
+                    parseInt(
+                        a.children[6]
+                        ? a.children[6].innerText.trim()
+                        : ""
+                    ) || 0;
+
+                var yearB =
+                    parseInt(
+                        b.children[6]
+                        ? b.children[6].innerText.trim()
+                        : ""
+                    ) || 0;
+
+                if (sortValue === "title_asc") {
+                    return titleA.localeCompare(titleB);
+                }
+
+                if (sortValue === "title_desc") {
+                    return titleB.localeCompare(titleA);
+                }
+
+                if (sortValue === "year_desc") {
+                    return yearB - yearA;
+                }
+
+                if (sortValue === "year_asc") {
+                    return yearA - yearB;
+                }
+
+                return 0;
+
+            });
+
+            table.innerHTML = "";
+            table.appendChild(header);
+
+            rows.forEach(function(row) {
+                table.appendChild(row);
+            });
+
+        }
+
+        document
+            .getElementById("search")
+            .addEventListener("input", function () {
+
+                var value = this.value.trim();
+
+                if (value === "") {
+                    clearSearchError();
+                    return;
+                }
+
+                if (value.length > 100) {
+                    showSearchError(
+                        "Search text cannot be more than 100 characters."
+                    );
+                    return;
+                }
+
+                clearSearchError();
+
+            });
+
+        document
+            .getElementById("search")
+            .addEventListener("keydown", function (event) {
+
+                if (event.key === "Enter") {
+                    event.preventDefault();
+                    searchBook();
+                }
+
+            });
+
+        hideNoBooksMessage();
+        renderTable();
+
+    </script>
 
 </body>
 
 </html>
-```
+
