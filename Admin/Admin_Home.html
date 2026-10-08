@@ -2,16 +2,24 @@
 <html>
 
 <head>
+
     <title>Library Admin Home</title>
 
+    <!-- Font Awesome Icon Library -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
     <style>
+
         body {
             margin: 0;
             font-family: Arial;
             background-color: #f2f2f2;
         }
 
-        /* Left Sidebar */
+
+        /* ================= SIDEBAR ================= */
+
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -20,7 +28,9 @@
             left: 0;
             top: 0;
             color: white;
+            transition: 0.3s;
         }
+
 
         .sidebar h2 {
             text-align: center;
@@ -28,6 +38,7 @@
             margin: 0;
             background-color: #222;
         }
+
 
         .sidebar a,
         .manage {
@@ -39,23 +50,32 @@
             cursor: pointer;
         }
 
+
         .sidebar a:hover,
         .manage:hover {
             background-color: rgba(255, 255, 255, .11);
         }
 
+
         .arrow {
             float: right;
         }
+
+
+        /* Submenu */
 
         .submenu {
             display: none;
             background-color: #444;
         }
 
+
         .submenu a {
             padding-left: 40px;
         }
+
+
+        /* Logout */
 
         .logout {
             position: absolute;
@@ -63,44 +83,67 @@
             width: 100%;
         }
 
+
         .logout a {
             background-color: #222;
             text-align: center;
         }
 
-        /* Main Content */
+
+        /* ================= MENU TOGGLE BUTTON ================= */
+
+        .menu-toggle-button {
+            display: none;
+            background-color: #333;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 30px;
+        }
+
+
+        /* ================= MAIN CONTENT ================= */
+
         .main {
             margin-left: 220px;
             padding: 25px;
         }
 
-        /* Top Area */
+
+        /* ================= TOP AREA ================= */
+
         .top {
             background-color: white;
             padding: 20px;
             border: 1px solid #ddd;
         }
 
+
         .top h1 {
             margin-top: 0;
             text-align: center;
         }
+
 
         .top h3 {
             text-align: right;
             margin-bottom: 5px;
         }
 
-        /* Dashboard */
+
+        /* ================= DASHBOARD ================= */
+
         .dashboard {
             margin-top: 25px;
         }
+
 
         .cards {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 20px;
         }
+
 
         .card {
             background-color: white;
@@ -109,10 +152,12 @@
             text-align: center;
         }
 
+
         .card h3 {
             margin: 5px 0 15px;
             color: #555;
         }
+
 
         .card p {
             font-size: 28px;
@@ -121,11 +166,14 @@
             color: #222;
         }
 
+
         .fine {
             color: #b30000 !important;
         }
 
-        /* Recent Activity */
+
+        /* ================= RECENT ACTIVITY ================= */
+
         .recent {
             background-color: white;
             margin-top: 25px;
@@ -133,10 +181,12 @@
             border: 1px solid #ddd;
         }
 
+
         .recent table {
             width: 100%;
             border-collapse: collapse;
         }
+
 
         .recent th,
         .recent td {
@@ -145,169 +195,408 @@
             text-align: left;
         }
 
+
         .recent th {
             background-color: #eee;
         }
 
+
+        /* ================= RESPONSIVE DESIGN ================= */
+
         @media (max-width: 800px) {
+
+            /* Hide sidebar outside the screen */
+
             .sidebar {
                 width: 180px;
+                left: -180px;
             }
 
-            .main {
-                margin-left: 180px;
+
+            /* Show sidebar when active */
+
+            .sidebar.active {
+                left: 0;
             }
+
+
+            /* Main content uses full screen */
+
+            .main {
+                margin-left: 0;
+                padding: 70px 15px 15px;
+            }
+
+
+            /* Cards become one column */
 
             .cards {
                 grid-template-columns: 1fr;
             }
+
+
+            /* Show menu button */
+
+            .menu-toggle-button {
+                display: block;
+                position: fixed;
+                top: 15px;
+                left: 15px;
+                z-index: 1000;
+
+                background-color: #333;
+                color: white;
+
+                border: none;
+                padding: 5px 10px;
+
+                font-size: 30px;
+                cursor: pointer;
+            }
+
+
+            /* Table can scroll horizontally */
+
+            .recent {
+                overflow-x: auto;
+            }
+
         }
+
     </style>
 
 </head>
 
+
 <body>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
+
+    <!-- ================= MENU TOGGLE BUTTON ================= -->
+
+    <button class="menu-toggle-button" onclick="toggleSidebar()">
+
+        <span class="fa-solid fa-bars"></span>
+
+    </button>
+
+
+    <!-- ================= SIDEBAR ================= -->
+
+    <div class="sidebar" id="sidebar">
+
 
         <h2>Library</h2>
 
-        <a href="admin_home.html">Dashboard</a>
 
-        <a href="my_profile.html">My Profile</a>
+        <a href="admin_home.html">
+            Dashboard
+        </a>
+
+
+        <a href="my_profile.html">
+            My Profile
+        </a>
+
 
         <!-- Manage Books Menu -->
+
         <div class="manage" onclick="toggleMenu()">
+
             Manage Books
-            <span class="arrow" id="arrow">+</span>
+
+            <span class="arrow" id="arrow">
+                +
+            </span>
+
         </div>
+
 
         <!-- Manage Books Submenu -->
+
         <div class="submenu" id="submenu">
-            <a href="view_books.html">View All Books</a>
-            <a href="add_book.html">Add Book</a>
-            <a href="update_book.html">Update / Return Book</a>
+
+            <a href="view_books.html">
+                View All Books
+            </a>
+
+            <a href="add_book.html">
+                Add Book
+            </a>
+
+            <a href="update_book.html">
+                Update / Return Book
+            </a>
+
         </div>
 
-        <a href="issue_book.html">Issue Book</a>
 
-        <a href="return_book.html">Return Book</a>
+        <a href="issue_book.html">
+            Issue Book
+        </a>
 
-        <a href="returned_books.html">Recent Returned Books</a>
 
-        <a href="members.html">Members Details</a>
+        <a href="return_book.html">
+            Return Book
+        </a>
 
-        <a href="announcement.html" class="active">
+
+        <a href="returned_books.html">
+            Recent Returned Books
+        </a>
+
+
+        <a href="members.html">
+            Members Details
+        </a>
+
+
+        <a href="announcement.html">
             Announcements
         </a>
 
+
+        <!-- Logout -->
+
         <div class="logout">
-            <a href="login_form.html">Logout</a>
+
+            <a href="login_form.html">
+                Logout
+            </a>
+
         </div>
+
 
     </div>
 
-    <!-- Main Page -->
+
+    <!-- ================= MAIN PAGE ================= -->
+
     <div class="main">
 
+
         <!-- Top Section -->
+
         <div class="top">
-            <h1>Library Admin Dashboard</h1>
+
+            <h1>
+                Library Admin Dashboard
+            </h1>
+
         </div>
 
-        <!-- Dashboard Details -->
+
+        <!-- Dashboard -->
+
         <div class="dashboard">
+
 
             <div class="cards">
 
-                <div class="card">
-                    <h3>Total Books</h3>
-                    <p>0</p>
-                </div>
 
                 <div class="card">
-                    <h3>Issued Books</h3>
-                    <p>0</p>
+
+                    <h3>
+                        Total Books
+                    </h3>
+
+                    <p>
+                        0
+                    </p>
+
                 </div>
 
-                <div class="card">
-                    <h3>Available Books</h3>
-                    <p>0</p>
-                </div>
 
                 <div class="card">
-                    <h3>Total Members</h3>
-                    <p>0</p>
+
+                    <h3>
+                        Issued Books
+                    </h3>
+
+                    <p>
+                        0
+                    </p>
+
                 </div>
 
-                <div class="card">
-                    <h3>Members With Due Date</h3>
-                    <p>0</p>
-                </div>
 
                 <div class="card">
-                    <h3>Total Fine To Collect</h3>
-                    <p class="fine">0</p>
+
+                    <h3>
+                        Available Books
+                    </h3>
+
+                    <p>
+                        0
+                    </p>
+
                 </div>
+
+
+                <div class="card">
+
+                    <h3>
+                        Total Members
+                    </h3>
+
+                    <p>
+                        0
+                    </p>
+
+                </div>
+
+
+                <div class="card">
+
+                    <h3>
+                        Members With Due Date
+                    </h3>
+
+                    <p>
+                        0
+                    </p>
+
+                </div>
+
+
+                <div class="card">
+
+                    <h3>
+                        Total Fine To Collect
+                    </h3>
+
+                    <p class="fine">
+                        0
+                    </p>
+
+                </div>
+
 
             </div>
+
         </div>
 
-        <!-- Recent Activity -->
+
+        <!-- ================= RECENT ACTIVITY ================= -->
+
         <div class="recent">
 
-            <h2>Recent Book Issue Details</h2>
+
+            <h2>
+                Recent Book Issue Details
+            </h2>
+
 
             <table>
 
-                <tr>
-                    <th>Member Name</th>
-                    <th>Book Name</th>
-                    <th>Issue Date</th>
-                    <th>Due Date</th>
-                </tr>
 
                 <tr>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
+
+                    <th>
+                        Member Name
+                    </th>
+
+                    <th>
+                        Book Name
+                    </th>
+
+                    <th>
+                        Issue Date
+                    </th>
+
+                    <th>
+                        Due Date
+                    </th>
+
                 </tr>
 
-                <tr>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
 
                 <tr>
+
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
                     <td>-</td>
+
                 </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+
+                </tr>
+
+
+                <tr>
+
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+                    <td>-</td>
+
+                </tr>
+
 
             </table>
 
+
         </div>
+
+
     </div>
 
+
+    <!-- ================= JAVASCRIPT ================= -->
+
     <script>
+
+
+        /* Manage Books submenu */
+
         function toggleMenu() {
+
             var menu = document.getElementById("submenu");
+
             var arrow = document.getElementById("arrow");
 
+
             if (menu.style.display === "block") {
+
                 menu.style.display = "none";
+
                 arrow.innerHTML = "+";
-            } else {
-                menu.style.display = "block";
-                arrow.innerHTML = "-";
+
             }
+
+            else {
+
+                menu.style.display = "block";
+
+                arrow.innerHTML = "-";
+
+            }
+
         }
+
+
+
+        /* Mobile sidebar */
+
+        function toggleSidebar() {
+
+            document
+                .getElementById("sidebar")
+                .classList
+                .toggle("active");
+
+        }
+
+
     </script>
+
 
 </body>
 
