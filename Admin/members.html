@@ -1,21 +1,19 @@
-```html
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Member Details</title>
-
     <style>
-
+        * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             background-color: #f2f2f2;
+            color: #333;
         }
 
-        /* Sidebar */
-
+        /* Sidebar - preserved from the original page */
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -24,15 +22,15 @@
             left: 0;
             top: 0;
             color: white;
+            overflow-y: auto;
+            z-index: 10;
         }
-
         .sidebar h2 {
             text-align: center;
             padding: 20px 0;
             margin: 0;
             background-color: #222;
         }
-
         .sidebar a {
             display: block;
             color: white;
@@ -40,514 +38,1092 @@
             padding: 14px 20px;
             border-bottom: 1px solid #555;
         }
-
-        .sidebar a:hover {
-            background-color: #555;
-        }
-
-        /* Manage Books */
-
+        .sidebar a:hover, .sidebar a.active { background-color: #555; }
         .manage {
             padding: 14px 20px;
             border-bottom: 1px solid #555;
             cursor: pointer;
         }
+        .manage:hover { background-color: #555; }
+        .arrow { float: right; }
+        .submenu { display: none; background-color: #444; }
+        .submenu a { padding-left: 40px; }
+        .logout { position: absolute; bottom: 10px; width: 100%; }
+        .logout a { background-color: #222; text-align: center; }
 
-        .manage:hover {
-            background-color: #555;
-        }
-
-        .arrow {
-            float: right;
-        }
-
-        /* Sub Menu */
-
-        .submenu {
-            display: none;
-            background-color: #444;
-        }
-
-        .submenu a {
-            padding-left: 40px;
-        }
-
-        /* Main */
-
+        /* Main layout and page header */
         .main {
             margin-left: 220px;
-            padding: 25px;
+            padding: 0 25px 25px;
+            min-width: 0;
         }
-
-        /* Page Header */
-
         .top {
+            margin-top: 10px;
             background-color: white;
             padding: 20px;
             border: 1px solid #ddd;
         }
-
         .top h1 {
             margin: 0;
             text-align: center;
             color: #333;
+            font-size: 36px;
         }
-
         .top p {
             text-align: center;
             color: #666;
+            font-size: 18px;
+            margin: 18px 0 0;
         }
 
-        /* Search */
-
-        .search {
-            text-align: center;
+        /* Search and Filter — dimensions matched to All Books */
+        .search-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             margin-top: 20px;
         }
-
-        .search input {
-            width: 350px;
-            padding: 10px;
-            border: 1px solid #aaa;
+        .search {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            flex-wrap: nowrap;
         }
-
+        .search-input-wrap {
+            flex: 0 0 325px;
+            min-width: 0;
+        }
+        .search input {
+            width: 325px;
+            padding: 12px;
+            border: 1px solid #aaa;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+            background: #fff;
+            color: #333;
+            outline: none;
+        }
+        .search input:focus { border-color: #465660; }
+        .search input.search-input-invalid { border: 2px solid red !important; }
         .search button {
-            padding: 10px 20px;
-            background-color: #333;
+            padding: 12px 22px;
+            background-color: #465660;
             color: white;
             border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            white-space: nowrap;
+        }
+        .search button:hover { background-color: #37434a; }
+        .search .filter-btn { background-color: #666 !important; }
+        .search .filter-btn:hover { background-color: #555 !important; }
+        .search-validation {
+            display: none;
+            width: 325px;
+            align-self: center;
+            margin-top: 6px;
+            color: red;
+            font-size: 14px;
+            text-align: left;
+            line-height: 1.4;
+        }
+
+        /* Filter modal matching the All Books popup */
+        .filter-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .filter-popup {
+            width: 620px;
+            max-width: calc(100% - 40px);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            background: white;
+            border-radius: 10px;
+            padding: 32px;
+            box-sizing: border-box;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+        }
+        .filter-popup h2 {
+            margin: 0 0 28px;
+            color: #465660;
+            font-size: 30px;
+        }
+        .filter-group { margin-bottom: 22px; }
+        .filter-group label {
+            display: block;
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+        .filter-group select {
+            width: 100%;
+            padding: 14px 18px;
+            font-size: 18px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            background: white;
+            box-sizing: border-box;
+        }
+        .filter-actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 28px;
+        }
+        .filter-actions button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 18px;
             cursor: pointer;
         }
+        .apply-filter { background-color: #465660; color: white; }
+        .apply-filter:hover { background-color: #37434a; }
+        .clear-filter { background-color: #ddd; color: #333; }
+        .clear-filter:hover { background-color: #ccc; }
 
-        .search button:hover {
-            background-color: #555;
-        }
-
-        /* Members */
-
+        /* Member table and horizontal scrolling */
         .members {
             background-color: white;
             margin-top: 25px;
             padding: 20px;
             border: 1px solid #ddd;
         }
-
         .members h2 {
             color: #333;
-            margin-top: 0;
+            margin: 0 0 18px;
+            font-size: 26px;
         }
-
-        table {
+        .table-wrap {
             width: 100%;
+            max-width: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            box-sizing: border-box;
+        }
+        table {
+            width: max-content;
+            min-width: 100%;
             border-collapse: collapse;
         }
-
-        th,
-        td {
+        th, td {
             padding: 12px;
             border: 1px solid #ccc;
             text-align: left;
+            white-space: nowrap;
+            height: 45px;
+            box-sizing: border-box;
         }
-
-        th {
-            background-color: #eee;
-            color: #333;
+        th { background-color: #eee; color: #333; }
+        .update {
+            background-color: #465660;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            padding: 8px 12px;
+            margin-right: 6px;
+            cursor: pointer;
         }
+        .update:hover { background-color: #37434a; }
 
-        /* Delete Button */
+        /* Update member credentials popup */
+        .edit-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.45);
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+        .edit-popup {
+            width: 620px;
+            max-width: calc(100% - 40px);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+            padding: 32px;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.25);
+            box-sizing: border-box;
+        }
+        .edit-popup h2 {
+            margin: 0 0 24px;
+            color: #465660;
+            font-size: 28px;
+        }
+        .edit-field { margin-bottom: 18px; }
+        .edit-field label {
+            display: block;
+            font-size: 17px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .edit-field input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            font-size: 16px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        .edit-field input:focus { border-color: #465660; }
+        .edit-field input.invalid { border: 2px solid #d93025; }
+        .field-error {
+            display: none;
+            color: #d93025;
+            font-size: 13px;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+        .field-error.show { display: block; }
+        .field-hint { color: #666; font-size: 13px; margin: 7px 0 0; }
+        .edit-actions { display: flex; gap: 12px; margin-top: 25px; }
+        .edit-actions button {
+            flex: 1;
+            padding: 13px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .save-update { background: #465660; color: white; }
+        .save-update:hover { background: #37434a; }
+        .cancel-update { background: #ddd; color: #333; }
+        .cancel-update:hover { background: #ccc; }
+        .update-success {
+            display: none;
+            margin-top: 15px;
+            color: #24723a;
+            font-size: 14px;
+        }
 
         .delete {
             background-color: #d9534f;
             color: white;
             border: none;
+            border-radius: 3px;
             padding: 8px 14px;
             cursor: pointer;
         }
-
-        .delete:hover {
-            background-color: #c9302c;
-        }
-
-        /* Logout */
-
-        .logout {
-            position: absolute;
-            bottom: 10px;
-            width: 100%;
-        }
-
-        .logout a {
-            background-color: #222;
+        .delete:hover { background-color: #c9302c; }
+        .no-results {
+            display: none;
             text-align: center;
+            color: red;
+            font-size: 17px;
+            font-weight: bold;
+            padding: 20px 8px;
         }
-
-        /* Mobile */
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 18px;
+            min-height: 38px;
+            flex-wrap: wrap;
+        }
+        .pagination button {
+            min-width: 38px;
+            padding: 9px 12px;
+            border: 1px solid #ccc;
+            background: white;
+            color: #333;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .pagination button:hover:not(:disabled) { background: #eee; }
+        .pagination button.active {
+            background: #465660;
+            color: white;
+            border-color: #465660;
+        }
+        .pagination button:disabled {
+            color: #aaa;
+            cursor: not-allowed;
+            background: #f5f5f5;
+        }
+        .page-info {
+            color: #666;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 8px;
+        }
 
         @media (max-width: 800px) {
-
-            .sidebar {
-                width: 180px;
-            }
-
-            .main {
-                margin-left: 180px;
-            }
-
-            .search input {
-                width: 60%;
-            }
-
+            .sidebar { width: 180px; }
+            .main { margin-left: 180px; padding: 0 15px 20px; }
+            .search { flex-wrap: wrap; }
+            .search-input-wrap { flex: 1 1 100%; }
+            .search input { width: min(100%, 325px); }
+            .search button { padding: 11px 18px; }
+            .search-validation { width: min(100%, 325px); }
+            .filter-popup { padding: 24px; }
+            .filter-popup h2 { font-size: 26px; }
+            .filter-group label { font-size: 18px; }
+            .filter-group select { font-size: 16px; }
+            .filter-actions { flex-direction: column; }
         }
-
+        @media (max-width: 540px) {
+            .sidebar { width: 150px; }
+            .sidebar a, .manage { padding: 12px; font-size: 13px; }
+            .sidebar h2 { font-size: 20px; }
+            .main { margin-left: 150px; padding: 0 10px 15px; }
+            .top, .members { padding: 14px; }
+            .top h1 { font-size: 27px; }
+            .top p { font-size: 15px; }
+            .search { gap: 8px; }
+            .search-btn, .filter-btn { padding: 0 12px; }
+            .filter-popup { padding: 22px; }
+            .logout { position: static; margin-top: 20px; }
+        }
     </style>
-
 </head>
-
-
 <body>
-
-
-    <!-- Sidebar -->
-
-    <div class="sidebar">
-
+    <aside class="sidebar">
         <h2>Library</h2>
-
-        <a href="admin_home.html">
-            Dashboard
-        </a>
-
-        <a href="my_profile.html">
-            My Profile
-        </a>
-
-
-        <!-- Manage Books -->
+        <a href="admin_home.html">Dashboard</a>
+        <a href="my_profile.html">My Profile</a>
 
         <div class="manage" onclick="toggleMenu()">
-
-            Manage Books
-
-            <span class="arrow" id="arrow">
-                +
-            </span>
-
+            Manage Books <span class="arrow" id="arrow">+</span>
         </div>
-
-
-        <!-- Sub Menu -->
-
         <div class="submenu" id="submenu">
-
-            <a href="view_books.html">
-                View All Books
-            </a>
-
-            <a href="add_book.html">
-                Add Book
-            </a>
-
-            <a href="update_book.html">
-                Update / Delete Book
-            </a>
-
+            <a href="view_books.html">View All Books</a>
+            <a href="add_book.html">Add Book</a>
+            <a href="update_book.html">Update / Delete Book</a>
         </div>
 
+        <a href="issue_book.html">Issue Book</a>
+        <a href="return_book.html">Return Book</a>
+        <a href="returned_books.html">Recent Returned Books</a>
+        <a href="members.html" class="active">Members Details</a>
+        <a href="announcement.html">Announcements</a>
+        <div class="logout"><a href="login_form.html">Logout</a></div>
+    </aside>
 
-        <a href="issue_book.html">
-            Issue Book
-        </a>
-
-        <a href="return_book.html">
-            Return Book
-        </a>
-
-
-        <a href="returned_books.html">
-            Recent Returned Books
-        </a>
-
-        <a href="members.html">
-            Members Details
-        </a>
-        
-        <a href="announcement.html" class="active">
-            Announcements
-        </a>
-
-
-        <!-- Logout -->
-
-        <div class="logout">
-
-            <a href="login_form.html">
-                Logout
-            </a>
-
-        </div>
-
-    </div>
-
-
-
-    <!-- Main Content -->
-
-    <div class="main">
-
-
-        <!-- Page Header -->
-
-        <div class="top">
-
+    <main class="main">
+        <section class="top">
             <h1>Member Details</h1>
+            <p>View and manage registered library members.</p>
 
+            <div class="search-container">
+                <div class="search">
+                    <div class="search-input-wrap">
+                        <input
+                            id="search"
+                            type="text"
+                            placeholder="Search by Member ID or Name"
+                            maxlength="200"
+                            autocomplete="off"
+                            aria-describedby="searchValidation"
+                        >
+                        <div id="searchValidation" class="search-validation" role="alert"></div>
+                    </div>
+                    <button type="button" class="search-btn" onclick="searchMember()">Search</button>
+                    <button type="button" class="filter-btn" id="filterButton" aria-expanded="false" onclick="openFilter()">Filter</button>
+                </div>
+            </div>
+        </section>
 
-            <!-- Search -->
+        <section class="members">
+            <h2>Library Members</h2>
+            <div class="table-wrap">
+                <table id="memberTable">
+                    <thead>
+                        <tr>
+                            <th>Member ID</th>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Address</th>
+                            <th>Total Books Issued</th>
+                            <th>Pending Returns</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberTableBody">
+                        <tr data-member-id="1001">
+                            <td>1001</td>
+                            <td>Aarav Joshi</td>
+                            <td class="username-cell">aarav.joshi</td>
+                            <td>aarav.joshi@example.com</td>
+                            <td>9876543210</td>
+                            <td>Baramati, Pune</td>
+                            <td>2</td>
+                            <td class="current-issues-cell">1</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1002">
+                            <td>1002</td>
+                            <td>Ananya Patil</td>
+                            <td class="username-cell">ananya.patil</td>
+                            <td>ananya.patil@example.com</td>
+                            <td>9876501234</td>
+                            <td>Phaltan, Satara</td>
+                            <td>0</td>
+                            <td class="current-issues-cell">0</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1003">
+                            <td>1003</td>
+                            <td>Rohan Shinde</td>
+                            <td class="username-cell">rohan.shinde</td>
+                            <td>rohan.shinde@example.com</td>
+                            <td>9867012345</td>
+                            <td>MIDC Road, Baramati</td>
+                            <td>1</td>
+                            <td class="current-issues-cell">1</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1004">
+                            <td>1004</td>
+                            <td>Sneha Pawar</td>
+                            <td class="username-cell">sneha.pawar</td>
+                            <td>sneha.pawar@example.com</td>
+                            <td>9856012345</td>
+                            <td>Indapur, Pune</td>
+                            <td>3</td>
+                            <td class="current-issues-cell">2</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1005">
+                            <td>1005</td>
+                            <td>Omkar Jadhav</td>
+                            <td class="username-cell">omkar.jadhav</td>
+                            <td>omkar.jadhav@example.com</td>
+                            <td>9845012345</td>
+                            <td>Bhigwan, Pune</td>
+                            <td>0</td>
+                            <td class="current-issues-cell">0</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1006">
+                            <td>1006</td>
+                            <td>Priya More</td>
+                            <td class="username-cell">priya.more</td>
+                            <td>priya.more@example.com</td>
+                            <td>9834012345</td>
+                            <td>Someshwar Nagar, Pune</td>
+                            <td>1</td>
+                            <td class="current-issues-cell">1</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1007">
+                            <td>1007</td>
+                            <td>Siddharth Deshmukh</td>
+                            <td class="username-cell">siddharth.d</td>
+                            <td>siddharth.d@example.com</td>
+                            <td>9823012345</td>
+                            <td>Morgaon, Pune</td>
+                            <td>2</td>
+                            <td class="current-issues-cell">1</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1008">
+                            <td>1008</td>
+                            <td>Kavya Kulkarni</td>
+                            <td class="username-cell">kavya.kulkarni</td>
+                            <td>kavya.kulkarni@example.com</td>
+                            <td>9812012345</td>
+                            <td>Phaltan Road, Baramati</td>
+                            <td>0</td>
+                            <td class="current-issues-cell">0</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1009">
+                            <td>1009</td>
+                            <td>Aditya Bhosale</td>
+                            <td class="username-cell">aditya.bhosale</td>
+                            <td>aditya.bhosale@example.com</td>
+                            <td>9801012345</td>
+                            <td>Nira, Pune</td>
+                            <td>1</td>
+                            <td class="current-issues-cell">1</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1010">
+                            <td>1010</td>
+                            <td>Isha Gaikwad</td>
+                            <td class="username-cell">isha.gaikwad</td>
+                            <td>isha.gaikwad@example.com</td>
+                            <td>9790012345</td>
+                            <td>Jalochi, Baramati</td>
+                            <td>0</td>
+                            <td class="current-issues-cell">0</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1011">
+                            <td>1011</td>
+                            <td>Vedant Salunkhe</td>
+                            <td class="username-cell">vedant.salunkhe</td>
+                            <td>vedant.salunkhe@example.com</td>
+                            <td>9789012345</td>
+                            <td>Malegaon, Baramati</td>
+                            <td>2</td>
+                            <td class="current-issues-cell">2</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                        <tr data-member-id="1012">
+                            <td>1012</td>
+                            <td>Mira Chavan</td>
+                            <td class="username-cell">mira.chavan</td>
+                            <td>mira.chavan@example.com</td>
+                            <td>9778012345</td>
+                            <td>Wagholi, Pune</td>
+                            <td>0</td>
+                            <td class="current-issues-cell">0</td>
+                            <td class="action-cell">
+                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
+                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="noResults" class="no-results">Member details not found.</div>
+            <div id="pagination" class="pagination" aria-label="Member table pagination"></div>
+            <div id="pageInfo" class="page-info"></div>
+        </section>
+    </main>
 
-            <div class="search">
+    <!-- Centered Filter Members modal -->
+    <div class="filter-overlay" id="filterOverlay" onclick="closeFilterOnOverlay(event)">
+        <div class="filter-popup" role="dialog" aria-modal="true" aria-labelledby="filterTitle" onclick="event.stopPropagation()">
+            <h2 id="filterTitle">Filter Members</h2>
 
-                <input
-                    type="text"
-                    id="search"
-                    placeholder="Search by member name or ID"
-                >
-
-                <button onclick="searchMember()">
-                    Search
-                </button>
-
+            <div class="filter-group">
+                <label for="issuedFilter">Current Issues</label>
+                <select id="issuedFilter">
+                    <option value="all">All Status</option>
+                    <option value="issued">Has Books Issued</option>
+                    <option value="none">No Books Issued</option>
+                </select>
             </div>
 
+            <div class="filter-group">
+                <label for="sortFilter">Sort By</label>
+                <select id="sortFilter">
+                    <option value="default">Default</option>
+                    <option value="name_asc">Name A-Z</option>
+                    <option value="name_desc">Name Z-A</option>
+                    <option value="id_asc">Member ID Ascending</option>
+                    <option value="id_desc">Member ID Descending</option>
+                </select>
+            </div>
+
+            <div class="filter-actions">
+                <button type="button" class="apply-filter" onclick="applyFilters()">Apply Filter</button>
+                <button type="button" class="clear-filter" onclick="resetFilters()">Clear</button>
+            </div>
         </div>
-
-
-
-        <!-- Member Details -->
-
-        <div class="members">
-
-            <h2>Library Members</h2>
-
-
-            <table id="memberTable">
-
-                <tr>
-
-                    <th>Member ID</th>
-
-                    <th>Member Name</th>
-
-                    <th>Email</th>
-
-                    <th>Phone</th>
-
-                    <th>Address</th>
-
-                    <th>Membership Date</th>
-
-                    <th>Books Issued</th>
-
-                    <th>Action</th>
-
-                </tr>
-
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>
-                        <button
-                            class="delete"
-                            onclick="deleteMember(this)">
-                            Delete
-                        </button>
-                    </td>
-
-                </tr>
-
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>
-                        <button
-                            class="delete"
-                            onclick="deleteMember(this)">
-                            Delete
-                        </button>
-                    </td>
-
-                </tr>
-
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>
-                        <button
-                            class="delete"
-                            onclick="deleteMember(this)">
-                            Delete
-                        </button>
-                    </td>
-
-                </tr>
-
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>
-                        <button
-                            class="delete"
-                            onclick="deleteMember(this)">
-                            Delete
-                        </button>
-                    </td>
-
-                </tr>
-
-
-            </table>
-
-        </div>
-
     </div>
 
+    <!-- Update Member Username / Password Popup -->
+    <div class="edit-overlay" id="editOverlay" onclick="closeEditOnOverlay(event)">
+        <div class="edit-popup" role="dialog" aria-modal="true" aria-labelledby="editTitle" onclick="event.stopPropagation()">
+            <h2 id="editTitle">Update Member Credentials</h2>
+            <p id="editingMemberLabel" class="field-hint"></p>
 
+            <div class="edit-field">
+                <label for="editUsername">Username <span style="color:#d93025">*</span></label>
+                <input type="text" id="editUsername" maxlength="25" autocomplete="off" aria-describedby="usernameError">
+                <div class="field-error" id="usernameError" role="alert"></div>
+            </div>
 
-    <!-- JavaScript -->
+            <div class="edit-field">
+                <label for="editPassword">New Password</label>
+                <input type="password" id="editPassword" maxlength="25" autocomplete="new-password" aria-describedby="passwordError">
+                <p class="field-hint">Leave blank to keep the current password. Use 8–25 characters, start with a capital letter, and include a letter and a number.</p>
+                <div class="field-error" id="passwordError" role="alert"></div>
+            </div>
+
+            <div class="edit-field">
+                <label for="confirmPassword">Confirm New Password</label>
+                <input type="password" id="confirmPassword" maxlength="25" autocomplete="new-password" aria-describedby="confirmPasswordError">
+                <div class="field-error" id="confirmPasswordError" role="alert"></div>
+            </div>
+
+            <div class="edit-actions">
+                <button type="button" class="save-update" onclick="saveMemberUpdate()">Save Changes</button>
+                <button type="button" class="cancel-update" onclick="closeEdit()">Cancel</button>
+            </div>
+            <div id="updateSuccess" class="update-success" role="status"></div>
+        </div>
+    </div>
 
     <script>
+        const ROWS_PER_PAGE = 8;
+        let currentPage = 1;
+        let originalOrder = [];
+
+        const searchInput = document.getElementById("search");
+        const searchValidation = document.getElementById("searchValidation");
+        const memberTableBody = document.getElementById("memberTableBody");
+        let currentEditingRow = null;
+        // Front-end demo only. Real passwords must be handled and hashed by PHP on the server.
+        const demoPasswords = new Map();
 
         function toggleMenu() {
-
-            var menu = document.getElementById("submenu");
-
-            var arrow = document.getElementById("arrow");
-
-
-            if (menu.style.display == "block") {
-
-                menu.style.display = "none";
-
-                arrow.innerHTML = "+";
-
-            }
-
-            else {
-
-                menu.style.display = "block";
-
-                arrow.innerHTML = "-";
-
-            }
-
+            const menu = document.getElementById("submenu");
+            const arrow = document.getElementById("arrow");
+            const isOpen = menu.style.display === "block";
+            menu.style.display = isOpen ? "none" : "block";
+            arrow.textContent = isOpen ? "+" : "-";
         }
 
+        function showSearchError(message) {
+            searchInput.classList.add("search-input-invalid");
+            searchValidation.textContent = message;
+            searchValidation.style.display = "block";
+        }
+
+        function clearSearchError() {
+            searchInput.classList.remove("search-input-invalid");
+            searchValidation.textContent = "";
+            searchValidation.style.display = "none";
+        }
+
+        // Matches the All Books search validation: empty search is valid;
+        // only the maximum length and control characters are rejected.
+        function validateSearch() {
+            const value = searchInput.value.trim();
+            clearSearchError();
+
+            if (value.length > 100) {
+                showSearchError("Search text cannot be more than 100 characters.");
+                searchInput.focus();
+                return false;
+            }
+            if (/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/.test(value)) {
+                showSearchError("Search text contains invalid characters.");
+                searchInput.focus();
+                return false;
+            }
+            return true;
+        }
+
+        function getAllRows() {
+            return Array.from(memberTableBody.querySelectorAll("tr"));
+        }
+
+        function getSearchValue() {
+            return searchInput.value.trim().toLocaleLowerCase();
+        }
+
+        function rowMatchesSearch(row) {
+            const query = getSearchValue();
+            if (query === "") return true; // Blank search resets the text search.
+            const memberId = (row.cells[0]?.textContent || "").trim().toLocaleLowerCase();
+            const name = (row.cells[1]?.textContent || "").trim().toLocaleLowerCase();
+            return memberId.includes(query) || name.includes(query);
+        }
+
+        function rowMatchesFilter(row) {
+            const issuedFilter = document.getElementById("issuedFilter").value;
+            const countText = (row.cells[7]?.textContent || "0").trim();
+            const issuedCount = Number.parseInt(countText, 10) || 0;
+
+            if (issuedFilter === "issued") return issuedCount > 0;
+            if (issuedFilter === "none") return issuedCount === 0;
+            return issuedFilter === "all";
+        }
+
+        function getVisibleRows() {
+            return getAllRows().filter(row => rowMatchesSearch(row) && rowMatchesFilter(row));
+        }
+
+        function sortRows(rows) {
+            const sortValue = document.getElementById("sortFilter").value;
+            const sorted = rows.slice();
+
+            if (sortValue === "name_asc" || sortValue === "name_desc") {
+                sorted.sort((a, b) => {
+                    const nameA = (a.cells[1]?.textContent || "").trim().toLocaleLowerCase();
+                    const nameB = (b.cells[1]?.textContent || "").trim().toLocaleLowerCase();
+                    const result = nameA.localeCompare(nameB);
+                    return sortValue === "name_asc" ? result : -result;
+                });
+            } else if (sortValue === "id_asc" || sortValue === "id_desc") {
+                sorted.sort((a, b) => {
+                    const idA = Number.parseInt((a.cells[0]?.textContent || "").trim(), 10) || 0;
+                    const idB = Number.parseInt((b.cells[0]?.textContent || "").trim(), 10) || 0;
+                    return sortValue === "id_asc" ? idA - idB : idB - idA;
+                });
+            } else {
+                sorted.sort((a, b) => originalOrder.indexOf(a) - originalOrder.indexOf(b));
+            }
+            return sorted;
+        }
+
+        function renderTable() {
+            const allRows = getAllRows();
+            const filteredRows = sortRows(getVisibleRows());
+            const totalPages = Math.max(1, Math.ceil(filteredRows.length / ROWS_PER_PAGE));
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+            const pageRows = filteredRows.slice(startIndex, startIndex + ROWS_PER_PAGE);
+
+            allRows.forEach(row => {
+                row.style.display = "none";
+                memberTableBody.appendChild(row);
+            });
+            pageRows.forEach(row => {
+                row.style.display = "";
+                memberTableBody.appendChild(row);
+            });
+
+            const noResults = document.getElementById("noResults");
+            noResults.style.display = filteredRows.length === 0 ? "block" : "none";
+
+            renderPagination(filteredRows.length, totalPages);
+            renderPageInfo(filteredRows.length, startIndex, pageRows.length);
+        }
+
+        function renderPagination(totalRows, totalPages) {
+            const pagination = document.getElementById("pagination");
+            pagination.innerHTML = "";
+
+            if (totalRows <= ROWS_PER_PAGE) return;
+
+            const previous = document.createElement("button");
+            previous.type = "button";
+            previous.textContent = "Previous";
+            previous.disabled = currentPage === 1;
+            previous.addEventListener("click", () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    renderTable();
+                }
+            });
+            pagination.appendChild(previous);
+
+            for (let page = 1; page <= totalPages; page++) {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.textContent = String(page);
+                button.classList.toggle("active", page === currentPage);
+                button.setAttribute("aria-current", page === currentPage ? "page" : "false");
+                button.addEventListener("click", () => {
+                    currentPage = page;
+                    renderTable();
+                });
+                pagination.appendChild(button);
+            }
+
+            const next = document.createElement("button");
+            next.type = "button";
+            next.textContent = "Next";
+            next.disabled = currentPage === totalPages;
+            next.addEventListener("click", () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    renderTable();
+                }
+            });
+            pagination.appendChild(next);
+        }
+
+        function renderPageInfo(totalRows, startIndex, visibleOnPage) {
+            const info = document.getElementById("pageInfo");
+            if (totalRows === 0) {
+                info.textContent = "";
+                return;
+            }
+            const first = startIndex + 1;
+            const last = startIndex + visibleOnPage;
+            info.textContent = `Showing ${first}-${last} of ${totalRows} member(s)`;
+        }
 
         function searchMember() {
-
-            var input =
-                document.getElementById("search").value.toLowerCase();
-
-            var rows =
-                document.querySelectorAll("#memberTable tr");
-
-
-            for (var i = 1; i < rows.length; i++) {
-
-                var text =
-                    rows[i].innerText.toLowerCase();
-
-                if (text.includes(input)) {
-
-                    rows[i].style.display = "";
-
-                }
-
-                else {
-
-                    rows[i].style.display = "none";
-
-                }
-
-            }
-
+            if (!validateSearch()) return;
+            currentPage = 1;
+            renderTable();
         }
 
+        function openFilter() {
+            document.getElementById("filterOverlay").style.display = "flex";
+            document.getElementById("filterButton").setAttribute("aria-expanded", "true");
+        }
+
+        function closeFilter() {
+            document.getElementById("filterOverlay").style.display = "none";
+            document.getElementById("filterButton").setAttribute("aria-expanded", "false");
+        }
+
+        function closeFilterOnOverlay(event) {
+            if (event.target === document.getElementById("filterOverlay")) closeFilter();
+        }
+
+        function validateFilters() {
+            const issued = document.getElementById("issuedFilter").value;
+            const sort = document.getElementById("sortFilter").value;
+            if (!["all", "issued", "none"].includes(issued)) {
+                alert("Please select a valid books-issued filter.");
+                return false;
+            }
+            if (!["default", "name_asc", "name_desc", "id_asc", "id_desc"].includes(sort)) {
+                alert("Please select a valid sorting option.");
+                return false;
+            }
+            return true;
+        }
+
+        function applyFilters() {
+            if (!validateFilters() || !validateSearch()) return;
+            currentPage = 1;
+            renderTable();
+            closeFilter();
+        }
+
+        function resetFilters() {
+            document.getElementById("issuedFilter").value = "all";
+            document.getElementById("sortFilter").value = "default";
+            searchInput.value = "";
+            clearSearchError();
+            currentPage = 1;
+            renderTable();
+            closeFilter();
+        }
 
         function deleteMember(button) {
-
-            var confirmDelete =
-                confirm("Are you sure you want to delete this member?");
-
-            if (confirmDelete) {
-
-                var row = button.parentElement.parentElement;
-
+            if (!confirm("Are you sure you want to delete this member?")) return;
+            const row = button.closest("tr");
+            if (row) {
+                const index = originalOrder.indexOf(row);
+                if (index !== -1) originalOrder.splice(index, 1);
                 row.remove();
-
+                currentPage = 1;
+                renderTable();
             }
-
         }
 
+        function showFieldError(inputId, errorId, message) {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+            input.classList.toggle("invalid", Boolean(message));
+            error.textContent = message || "";
+            error.classList.toggle("show", Boolean(message));
+        }
+
+        function clearEditErrors() {
+            showFieldError("editUsername", "usernameError", "");
+            showFieldError("editPassword", "passwordError", "");
+            showFieldError("confirmPassword", "confirmPasswordError", "");
+            document.getElementById("updateSuccess").style.display = "none";
+        }
+
+        function openUpdate(button) {
+            currentEditingRow = button.closest("tr");
+            if (!currentEditingRow) return;
+
+            const memberId = currentEditingRow.cells[0].textContent.trim();
+            const memberName = currentEditingRow.cells[1].textContent.trim();
+            const username = currentEditingRow.querySelector(".username-cell")?.textContent.trim() || "";
+
+            document.getElementById("editingMemberLabel").textContent =
+                "Member ID: " + memberId + " | Name: " + memberName;
+            document.getElementById("editUsername").value = username;
+            document.getElementById("editPassword").value = "";
+            document.getElementById("confirmPassword").value = "";
+            clearEditErrors();
+            document.getElementById("editOverlay").style.display = "flex";
+            document.getElementById("editUsername").focus();
+        }
+
+        function closeEdit() {
+            document.getElementById("editOverlay").style.display = "none";
+            currentEditingRow = null;
+            clearEditErrors();
+        }
+
+        function closeEditOnOverlay(event) {
+            if (event.target === document.getElementById("editOverlay")) closeEdit();
+        }
+
+        function validateEditUsername() {
+            const input = document.getElementById("editUsername");
+            const value = input.value.trim();
+            let message = "";
+
+            if (!value) {
+                message = "Username is required.";
+            } else if (value.length < 3 || value.length > 25) {
+                message = "Username must be 3–25 characters long.";
+            } else if (!/^[A-Za-z][A-Za-z0-9._]*$/.test(value)) {
+                message = "Start with a letter; use only letters, numbers, dots, and underscores.";
+            } else {
+                const editingId = currentEditingRow?.cells[0]?.textContent.trim();
+                const duplicate = getAllRows().some(row =>
+                    row !== currentEditingRow &&
+                    row.cells[2]?.textContent.trim().toLowerCase() === value.toLowerCase()
+                );
+                if (duplicate) message = "This username is already used by another member.";
+            }
+
+            showFieldError("editUsername", "usernameError", message);
+            return !message;
+        }
+
+        function validateEditPassword() {
+            const password = document.getElementById("editPassword").value;
+            let message = "";
+
+            // An empty password means "keep the existing password".
+            if (password === "") {
+                showFieldError("editPassword", "passwordError", "");
+                return true;
+            }
+
+            if (password.length < 8 || password.length > 25) {
+                message = "Password must be 8–25 characters long.";
+            } else if (!/^[A-Z]/.test(password)) {
+                message = "Password must begin with a capital letter.";
+            } else if (!/[A-Za-z]/.test(password)) {
+                message = "Password must contain at least one letter.";
+            } else if (!/\d/.test(password)) {
+                message = "Password must contain at least one number.";
+            } else if (/\s/.test(password)) {
+                message = "Password cannot contain spaces.";
+            }
+
+            showFieldError("editPassword", "passwordError", message);
+            return !message;
+        }
+
+        function validateConfirmPassword() {
+            const password = document.getElementById("editPassword").value;
+            const confirmation = document.getElementById("confirmPassword").value;
+            let message = "";
+
+            if (password !== "" && confirmation === "") {
+                message = "Please confirm the new password.";
+            } else if (password !== confirmation) {
+                message = "Passwords do not match.";
+            }
+
+            showFieldError("confirmPassword", "confirmPasswordError", message);
+            return !message;
+        }
+
+        function saveMemberUpdate() {
+            if (!currentEditingRow) return;
+
+            const usernameValid = validateEditUsername();
+            const passwordValid = validateEditPassword();
+            const confirmValid = validateConfirmPassword();
+
+            if (!usernameValid || !passwordValid || !confirmValid) return;
+
+            const memberId = currentEditingRow.cells[0].textContent.trim();
+            const updatedUsername = document.getElementById("editUsername").value.trim();
+            const newPassword = document.getElementById("editPassword").value;
+
+            currentEditingRow.querySelector(".username-cell").textContent = updatedUsername;
+
+            // Passwords are not printed in the table. This is only an in-browser demo;
+            // the map is volatile and clears on refresh, not a secure password store.
+            if (newPassword !== "") demoPasswords.set(memberId, newPassword);
+
+            const success = document.getElementById("updateSuccess");
+            success.textContent = "Member credentials updated successfully for this test session.";
+            success.style.display = "block";
+
+            renderTable();
+            window.setTimeout(() => {
+                if (document.getElementById("editOverlay").style.display !== "none") closeEdit();
+            }, 900);
+        }
+
+        document.getElementById("editUsername").addEventListener("input", validateEditUsername);
+        document.getElementById("editPassword").addEventListener("input", () => {
+            validateEditPassword();
+            validateConfirmPassword();
+        });
+        document.getElementById("confirmPassword").addEventListener("input", validateConfirmPassword);
+
+        searchInput.addEventListener("input", () => {
+            const value = searchInput.value.trim();
+            if (value.length > 100) {
+                showSearchError("Search text cannot be more than 100 characters.");
+                return;
+            }
+            clearSearchError();
+            // Empty text immediately restores all rows under the current filter.
+            currentPage = 1;
+            renderTable();
+        });
+
+        searchInput.addEventListener("keydown", event => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                searchMember();
+            }
+        });
+
+        document.addEventListener("keydown", event => {
+            if (event.key === "Escape") {
+                closeFilter();
+                closeEdit();
+            }
+        });
+
+        // Supports rows supplied by server-side PHP or added to the tbody.
+        originalOrder = getAllRows();
+        renderTable();
     </script>
-
-
 </body>
-
 </html>
-```
