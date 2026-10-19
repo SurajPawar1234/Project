@@ -548,15 +548,6 @@
 
         .page-heading { max-width: 900px; }
 
-        .page-eyebrow {
-            display: block;
-            margin-bottom: 9px;
-            color: #647680;
-            font-size: 12px;
-            font-weight: 700;
-            letter-spacing: 1.5px;
-        }
-
         .top h1 {
             margin: 0;
             color: #28343b;
@@ -564,14 +555,6 @@
             font-size: 30px;
             line-height: 1.25;
             letter-spacing: -0.4px;
-        }
-
-        .top p {
-            max-width: 720px;
-            margin: 10px 0 0;
-            color: #66737a;
-            font-size: 15px;
-            line-height: 1.6;
         }
 
         .announcement-form,
@@ -587,13 +570,6 @@
             color: #29363e;
             font-size: 22px;
             line-height: 1.35;
-        }
-
-        .card-description {
-            margin: 7px 0 22px;
-            color: #6b777e;
-            font-size: 14px;
-            line-height: 1.5;
         }
 
         #announcementForm {
@@ -692,8 +668,6 @@
         .clear-btn:hover { background: #e0e4e6; }
 
         .recent { padding-bottom: 22px; }
-        .recent .card-description { margin-bottom: 18px; }
-
         .table-wrap {
             width: 100%;
             max-width: 100%;
@@ -816,7 +790,6 @@
             .main { padding: 14px 12px 24px; }
             .top { padding: 20px; }
             .top h1 { font-size: 24px; }
-            .top p { font-size: 14px; }
             .announcement-form,
             .recent { padding: 17px; }
             .announcement-form h2,
@@ -927,9 +900,7 @@
 
                 <div class="top">
             <div class="page-heading">
-                <span class="page-eyebrow">LIBRARY ADMINISTRATION</span>
                 <h1>Library Announcements</h1>
-                <p>Publish important updates and manage when they appear to library members.</p>
             </div>
         </div>
 
@@ -937,12 +908,11 @@
 
         <div class="announcement-form">
 
-            <h2 id="formTitle">
+            <h2 id="formTitle" style="text-align: center;">
 
                 Add New Announcement
 
             </h2>
-            <p class="card-description">Add a clear title, message, and the period when this announcement should be visible.</p>
 
             <form id="announcementForm" novalidate>
 
@@ -1075,7 +1045,6 @@
                 Existing Announcements
 
             </h2>
-            <p class="card-description">Review announcement status and manage active announcements from this list.</p>
 
             <!-- Announcement Table -->
 
