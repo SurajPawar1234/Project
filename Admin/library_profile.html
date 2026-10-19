@@ -96,6 +96,7 @@ button{font:15px Arial,sans-serif;cursor:pointer;border:0;padding:11px 17px}
   <header class="top"><h1>Library Profile</h1></header>
   <div class="tabs">
     <button type="button" class="tab active" data-target="librarySection" role="tab" aria-selected="true">Library Details</button>
+    <button type="button" class="tab" data-target="borrowSection" role="tab" aria-selected="false">Borrowing Rules</button>
     <button type="button" class="tab" data-target="fineSection" role="tab" aria-selected="false">Fine &amp; Payment Details</button>
   </div>
   <div class="panel">
@@ -125,6 +126,15 @@ button{font:15px Arial,sans-serif;cursor:pointer;border:0;padding:11px 17px}
                 <label class="day"><input type="checkbox" name="days" value="Saturday" checked> Saturday</label>
                 <label class="day"><input type="checkbox" name="days" value="Sunday"> Sunday</label>
               </div><small class="error" id="daysError"></small>
+            </div>
+          </div>
+        </section>
+        <section class="section" id="borrowSection">
+          <div class="section-head"><h2>Borrowing Rules</h2></div>
+          <div class="section-body">
+            <div class="two-col">
+              <div class="field"><label class="field-label" for="borrowLimit">Borrow Limit at a Time <span class="required">*</span></label><input id="borrowLimit" type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="e.g. 5"><small class="error" id="borrowLimitError"></small></div>
+              <div class="field"><label class="field-label" for="requestLimit">Request Limit at a Time <span class="required">*</span></label><input id="requestLimit" type="text" inputmode="numeric" maxlength="3" autocomplete="off" placeholder="e.g. 3"><small class="error" id="requestLimitError"></small></div>
             </div>
           </div>
         </section>
@@ -174,6 +184,17 @@ let qrData='';
   });
 });
 
+['borrowLimit','requestLimit'].forEach(id => {
+  const field = $(id);
+  field.setAttribute('type', 'text');
+  field.setAttribute('inputmode', 'numeric');
+  field.setAttribute('autocomplete', 'off');
+  field.addEventListener('input', () => {
+    const cleaned = field.value.replace(/\D/g, '').slice(0, 3);
+    if (field.value !== cleaned) field.value = cleaned;
+  });
+});
+
 $('finePerDay').addEventListener('input', () => {
   const field = $('finePerDay');
   let cleaned = field.value.replace(/[^\d.]/g, '');
@@ -185,14 +206,15 @@ $('finePerDay').addEventListener('input', () => {
   }
   if (field.value !== cleaned) field.value = cleaned;
 });
-const fieldIds=['libraryName','address','phone','email','openingTime','closingTime','finePerDay','upiId','paymentNumber'];
-const errorIds=['libraryName','address','phone','email','openingTime','closingTime','days','finePerDay','upiId','paymentNumber','qrFile'];
+const fieldIds=['libraryName','address','phone','email','openingTime','closingTime','borrowLimit','requestLimit','finePerDay','upiId','paymentNumber'];
+const errorIds=['libraryName','address','phone','email','openingTime','closingTime','days','borrowLimit','requestLimit','finePerDay','upiId','paymentNumber','qrFile'];
 function error(id,msg){$(id+'Error').textContent=msg;const el=$(id);if(el && el.matches('input,textarea'))el.classList.toggle('invalid',!!msg)}
 function clearErrors(){errorIds.forEach(id=>error(id,''));fieldIds.forEach(id=>$(id).classList.remove('invalid','valid'));$('notice').className='notice';$('notice').textContent=''}
 function days(){return [...document.querySelectorAll('input[name="days"]:checked')].map(x=>x.value)}
 function validate(){
  clearErrors();let ok=true;const fail=(id,msg)=>{error(id,msg);ok=false};
  const activeLibrary=$('librarySection').classList.contains('active-section');
+ const activeBorrow=$('borrowSection').classList.contains('active-section');
  const activeFine=$('fineSection').classList.contains('active-section');
  if(activeLibrary){
   const name=$('libraryName').value.trim(),address=$('address').value.trim(),phone=$('phone').value.trim(),email=$('email').value.trim(),open=$('openingTime').value,close=$('closingTime').value;
@@ -206,6 +228,11 @@ function validate(){
   if(open&&close&&close<=open)fail('closingTime','Closing time must be later than opening time.');
   if(!days().length){error('days','Select at least one working day.');ok=false}
  }
+ if(activeBorrow){
+  const borrow=$('borrowLimit').value.trim(),request=$('requestLimit').value.trim();
+  if(borrow===''||!Number.isFinite(Number(borrow))||Number(borrow)<=0||Number(borrow)>100)fail('borrowLimit','Enter a valid borrow limit between 1 and 100.');
+  if(request===''||!Number.isFinite(Number(request))||Number(request)<0||Number(request)>100)fail('requestLimit','Enter a valid request limit between 0 and 100.');
+ }
  if(activeFine){
   const fine=$('finePerDay').value,upi=$('upiId').value.trim(),pay=$('paymentNumber').value.trim();
   if(fine===''||!Number.isFinite(Number(fine))||Number(fine)<=0||Number(fine)>10000)fail('finePerDay','Enter a fine greater than ₹0 and no more than ₹10,000.');
@@ -215,7 +242,7 @@ function validate(){
  }
  return ok;
 }
-function collect(){let old={};try{old=JSON.parse(localStorage.getItem('lmsLibraryFineDetails')||'{}')}catch(e){}const d={...old};if($('librarySection').classList.contains('active-section'))Object.assign(d,{libraryName:$('libraryName').value.trim(),address:$('address').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim(),openingTime:$('openingTime').value,closingTime:$('closingTime').value,days:days()});if($('fineSection').classList.contains('active-section'))Object.assign(d,{finePerDay:Number($('finePerDay').value),upiId:$('upiId').value.trim(),paymentNumber:$('paymentNumber').value.trim(),qrData});return d}
+function collect(){let old={};try{old=JSON.parse(localStorage.getItem('lmsLibraryFineDetails')||'{}')}catch(e){}const d={...old};if($('librarySection').classList.contains('active-section'))Object.assign(d,{libraryName:$('libraryName').value.trim(),address:$('address').value.trim(),phone:$('phone').value.trim(),email:$('email').value.trim(),openingTime:$('openingTime').value,closingTime:$('closingTime').value,days:days()});if($('borrowSection').classList.contains('active-section'))Object.assign(d,{borrowLimit:Number($('borrowLimit').value),requestLimit:Number($('requestLimit').value)});if($('fineSection').classList.contains('active-section'))Object.assign(d,{finePerDay:Number($('finePerDay').value),upiId:$('upiId').value.trim(),paymentNumber:$('paymentNumber').value.trim(),qrData});return d}
 function showQr(){if(qrData){$('qrImage').src=qrData;$('qrImage').style.display='block';$('qrPlaceholder').style.display='none';$('qrUploadIcon').style.display='none';$('qrUploadTitle').textContent='Change QR Code';$('fileName').textContent='QR code uploaded';$('removeQr').style.display='inline-block'}else{$('qrImage').removeAttribute('src');$('qrImage').style.display='none';$('qrPlaceholder').style.display='grid';$('qrUploadIcon').style.display='block';$('qrUploadTitle').textContent='Upload QR Code';$('fileName').textContent='No file selected';$('removeQr').style.display='none'}}
 function fill(d){if(!d)return;fieldIds.forEach(id=>{if(d[id]!==undefined)$(id).value=d[id]});document.querySelectorAll('input[name="days"]').forEach(x=>x.checked=(d.days||[]).includes(x.value));qrData=d.qrData||'';showQr();counts()}
 function counts(){}
@@ -239,7 +266,7 @@ function switchTab(targetId){
 }
 document.querySelectorAll('.tab').forEach(btn=>btn.addEventListener('click',()=>switchTab(btn.dataset.target)));
 $('viewBtn').addEventListener('click',()=>{let d;try{d=JSON.parse(localStorage.getItem('lmsLibraryFineDetails')||'null')}catch(e){}if(!d){$('notice').className='notice error';$('notice').textContent='No saved details found. Save the form first.';return}
-const rows=[['Library Name',d.libraryName||'Not saved'],['Address',d.address||'Not saved'],['Contact Number',d.phone||'Not saved'],['Email',d.email||'Not provided'],['Opening Time',d.openingTime||'Not saved'],['Closing Time',d.closingTime||'Not saved'],['Working Days',(d.days||[]).join(', ')||'Not saved'],['Fine per Day',d.finePerDay!=null?'₹'+Number(d.finePerDay).toFixed(2):'Not saved'],['UPI ID',d.upiId||'Not saved'],['Payment Number',d.paymentNumber||'Not saved']];
+const rows=[['Library Name',d.libraryName||'Not saved'],['Address',d.address||'Not saved'],['Contact Number',d.phone||'Not saved'],['Email',d.email||'Not provided'],['Opening Time',d.openingTime||'Not saved'],['Closing Time',d.closingTime||'Not saved'],['Working Days',(d.days||[]).join(', ')||'Not saved'],['Borrow Limit at a Time',d.borrowLimit!=null?d.borrowLimit:'Not saved'],['Request Limit at a Time',d.requestLimit!=null?d.requestLimit:'Not saved'],['Fine per Day',d.finePerDay!=null?'₹'+Number(d.finePerDay).toFixed(2):'Not saved'],['UPI ID',d.upiId||'Not saved'],['Payment Number',d.paymentNumber||'Not saved']];
 const table=document.createElement('table');table.className='details-table';rows.forEach(([k,v])=>{const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.textContent=k;td.textContent=v||'—';tr.append(th,td);table.append(tr)});if(d.qrData){const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td'),img=document.createElement('img');th.textContent='UPI QR Code';img.src=d.qrData;img.alt='Saved UPI QR code';img.className='view-qr';td.append(img);tr.append(th,td);table.append(tr)}$('savedDetails').replaceChildren(table);$('settingsForm').style.display='none';$('viewMode').style.display='block';$('notice').className='notice'});
 $('editBtn').addEventListener('click',()=>{try{fill(JSON.parse(localStorage.getItem('lmsLibraryFineDetails')||'null'))}catch(e){}$('viewMode').style.display='none';$('settingsForm').style.display='block'});
 window.addEventListener('DOMContentLoaded',()=>{try{const d=JSON.parse(localStorage.getItem('lmsLibraryFineDetails')||'null');if(d)fill(d)}catch(e){}counts()});
@@ -271,4 +298,4 @@ document.querySelectorAll('form').forEach(form => {
 </script>
 
 </body>
-</html>
+</html> 
