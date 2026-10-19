@@ -297,7 +297,7 @@
 
             border-collapse: collapse;
 
-            min-width: 700px;
+            min-width: 920px;
         }
 
 
@@ -342,6 +342,103 @@
             padding: 25px;
 
             font-size: 14px;
+        }
+
+        /* Available-book request action */
+        .request-btn {
+            border: none;
+            border-radius: 4px;
+            background: #43515a;
+            color: #fff;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .request-btn:hover {
+            background: #344149;
+        }
+
+        .request-btn:disabled {
+            background: #e6eaec;
+            color: #59666d;
+            cursor: not-allowed;
+        }
+
+        .unavailable-label {
+            color: #777;
+            font-size: 13px;
+            white-space: nowrap;
+        }
+
+        .book-id-cell {
+            color: #43515a;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding-top: 16px;
+        }
+
+        .pagination-summary {
+            color: #68757c;
+            font-size: 13px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            min-width: 34px;
+            height: 34px;
+            padding: 0 10px;
+            border: 1px solid #d3dadd;
+            border-radius: 4px;
+            background: #fff;
+            color: #43515a;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #eef1f2;
+        }
+
+        .page-btn.active {
+            background: #43515a;
+            border-color: #43515a;
+            color: #fff;
+            font-weight: 700;
+        }
+
+        .page-btn:disabled {
+            color: #a4adb2;
+            background: #f5f6f6;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 650px) {
+            .pagination-bar {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .pagination-controls {
+                width: 100%;
+            }
         }
 
 
@@ -739,36 +836,61 @@
            MEMBER NAVIGATION
         ================================================= */
 
+        /* Integrated sticky member navigation */
         .member-navigation {
-            width: 100%;
-            background-color: white;
-            border-bottom: 1px solid #ddd;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            position: sticky;
+            top: 0;
+            z-index: 900;
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 5px;
-            padding: 8px 20px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+            gap: 6px;
+            width: 100%;
+            min-height: 54px;
+            padding: 7px 20px;
             overflow-x: auto;
+            background: #fff;
+            border-bottom: 1px solid #d9dfe2;
+            box-shadow: 0 2px 5px rgba(32, 44, 51, 0.07);
+            scrollbar-width: thin;
         }
 
         .member-navigation a {
+            flex: 0 0 auto;
             color: #43515a;
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
-            padding: 9px 16px;
-            border-radius: 5px;
-            transition: 0.2s;
+            padding: 10px 16px 9px;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            border-radius: 4px 4px 0 0;
+            background: transparent;
+            transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
             white-space: nowrap;
         }
 
         .member-navigation a:hover {
-            background-color: #43515a;
-            color: white;
+            background: #f1f4f5;
+            color: #293941;
+        }
+
+        .member-navigation a.active {
+            color: #293941;
+            background: #f4f6f7;
+            border-bottom-color: #43515a;
+        }
+
+        /* Keep target headings clear of the sticky navigation. */
+        #home-section,
+        #issued-books,
+        #all-books,
+        #library-details {
+            scroll-margin-top: 66px;
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         /* =================================================
@@ -842,6 +964,17 @@
 
 
         @media (max-width: 650px) {
+
+            .member-navigation {
+                justify-content: flex-start;
+                padding: 7px 10px;
+                gap: 2px;
+            }
+
+            .member-navigation a {
+                padding: 9px 12px 8px;
+                font-size: 13px;
+            }
 
             .header {
 
@@ -1034,7 +1167,7 @@
 ================================================= -->
 
 <nav class="member-navigation" aria-label="Member Navigation">
-    <a href="#top">Home</a>
+    <a href="#home-section" class="active">Home</a>
     <a href="#issued-books">My Issued Books</a>
     <a href="#all-books">All Books</a>
     <a href="#library-details">About Library</a>
@@ -1045,14 +1178,14 @@
      MAIN CONTENT
 ================================================= -->
 
-<main id="top">
+<main>
 
 
     <!-- =================================================
          WELCOME
     ================================================= -->
 
-    <div class="welcome-card">
+    <div class="welcome-card" id="home-section">
 
         <h2>
             Welcome
@@ -1078,21 +1211,14 @@
             <thead>
 
                 <tr>
-
+                    <th>Book ID</th>
                     <th>Book Name</th>
-
                     <th>Author</th>
-
                     <th>ISBN</th>
-
                     <th>Issue Date</th>
-
                     <th>Due Date</th>
-
                     <th>Fine</th>
-
                     <th>Status</th>
-
                 </tr>
 
             </thead>
@@ -1132,7 +1258,8 @@
                     type="text"
                     id="searchInput"
                     class="search-box"
-                    placeholder="Search by name, author or ISBN">
+                    placeholder="Search by Book ID, title, author or ISBN"
+                    aria-label="Search books by ID, title, author or ISBN">
 
 
                 <button
@@ -1163,17 +1290,13 @@
             <thead>
 
                 <tr>
-
-                    <th>Book Name</th>
-
+                    <th>Book ID</th>
+                    <th>Book Title</th>
                     <th>Author</th>
-
                     <th>ISBN</th>
-
                     <th>Category</th>
-
                     <th>Status</th>
-
+                    <th>Action</th>
                 </tr>
 
             </thead>
@@ -1181,11 +1304,13 @@
 
             <tbody id="booksTable">
 
-                <!-- Real book records will be loaded here -->
+                <!-- Book records are rendered here -->
 
             </tbody>
 
         </table>
+
+        <div class="pagination-bar" id="booksPagination" aria-label="Books pagination"></div>
 
     </div>
 
@@ -1528,73 +1653,230 @@
    DATA
 ================================================= */
 
-/*
-   No dummy data is included.
-
-   These arrays are intentionally empty.
-   Replace them later with data from your database/backend.
-*/
-
-let books = [];
+/* Demo records for the member-page UI. Replace with database data later. */
+let books = [
+    { bookId: 1,  name: "Database Management System", author: "Raghu Ramakrishnan", isbn: "9780072465631", category: "Computer Science", status: "Available" },
+    { bookId: 2,  name: "Web Development", author: "Jon Duckett", isbn: "9781118008188", category: "Web Development", status: "Available" },
+    { bookId: 3,  name: "Computer Networks", author: "Andrew S. Tanenbaum", isbn: "9780132126953", category: "Computer Networks", status: "Issued" },
+    { bookId: 4,  name: "Java Programming", author: "Herbert Schildt", isbn: "9781260440232", category: "Programming", status: "Available" },
+    { bookId: 5,  name: "Operating System", author: "Abraham Silberschatz", isbn: "9781119800361", category: "Computer Science", status: "Available" },
+    { bookId: 6,  name: "Python Crash Course", author: "Eric Matthes", isbn: "9781718502703", category: "Programming", status: "Available" },
+    { bookId: 7,  name: "Clean Code", author: "Robert C. Martin", isbn: "9780132350884", category: "Software Engineering", status: "Issued" },
+    { bookId: 8,  name: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell", isbn: "9780134610993", category: "Artificial Intelligence", status: "Available" },
+    { bookId: 9,  name: "Data Structures and Algorithms in Java", author: "Robert Lafore", isbn: "9780672324536", category: "Programming", status: "Available" },
+    { bookId: 10, name: "Machine Learning with Python", author: "Andreas C. Müller", isbn: "9781449369415", category: "Artificial Intelligence", status: "Available" },
+    { bookId: 11, name: "Software Engineering", author: "Ian Sommerville", isbn: "9780133943030", category: "Software Engineering", status: "Available" },
+    { bookId: 12, name: "Introduction to Algorithms", author: "Thomas H. Cormen", isbn: "9780262046305", category: "Computer Science", status: "Issued" },
+    { bookId: 13, name: "Computer Organization", author: "Carl Hamacher", isbn: "9780071204119", category: "Computer Science", status: "Available" },
+    { bookId: 14, name: "Cloud Computing", author: "Rajkumar Buyya", isbn: "9780470887998", category: "Cloud Computing", status: "Available" },
+    { bookId: 15, name: "Database System Concepts", author: "Abraham Silberschatz", isbn: "9780078022159", category: "Computer Science", status: "Available" }
+];
 
 let issuedBooks = [];
+
+/* Demo identity used only by this front-end sample. */
+const currentMember = {
+    id: "1",
+    name: "Rahul Patil",
+    username: "rahulpatil"
+};
+
+const BOOKS_PER_PAGE = 10;
+let currentBooksPage = 1;
+let currentBookList = [...books];
 
 
 
 /* =================================================
-   LOAD BOOKS
+   LOAD BOOKS + PAGINATION
 ================================================= */
 
 function loadBooks(bookList = books) {
+    currentBookList = [...bookList];
+    currentBooksPage = 1;
+    renderBooksPage();
+}
 
-    const table =
-        document.getElementById("booksTable");
-
-
+function renderBooksPage() {
+    const table = document.getElementById("booksTable");
     table.innerHTML = "";
 
+    const totalBooks = currentBookList.length;
+    const totalPages = Math.ceil(totalBooks / BOOKS_PER_PAGE);
 
-    if (bookList.length === 0) {
-
+    if (totalBooks === 0) {
         table.innerHTML = `
             <tr>
-                <td colspan="5" class="no-records">
-                    No books available.
-                </td>
+                <td colspan="7" class="no-records">No books available.</td>
             </tr>
         `;
-
+        renderBooksPagination();
         return;
     }
 
+    if (currentBooksPage > totalPages) {
+        currentBooksPage = totalPages;
+    }
 
-    bookList.forEach(book => {
+    const firstIndex = (currentBooksPage - 1) * BOOKS_PER_PAGE;
+    const visibleBooks = currentBookList.slice(firstIndex, firstIndex + BOOKS_PER_PAGE);
 
-        const row =
-            document.createElement("tr");
+    visibleBooks.forEach(book => {
+        const row = document.createElement("tr");
+        const bookId = String(book.bookId ?? "");
+        const isAvailable = String(book.status || "").toLowerCase() === "available";
+        const hasActiveRequest = isActiveIssueRequest(bookId);
 
+        let actionCell;
+        if (!isAvailable) {
+            actionCell = '<span class="unavailable-label">Unavailable</span>';
+        } else if (hasActiveRequest) {
+            actionCell = '<button type="button" class="request-btn" disabled>Requested</button>';
+        } else {
+            actionCell = `<button type="button" class="request-btn" onclick="requestBookIssue(${Number(book.bookId)})">Request Issue</button>`;
+        }
 
         row.innerHTML = `
-
+            <td class="book-id-cell">${escapeHTML(bookId)}</td>
             <td>${escapeHTML(book.name || "")}</td>
-
             <td>${escapeHTML(book.author || "")}</td>
-
             <td>${escapeHTML(book.isbn || "")}</td>
-
             <td>${escapeHTML(book.category || "")}</td>
-
             <td>${escapeHTML(book.status || "")}</td>
-
+            <td>${actionCell}</td>
         `;
 
-
         table.appendChild(row);
-
     });
 
+    renderBooksPagination();
 }
 
+function renderBooksPagination() {
+    const pagination = document.getElementById("booksPagination");
+    const totalBooks = currentBookList.length;
+    const totalPages = Math.ceil(totalBooks / BOOKS_PER_PAGE);
+
+    if (totalBooks === 0) {
+        pagination.innerHTML = "";
+        return;
+    }
+
+    const first = (currentBooksPage - 1) * BOOKS_PER_PAGE + 1;
+    const last = Math.min(currentBooksPage * BOOKS_PER_PAGE, totalBooks);
+    let pageButtons = "";
+
+    for (let page = 1; page <= totalPages; page++) {
+        pageButtons += `
+            <button type="button"
+                class="page-btn ${page === currentBooksPage ? "active" : ""}"
+                ${page === currentBooksPage ? 'aria-current="page"' : ""}
+                onclick="changeBooksPage(${page})">${page}</button>
+        `;
+    }
+
+    pagination.innerHTML = `
+        <div class="pagination-summary">Showing ${first}-${last} of ${totalBooks} books</div>
+        <div class="pagination-controls">
+            <button type="button" class="page-btn"
+                onclick="changeBooksPage(${currentBooksPage - 1})"
+                ${currentBooksPage === 1 ? "disabled" : ""}>Previous</button>
+            ${pageButtons}
+            <button type="button" class="page-btn"
+                onclick="changeBooksPage(${currentBooksPage + 1})"
+                ${currentBooksPage === totalPages ? "disabled" : ""}>Next</button>
+        </div>
+    `;
+}
+
+function changeBooksPage(page) {
+    const totalPages = Math.ceil(currentBookList.length / BOOKS_PER_PAGE);
+    if (page < 1 || page > totalPages) return;
+    currentBooksPage = page;
+    renderBooksPage();
+}
+
+function getIssueRequests() {
+    try {
+        const value = JSON.parse(localStorage.getItem("libraryIssueRequests") || "[]");
+        return Array.isArray(value) ? value : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function isActiveIssueRequest(bookId) {
+    const activeStatuses = ["pending", "approve", "approved"];
+    return getIssueRequests().some(request => {
+        const requestMemberId = String(request.memberId ?? request.member_id ?? "");
+        const requestBookId = String(request.bookId ?? request.book_id ?? "");
+        const status = String(request.status || "Pending").toLowerCase();
+        return requestMemberId === currentMember.id &&
+            requestBookId === String(bookId) &&
+            activeStatuses.includes(status);
+    });
+}
+
+function requestBookIssue(bookId) {
+    const book = books.find(item => String(item.bookId) === String(bookId));
+
+    if (!book || String(book.status).toLowerCase() !== "available") {
+        alert("This book is not currently available.");
+        return;
+    }
+
+    const requests = getIssueRequests();
+    const activeStatuses = ["pending", "approve", "approved"];
+    const duplicate = requests.some(request => {
+        const requestMemberId = String(request.memberId ?? request.member_id ?? "");
+        const requestBookId = String(request.bookId ?? request.book_id ?? "");
+        const status = String(request.status || "Pending").toLowerCase();
+        return requestMemberId === currentMember.id &&
+            requestBookId === String(book.bookId) &&
+            activeStatuses.includes(status);
+    });
+
+    if (duplicate) {
+        alert("You already have an active request for this book.");
+        return;
+    }
+
+    if (!confirm(`Send an issue request for "${book.name}"?`)) {
+        return;
+    }
+
+    const now = new Date();
+    const localDate = [
+        now.getFullYear(),
+        String(now.getMonth() + 1).padStart(2, "0"),
+        String(now.getDate()).padStart(2, "0")
+    ].join("-");
+
+    requests.push({
+        requestId: `REQ-${Date.now()}`,
+        memberId: currentMember.id,
+        memberName: currentMember.name,
+        username: currentMember.username,
+        bookId: String(book.bookId),
+        bookName: book.name,
+        bookTitle: book.name,
+        title: book.name,
+        status: "Pending",
+        requestDate: localDate,
+        requestedAt: now.toISOString(),
+        createdAt: now.toISOString()
+    });
+
+    try {
+        localStorage.setItem("libraryIssueRequests", JSON.stringify(requests));
+    } catch (error) {
+        alert("The request could not be saved in this browser. Please try again.");
+        return;
+    }
+
+    renderBooksPage();
+    alert("Issue request submitted successfully.");
+}
 
 
 /* =================================================
@@ -1614,7 +1896,7 @@ function loadIssuedBooks() {
 
         table.innerHTML = `
             <tr>
-                <td colspan="7" class="no-records">
+                <td colspan="8" class="no-records">
                     No issued books.
                 </td>
             </tr>
@@ -1631,21 +1913,14 @@ function loadIssuedBooks() {
 
 
         row.innerHTML = `
-
-            <td>${escapeHTML(book.name || "")}</td>
-
+            <td>${escapeHTML(book.bookId ?? book.book_id ?? book.id ?? "-")}</td>
+            <td>${escapeHTML(book.name || book.title || "")}</td>
             <td>${escapeHTML(book.author || "")}</td>
-
             <td>${escapeHTML(book.isbn || "")}</td>
-
-            <td>${escapeHTML(book.issueDate || "")}</td>
-
-            <td>${escapeHTML(book.dueDate || "")}</td>
-
-            <td>${escapeHTML(book.fine || "")}</td>
-
+            <td>${escapeHTML(book.issueDate || book.issue_date || "")}</td>
+            <td>${escapeHTML(book.dueDate || book.due_date || "")}</td>
+            <td>${escapeHTML(book.fine ?? "")}</td>
             <td>${escapeHTML(book.status || "")}</td>
-
         `;
 
 
@@ -1681,6 +1956,12 @@ function searchBooks() {
 
     const filteredBooks =
         books.filter(book =>
+
+            String(book.bookId ?? "")
+                .toLowerCase()
+                .includes(searchValue)
+
+            ||
 
             String(book.name || "")
                 .toLowerCase()
@@ -2171,6 +2452,50 @@ setInterval(
     30000
 );
 
+
+
+/* Keep the current section highlighted in the sticky navigation. */
+(function setupMemberNavigation() {
+    const nav = document.querySelector(".member-navigation");
+    if (!nav) return;
+
+    const navLinks = Array.from(nav.querySelectorAll("a"));
+    const sections = [
+        document.getElementById("home-section"),
+        document.getElementById("issued-books"),
+        document.getElementById("all-books"),
+        document.getElementById("library-details")
+    ].filter(Boolean);
+
+    navLinks.forEach(link => {
+        link.addEventListener("click", function () {
+            navLinks.forEach(item => item.classList.remove("active"));
+            this.classList.add("active");
+        });
+    });
+
+    if ("IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(entries => {
+            const visible = entries
+                .filter(entry => entry.isIntersecting)
+                .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+            if (!visible) return;
+
+            const activeLink = nav.querySelector(`a[href="#${visible.target.id}"]`);
+            if (activeLink) {
+                navLinks.forEach(item => item.classList.remove("active"));
+                activeLink.classList.add("active");
+            }
+        }, {
+            root: null,
+            rootMargin: "-66px 0px -55% 0px",
+            threshold: [0.05, 0.2, 0.5]
+        });
+
+        sections.forEach(section => observer.observe(section));
+    }
+})();
 
 </script>
 
