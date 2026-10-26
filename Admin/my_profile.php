@@ -1,50 +1,48 @@
 <?php
 declare(strict_types=1);
 
-/** Escape database/user content before rendering it in HTML. */
-function h(?string $value): string {
+/*
+ * My Profile page.
+ * Uses the existing Authentication/auth.php and Connection/db.php files.
+ * Expected location: Project/Admin/my_profile.php
+ */
+require_once __DIR__ . '/../Authentication/auth.php';
+
+// auth.php should start the session and verify that a user is logged in.
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
+
+$userIdValue = $_SESSION['user_id'] ?? $_SESSION['User_id'] ?? $_SESSION['userid'] ?? null;
+$userRole = (string)($_SESSION['role'] ?? $_SESSION['Role'] ?? '');
+
+if (!is_scalar($userIdValue) || !ctype_digit((string)$userIdValue) || (int)$userIdValue < 1) {
+    header('Location: ../Login/login_form.php');
+    exit;
+}
+
+if (strcasecmp($userRole, 'Admin') !== 0) {
+    header('Location: ../Member/member_home.html');
+    exit;
+}
+
+$userId = (int)$userIdValue;
+
+function h(?string $value): string
+{
     return htmlspecialchars($value ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
 
-function text_length(string $value): int {
+function text_length(string $value): int
+{
     return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
 }
 
-/*
- * TEMPORARY LOCAL-DEVELOPMENT MODE:
- * Sessions/login are bypassed as requested. The page selects the first account
- * whose login.Role is Admin. Anyone who can access this page can edit that admin's
- * profile, so use only on localhost until authentication/session handling is restored.
- */
-const PROFILE_CSRF_SECRET = '0b8229c18908b8a71d41699561e7338fff4869c2d3f6130ffd3953bdf88d6b85';
-
-function create_profile_csrf_token(): string {
-    $timestamp = (string) time();
-    $nonce = bin2hex(random_bytes(16));
-    $payload = $timestamp . '.' . $nonce;
-    $signature = hash_hmac('sha256', $payload, PROFILE_CSRF_SECRET);
-    return base64_encode($payload . '.' . $signature);
+if (empty($_SESSION['csrf_token']) || !is_string($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
 }
+$csrfToken = $_SESSION['csrf_token'];
 
-function valid_profile_csrf_token(string $token): bool {
-    $decoded = base64_decode($token, true);
-    if ($decoded === false) {
-        return false;
-    }
-    $parts = explode('.', $decoded);
-    if (count($parts) !== 3 || !ctype_digit($parts[0]) || !preg_match('/^[a-f0-9]{32}$/', $parts[1])) {
-        return false;
-    }
-    $issuedAt = (int) $parts[0];
-    if ($issuedAt > time() + 60 || time() - $issuedAt > 7200) {
-        return false;
-    }
-    $payload = $parts[0] . '.' . $parts[1];
-    $expected = hash_hmac('sha256', $payload, PROFILE_CSRF_SECRET);
-    return hash_equals($expected, $parts[2]);
-}
-
-$userId = 0;
 $profile = [
     'Username' => '',
     'Name' => '',
@@ -56,62 +54,50 @@ $pageError = '';
 $fieldErrors = [];
 $postedProfile = [];
 $showEditPopup = false;
-$profileFlash = (($_GET['saved'] ?? '') === '1')
-    ? ['type' => 'success', 'message' => 'Profile updated successfully.']
-    : null;
-$csrfToken = create_profile_csrf_token();
+$profileFlash = $_SESSION['profile_flash'] ?? null;
+unset($_SESSION['profile_flash']);
 
 try {
-    /*
-     * DATABASE CONNECTION.
-     * If this page is in Project/Admin, try Project/Connection/db.php first.
-     * The fallback matches a standard local XAMPP install (library/root/blank password).
-     */
     mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-    $connectionFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'Connection'
-        . DIRECTORY_SEPARATOR . 'db.php';
 
-    if (is_file($connectionFile)) {
-        require_once $connectionFile;
-        foreach (['conn', 'con', 'connection', 'mysqli'] as $connectionVariable) {
+    // Reuse the project's established DB connection. Expected variable: $conn.
+    require_once __DIR__ . '/../Connection/db.php';
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        foreach (['con', 'connection', 'mysqli', 'db'] as $connectionVariable) {
             if (isset(${$connectionVariable}) && ${$connectionVariable} instanceof mysqli) {
                 $conn = ${$connectionVariable};
                 break;
             }
         }
     }
-
     if (!isset($conn) || !($conn instanceof mysqli)) {
-        $dbHost = 'localhost';
-        $dbName = 'library';
-        $dbUser = 'root';
-        $dbPassword = '';
-        $conn = new mysqli($dbHost, $dbUser, $dbPassword, $dbName);
+        throw new RuntimeException('Connection/db.php did not provide a mysqli connection in $conn.');
     }
     $conn->set_charset('utf8mb4');
 
-    // No session for now: use the first Admin account in the login table.
+    // Confirm this session belongs to an Admin account in the database.
     $loginStatement = $conn->prepare(
-        "SELECT User_id, Username, Role FROM login WHERE Role = 'Admin' ORDER BY User_id ASC LIMIT 1"
+        'SELECT User_id, Username, Role FROM login WHERE User_id = ? LIMIT 1'
     );
+    $loginStatement->bind_param('i', $userId);
     $loginStatement->execute();
     $loginAccount = $loginStatement->get_result()->fetch_assoc();
     $loginStatement->close();
 
-    if (!$loginAccount) {
-        $pageError = 'No Admin login account was found in the login table.';
+    if (!$loginAccount || strcasecmp((string)$loginAccount['Role'], 'Admin') !== 0) {
+        http_response_code(403);
+        $pageError = 'Access denied. Please sign in with an admin account.';
     } else {
-        $userId = (int) $loginAccount['User_id'];
-        $profile['Username'] = (string) $loginAccount['Username'];
+        $profile['Username'] = (string)$loginAccount['Username'];
 
-        // admin.User_id links this profile to the chosen login account.
-        $adminUserIdColumn = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'User_id'");
-        if ($adminUserIdColumn->num_rows === 0) {
-            $pageError = 'Database setup is incomplete. In phpMyAdmin, select the library database and run admin_profile_setup.sql, then reload this page.';
+        // Ensure the admin.User_id link exists in the current schema.
+        $columnResult = $conn->query("SHOW COLUMNS FROM `admin` LIKE 'User_id'");
+        if ($columnResult->num_rows === 0) {
+            $pageError = 'Database setup is incomplete: add admin.User_id and link it to login.User_id in phpMyAdmin.';
         } else {
-            // SELECT: retrieve this admin's saved personal details.
+            // SELECT the current admin's existing profile, never the first Admin arbitrarily.
             $profileStatement = $conn->prepare(
-                'SELECT Name, Email, Phone_no, Addres FROM admin WHERE User_id = ? LIMIT 1'
+                'SELECT Admin_id, Name, Email, Phone_no, Addres FROM admin WHERE User_id = ? LIMIT 1'
             );
             $profileStatement->bind_param('i', $userId);
             $profileStatement->execute();
@@ -119,23 +105,24 @@ try {
             $profileStatement->close();
 
             if ($savedProfile) {
-                $profile['Name'] = (string) ($savedProfile['Name'] ?? '');
-                $profile['Email'] = (string) ($savedProfile['Email'] ?? '');
-                $profile['Phone_no'] = (string) ($savedProfile['Phone_no'] ?? '');
-                $profile['Addres'] = (string) ($savedProfile['Addres'] ?? '');
+                $profile['Name'] = (string)($savedProfile['Name'] ?? '');
+                $profile['Email'] = (string)($savedProfile['Email'] ?? '');
+                $profile['Phone_no'] = (string)($savedProfile['Phone_no'] ?? '');
+                $profile['Addres'] = (string)($savedProfile['Addres'] ?? '');
             }
 
             if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $showEditPopup = true;
                 $postedProfile = [
-                    'name' => trim((string) ($_POST['name'] ?? '')),
-                    'email' => trim((string) ($_POST['email'] ?? '')),
-                    'phone' => trim((string) ($_POST['phone'] ?? '')),
-                    'address' => trim((string) ($_POST['address'] ?? ''))
+                    'name' => trim((string)($_POST['name'] ?? '')),
+                    'email' => trim((string)($_POST['email'] ?? '')),
+                    'phone' => trim((string)($_POST['phone'] ?? '')),
+                    'address' => trim((string)($_POST['address'] ?? ''))
                 ];
 
-                if (!valid_profile_csrf_token((string) ($_POST['csrf_token'] ?? ''))) {
-                    $pageError = 'Form validation expired or failed. Reload the page and try again.';
+                $submittedToken = (string)($_POST['csrf_token'] ?? '');
+                if (!hash_equals((string)$_SESSION['csrf_token'], $submittedToken)) {
+                    $pageError = 'Form security validation failed. Reload the page and try again.';
                 } else {
                     $name = $postedProfile['name'];
                     $email = $postedProfile['email'];
@@ -169,22 +156,47 @@ try {
                     }
 
                     if (!$fieldErrors && $pageError === '') {
-                        // INSERT first profile; update it on later saves.
-                        $saveStatement = $conn->prepare(
-                            'INSERT INTO admin (User_id, Name, Email, Phone_no, Addres)
-                             VALUES (?, ?, ?, ?, ?)
-                             ON DUPLICATE KEY UPDATE
-                                 Name = VALUES(Name),
-                                 Email = VALUES(Email),
-                                 Phone_no = VALUES(Phone_no),
-                                 Addres = VALUES(Addres)'
-                        );
-                        $saveStatement->bind_param('issss', $userId, $name, $email, $phone, $address);
-                        $saveStatement->execute();
-                        $saveStatement->close();
+                        // Use a transaction: update existing row, or create a new one.
+                        $conn->begin_transaction();
+                        try {
+                            $findStatement = $conn->prepare(
+                                'SELECT Admin_id FROM admin WHERE User_id = ? LIMIT 1 FOR UPDATE'
+                            );
+                            $findStatement->bind_param('i', $userId);
+                            $findStatement->execute();
+                            $existingAdmin = $findStatement->get_result()->fetch_assoc();
+                            $findStatement->close();
 
-                        header('Location: my_profile.php?saved=1');
-                        exit;
+                            if ($existingAdmin) {
+                                $saveStatement = $conn->prepare(
+                                    'UPDATE admin SET Name = ?, Email = ?, Phone_no = ?, Addres = ? WHERE User_id = ?'
+                                );
+                                $saveStatement->bind_param('ssssi', $name, $email, $phone, $address, $userId);
+                                $saveStatement->execute();
+                                $saveStatement->close();
+                            } else {
+                                // Admin_id is not AUTO_INCREMENT in the supplied SQL dump.
+                                $idResult = $conn->query('SELECT COALESCE(MAX(Admin_id), 0) + 1 AS next_id FROM admin');
+                                $nextAdminId = (int)$idResult->fetch_assoc()['next_id'];
+                                $saveStatement = $conn->prepare(
+                                    'INSERT INTO admin (Admin_id, User_id, Name, Email, Phone_no, Addres) VALUES (?, ?, ?, ?, ?, ?)'
+                                );
+                                $saveStatement->bind_param('iissss', $nextAdminId, $userId, $name, $email, $phone, $address);
+                                $saveStatement->execute();
+                                $saveStatement->close();
+                            }
+
+                            $conn->commit();
+                            $_SESSION['profile_flash'] = [
+                                'type' => 'success',
+                                'message' => 'Profile updated successfully.'
+                            ];
+                            header('Location: my_profile.php');
+                            exit;
+                        } catch (Throwable $saveException) {
+                            $conn->rollback();
+                            throw $saveException;
+                        }
                     }
                 }
             }
@@ -192,7 +204,9 @@ try {
     }
 } catch (Throwable $exception) {
     error_log('My Profile database error: ' . $exception->getMessage());
-    $pageError = 'Could not connect to or query the library database. Confirm MariaDB is running, database credentials match your XAMPP setup, and admin_profile_setup.sql has been run.';
+    if ($pageError === '') {
+        $pageError = 'Could not load or save profile data. Check Connection/db.php and confirm the admin.User_id relationship exists in the library database.';
+    }
 }
 ?>
 <!DOCTYPE html>
