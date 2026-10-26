@@ -1,17 +1,19 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Library Admin Home</title>
 
     <style>
         body {
             margin: 0;
-            font-family: Arial;
+            font-family: Arial, sans-serif;
             background-color: #f2f2f2;
         }
 
-        /* Left Sidebar */
+        /* Left Sidebar: original width, colours and item sizing retained */
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -20,6 +22,7 @@
             left: 0;
             top: 0;
             color: white;
+            overflow: hidden;
         }
 
         .sidebar h2 {
@@ -29,9 +32,19 @@
             background-color: #222;
         }
 
+        /* This area scrolls if the expanded menu is taller than the screen. */
+        .sidebar-menu {
+            max-height: calc(100vh - 135px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
+        }
+
         .sidebar a,
         .manage {
             display: block;
+            box-sizing: border-box;
             color: white;
             text-decoration: none;
             padding: 15px 20px;
@@ -44,6 +57,13 @@
             background-color: rgba(255, 255, 255, .11);
         }
 
+        /* Active page indicator without changing menu item dimensions. */
+        .sidebar a.active,
+        .manage.active-parent {
+            background-color: #484848;
+            box-shadow: inset 4px 0 0 #f2f2f2;
+        }
+
         .arrow {
             float: right;
         }
@@ -53,6 +73,10 @@
             background-color: #444;
         }
 
+        .submenu.open {
+            display: block;
+        }
+
         .submenu a {
             padding-left: 40px;
         }
@@ -60,6 +84,7 @@
         .logout {
             position: absolute;
             bottom: 10px;
+            left: 0;
             width: 100%;
         }
 
@@ -68,10 +93,11 @@
             text-align: center;
         }
 
-        /* Main Content */
+        /* Main Content: original margins and layout retained */
         .main {
             margin-left: 220px;
-            padding: 25px;
+            /* Match the tighter top spacing in the reference screenshot. */
+            padding: 10px 25px 25px;
         }
 
         /* Top Area */
@@ -79,6 +105,7 @@
             background-color: white;
             padding: 20px;
             border: 1px solid #ddd;
+            position: relative;
         }
 
         .top h1 {
@@ -91,6 +118,49 @@
             margin-bottom: 5px;
         }
 
+        /* Profile icon links to the existing profile page. */
+        .profile-link {
+            position: absolute;
+            top: 12px;
+            right: 30px;
+            width: 48px;
+            height: 48px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            border: 1px solid #ccc;
+            border-radius: 50%;
+            background: #f2f2f2;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .profile-link:hover {
+            background: #e5e5e5;
+        }
+
+        .profile-link svg {
+            width: 27px;
+            height: 27px;
+        }
+
+        /* Login username displayed directly below the profile icon. */
+        .profile-username {
+            position: absolute;
+            top: 64px;
+            right: 4px;
+            width: 100px;
+            text-align: center;
+            font-size: 12px;
+            line-height: 16px;
+            color: #555;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         /* Dashboard */
         .dashboard {
             margin-top: 25px;
@@ -99,7 +169,7 @@
         .cards {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
+            gap: 12px;
         }
 
         .card {
@@ -154,6 +224,10 @@
                 width: 180px;
             }
 
+            .sidebar-menu {
+                max-height: calc(100vh - 135px);
+            }
+
             .main {
                 margin-left: 180px;
             }
@@ -161,154 +235,178 @@
             .cards {
                 grid-template-columns: 1fr;
             }
+
+            .top h1 {
+                padding-right: 95px;
+                font-size: 24px;
+            }
         }
     </style>
-
 </head>
 
 <body>
 
     <!-- Sidebar -->
     <div class="sidebar">
-
         <h2>Library</h2>
 
-        <a href="admin_home.html">Dashboard</a>
+        <nav class="sidebar-menu" aria-label="Admin menu">
+            <a href="Admin_Home.html" data-page="Admin_Home.html">Dashboard</a>
+            <a href="my_profile.html" data-page="my_profile.html">My Profile</a>
+            <a href="library_profile.html" data-page="library_profile.html">Library Profile</a>
 
-        <a href="my_profile.html">My Profile</a>
+            <!-- Manage Books Menu -->
+            <div class="manage" id="manageToggle" role="button" tabindex="0"
+                 aria-expanded="false" aria-controls="submenu">
+                Manage Books
+                <span class="arrow" id="arrow">+</span>
+            </div>
 
-        <!-- Manage Books Menu -->
-        <div class="manage" onclick="toggleMenu()">
-            Manage Books
-            <span class="arrow" id="arrow">+</span>
-        </div>
+            <!-- Manage Books Submenu -->
+            <div class="submenu" id="submenu">
+                <a href="view_books.html" data-page="view_books.html">View All Books</a>
+                <a href="add_book.html" data-page="add_book.html">Add Book</a>
+                <a href="update_book.html" data-page="update_book.html">Update/Delete Book</a>
+            </div>
 
-        <!-- Manage Books Submenu -->
-        <div class="submenu" id="submenu">
-            <a href="view_books.html">View All Books</a>
-            <a href="add_book.html">Add Book</a>
-            <a href="update_book.html">Update / Return Book</a>
-        </div>
-
-        <a href="issue_book.html">Issue Book</a>
-
-        <a href="return_book.html">Return Book</a>
-
-        <a href="returned_books.html">Recent Returned Books</a>
-
-        <a href="members.html">Members Details</a>
-
-        <a href="announcement.html" class="active">
-            Announcements
-        </a>
+            <a href="issue_book.html" data-page="issue_book.html">Issue Book</a>
+            <a href="return_book.html" data-page="return_book.html">Return Book</a>
+            <!-- Recent Returned Books is intentionally removed. -->
+            <a href="members.html" data-page="members.html">Members Details</a>
+            <a href="announcement.html" data-page="announcement.html">Announcements</a>
+        </nav>
 
         <div class="logout">
             <a href="login_form.html">Logout</a>
         </div>
-
     </div>
 
     <!-- Main Page -->
     <div class="main">
-
         <!-- Top Section -->
         <div class="top">
             <h1>Library Admin Dashboard</h1>
+            <a class="profile-link" href="my_profile.html" aria-label="Open My Profile" title="My Profile">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="8" r="4"></circle>
+                    <path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path>
+                </svg>
+            </a>
+            <span class="profile-username" id="loggedInUsername" title="Logged-in username">Admin</span>
         </div>
 
         <!-- Dashboard Details -->
         <div class="dashboard">
-
             <div class="cards">
-
                 <div class="card">
                     <h3>Total Books</h3>
                     <p>0</p>
                 </div>
-
                 <div class="card">
                     <h3>Issued Books</h3>
                     <p>0</p>
                 </div>
-
                 <div class="card">
                     <h3>Available Books</h3>
                     <p>0</p>
                 </div>
-
                 <div class="card">
                     <h3>Total Members</h3>
                     <p>0</p>
                 </div>
-
                 <div class="card">
                     <h3>Members With Due Date</h3>
                     <p>0</p>
                 </div>
-
                 <div class="card">
                     <h3>Total Fine To Collect</h3>
                     <p class="fine">0</p>
                 </div>
-
             </div>
         </div>
 
         <!-- Recent Activity -->
         <div class="recent">
-
             <h2>Recent Book Issue Details</h2>
-
             <table>
-
-                <tr>
-                    <th>Member Name</th>
-                    <th>Book Name</th>
-                    <th>Issue Date</th>
-                    <th>Due Date</th>
-                </tr>
-
-                <tr>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-
-                <tr>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-
-                <tr>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                    <td>-</td>
-                </tr>
-
+                <thead>
+                    <tr>
+                        <th>Member Name</th>
+                        <th>Book Name</th>
+                        <th>Issue Date</th>
+                        <th>Due Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+                    <tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+                    <tr><td>-</td><td>-</td><td>-</td><td>-</td></tr>
+                </tbody>
             </table>
-
         </div>
     </div>
 
     <script>
-        function toggleMenu() {
-            var menu = document.getElementById("submenu");
-            var arrow = document.getElementById("arrow");
+        // Show the username saved by the login page, when available.
+        // Supported storage keys: loggedInUsername, username, or Username.
+        const usernameLabel = document.getElementById('loggedInUsername');
+        const savedUsername =
+            sessionStorage.getItem('loggedInUsername') ||
+            sessionStorage.getItem('username') ||
+            sessionStorage.getItem('Username') ||
+            localStorage.getItem('loggedInUsername') ||
+            localStorage.getItem('username') ||
+            localStorage.getItem('Username');
 
-            if (menu.style.display === "block") {
-                menu.style.display = "none";
-                arrow.innerHTML = "+";
-            } else {
-                menu.style.display = "block";
-                arrow.innerHTML = "-";
+        if (savedUsername && savedUsername.trim()) {
+            usernameLabel.textContent = savedUsername.trim();
+            usernameLabel.title = savedUsername.trim();
+        }
+
+        const manageToggle = document.getElementById('manageToggle');
+        const submenu = document.getElementById('submenu');
+        const arrow = document.getElementById('arrow');
+
+        function toggleMenu(forceOpen) {
+            const shouldOpen = typeof forceOpen === 'boolean'
+                ? forceOpen
+                : !submenu.classList.contains('open');
+
+            submenu.classList.toggle('open', shouldOpen);
+            manageToggle.setAttribute('aria-expanded', String(shouldOpen));
+            arrow.textContent = shouldOpen ? '-' : '+';
+        }
+
+        manageToggle.addEventListener('click', () => toggleMenu());
+        manageToggle.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleMenu();
             }
+        });
+
+        // Highlight the item that matches the currently opened HTML page.
+        // Comparison is case-insensitive to avoid filename-capitalization issues.
+        const currentPage = window.location.pathname.split('/').pop().toLowerCase();
+        const menuLinks = document.querySelectorAll('.sidebar-menu a[data-page]');
+        let activeIsBookSubpage = false;
+
+        menuLinks.forEach((link) => {
+            const linkPage = link.dataset.page.toLowerCase();
+            if (linkPage === currentPage) {
+                link.classList.add('active');
+                if (submenu.contains(link)) {
+                    activeIsBookSubpage = true;
+                }
+            }
+        });
+
+        if (activeIsBookSubpage) {
+            toggleMenu(true);
+            manageToggle.classList.add('active-parent');
         }
     </script>
 
 </body>
-
 </html>
