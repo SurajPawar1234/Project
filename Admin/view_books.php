@@ -1,3 +1,97 @@
+<?php
+/*
+ * All Books page: loads book records from the existing `library` database.
+ * The HTML/CSS and existing client-side search, filter, sort and pagination
+ * have been retained. Year/location are shown when matching columns exist;
+ * the uploaded schema does not define those columns, so they show as '-'.
+ */
+$dbErrorMessage = '';
+$books = [];
+
+function viewBooksEscape($value): string
+{
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+try {
+    // Find Connection/db.php whether this page is in the project root or a subfolder.
+    $connectionFile = null;
+    $searchDirs = [
+        __DIR__,
+        dirname(__DIR__),
+        dirname(dirname(__DIR__)),
+        dirname(dirname(dirname(__DIR__)))
+    ];
+    foreach ($searchDirs as $searchDir) {
+        $candidate = $searchDir . DIRECTORY_SEPARATOR . 'Connection' . DIRECTORY_SEPARATOR . 'db.php';
+        if (is_file($candidate)) {
+            $connectionFile = $candidate;
+            break;
+        }
+    }
+
+    if ($connectionFile === null) {
+        throw new RuntimeException('Connection/db.php was not found relative to this page.');
+    }
+
+    require_once $connectionFile;
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        throw new RuntimeException('Connection/db.php must provide a MySQLi connection in $conn.');
+    }
+
+    $conn->set_charset('utf8mb4');
+
+    // Identify optional columns without assuming they exist in every schema version.
+    $columns = [];
+    $columnResult = $conn->query('SHOW COLUMNS FROM `book`');
+    while ($column = $columnResult->fetch_assoc()) {
+        $columns[strtolower($column['Field'])] = $column['Field'];
+    }
+    $columnResult->free();
+
+    $yearColumn = null;
+    foreach (['release_year', 'year', 'publication_year'] as $candidate) {
+        if (isset($columns[$candidate])) {
+            $yearColumn = $columns[$candidate];
+            break;
+        }
+    }
+
+    $locationColumn = null;
+    foreach (['shelf_no', 'book_location', 'location', 'location_no'] as $candidate) {
+        if (isset($columns[strtolower($candidate)])) {
+            $locationColumn = $columns[strtolower($candidate)];
+            break;
+        }
+    }
+
+    $yearExpression = $yearColumn !== null ? 'b.`' . str_replace('`', '``', $yearColumn) . '`' : 'NULL';
+    $locationExpression = $locationColumn !== null ? 'b.`' . str_replace('`', '``', $locationColumn) . '`' : 'NULL';
+
+    $sql = "SELECT
+                b.`Book_id` AS book_id,
+                b.`Title` AS title,
+                b.`Author` AS author,
+                b.`ISBN` AS isbn,
+                b.`Category` AS category,
+                b.`Publisher` AS publisher,
+                {$yearExpression} AS book_year,
+                b.`Quantity` AS quantity,
+                b.`Status` AS status,
+                {$locationExpression} AS book_location
+            FROM `book` AS b
+            ORDER BY b.`Book_id` ASC";
+
+    $result = $conn->query($sql);
+    while ($row = $result->fetch_assoc()) {
+        $books[] = $row;
+    }
+    $result->free();
+} catch (Throwable $e) {
+    error_log('View Books page: ' . $e->getMessage());
+    $dbErrorMessage = 'Unable to load books from the database. Check Connection/db.php and confirm that the library.book table exists.';
+}
+?>
 <!DOCTYPE html>
 <html>
 
@@ -12,7 +106,7 @@
             background-color: #f2f2f2;
         }
 
-        /* Sidebar */
+        /* Sidebar - updated menu */
 
         .sidebar {
             width: 220px;
@@ -22,6 +116,7 @@
             left: 0;
             top: 0;
             color: white;
+            overflow: hidden;
         }
 
         .sidebar h2 {
@@ -31,39 +126,47 @@
             background-color: #222;
         }
 
-        .sidebar a {
+        .sidebar-menu {
+            max-height: calc(100vh - 135px);
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
+        }
+
+        .sidebar a,
+        .manage {
             display: block;
+            box-sizing: border-box;
             color: white;
             text-decoration: none;
-            padding: 14px 20px;
-            border-bottom: 1px solid #555;
-        }
-
-        .sidebar a:hover {
-            background-color: #555;
-        }
-
-        /* Manage Books Button */
-
-        .manage {
-            padding: 14px 20px;
+            padding: 15px 20px;
             border-bottom: 1px solid #555;
             cursor: pointer;
         }
 
+        .sidebar a:hover,
         .manage:hover {
-            background-color: #555;
+            background-color: rgba(255, 255, 255, .11);
+        }
+
+        .sidebar a.active,
+        .manage.active-parent {
+            background-color: #484848;
+            box-shadow: inset 4px 0 0 #f2f2f2;
         }
 
         .arrow {
             float: right;
         }
 
-        /* Sub Menu */
-
         .submenu {
             display: none;
             background-color: #444;
+        }
+
+        .submenu.open {
+            display: block;
         }
 
         .submenu a {
@@ -394,11 +497,12 @@
             background-color: #f5f5f5;
         }
 
-        /* Logout */
+        /* Logout stays at the bottom of the sidebar */
 
         .logout {
             position: absolute;
             bottom: 10px;
+            left: 0;
             width: 100%;
         }
 
@@ -412,6 +516,10 @@
         @media (max-width: 800px) {
 
             .sidebar {
+                width: 180px;
+            }
+
+            .logout {
                 width: 180px;
             }
 
@@ -442,64 +550,34 @@
 
         <h2>Library</h2>
 
-        <a href="admin_home.html">Dashboard</a>
+        <nav class="sidebar-menu" aria-label="Admin menu">
+            <a href="admin_home.html" data-page="admin_home.html">Dashboard</a>
+            <a href="my_profile.php" data-page="my_profile.php">My Profile</a>
+            <a href="library_profile.php" data-page="library_profile.php">Library Profile</a>
 
-        <a href="my_profile.html">My Profile</a>
+            <!-- Manage Books Menu -->
+            <div class="manage" id="manageToggle" role="button" tabindex="0"
+                 aria-expanded="false" aria-controls="submenu">
+                Manage Books
+                <span class="arrow" id="arrow">+</span>
+            </div>
 
-        <!-- Manage Books Menu -->
+            <!-- Manage Books Submenu -->
+            <div class="submenu" id="submenu">
+                <a href="view_books.php" data-page="view_books.php">View All Books</a>
+                <a href="add_book.html" data-page="add_book.html">Add Book</a>
+                <a href="update_book.html" data-page="update_book.html">Update / Delete Book</a>
+            </div>
 
-        <div class="manage" onclick="toggleMenu()">
-
-            Manage Books
-
-            <span class="arrow" id="arrow">+</span>
-
-        </div>
-
-        <!-- Manage Books Submenu -->
-
-        <div class="submenu" id="submenu">
-
-            <a href="view_books.html">
-                View All Books
-            </a>
-
-            <a href="add_book.html">
-                Add Book
-            </a>
-
-            <a href="update_book.html">
-                Update / Delete Book
-            </a>
-
-        </div>
-
-        <a href="issue_book.html">
-            Issue Book
-        </a>
-
-        <a href="return_book.html">
-            Return Book
-        </a>
-
-        <a href="returned_books.html">
-            Recent Returned Books
-        </a>
-
-        <a href="members.html">
-            Members Details
-        </a>
-
-        <a href="announcement.html" class="active">
-            Announcements
-        </a>
+            <a href="issue_book.html" data-page="issue_book.html">Issue Book</a>
+            <a href="return_book.html" data-page="return_book.html">Return Book</a>
+            <!-- Recent Returned Books is intentionally removed. -->
+            <a href="members.html" data-page="members.html">Members Details</a>
+            <a href="announcement.html" data-page="announcement.html">Announcements</a>
+        </nav>
 
         <div class="logout">
-
-            <a href="login_form.html">
-                Logout
-            </a>
-
+            <a href="logout.php">Logout</a>
         </div>
 
     </div>
@@ -589,225 +667,31 @@
                     <th>Location</th>
 
                 </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                </tr>
-
-                <tr>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
-                    <td>0</td>
-
-                    <td>-</td>
-
-                    <td>-</td>
-
+                    <?php foreach ($books as $book): ?>
+                    <?php
+                        $statusText = trim((string)($book['status'] ?? ''));
+                        $statusClass = strcasecmp($statusText, 'Available') === 0
+                            ? 'available'
+                            : (strcasecmp($statusText, 'Issued') === 0 ? 'issued' : '');
+                        $yearText = ($book['book_year'] ?? '') !== '' && $book['book_year'] !== null
+                            ? $book['book_year'] : '-';
+                        $locationText = ($book['book_location'] ?? '') !== '' && $book['book_location'] !== null
+                            ? $book['book_location'] : '-';
+                    ?>
+                    <tr>
+                        <td><?= viewBooksEscape($book['book_id'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($book['title'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($book['author'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($book['isbn'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($book['category'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($book['publisher'] ?? '-') ?></td>
+                        <td><?= viewBooksEscape($yearText) ?></td>
+                        <td><?= viewBooksEscape($book['quantity'] ?? '0') ?></td>
+                        <td class="<?= viewBooksEscape($statusClass) ?>"><?= viewBooksEscape($statusText !== '' ? $statusText : '-') ?></td>
+                        <td><?= viewBooksEscape($locationText) ?></td>
                     </tr>
-
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-                <tr>
-                    <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>0</td><td>-</td><td>-</td>
-                </tr>
-
-                </table>
+                    <?php endforeach; ?>
+</table>
 
             </div>
 
@@ -907,28 +791,43 @@
 
     <script>
 
-        function toggleMenu() {
+        // Updated menu toggle, keyboard support, and active-page highlighting.
+        const manageToggle = document.getElementById("manageToggle");
+        const submenu = document.getElementById("submenu");
+        const arrow = document.getElementById("arrow");
 
-            var menu = document.getElementById("submenu");
+        function toggleMenu(forceOpen) {
+            const shouldOpen = typeof forceOpen === "boolean"
+                ? forceOpen
+                : !submenu.classList.contains("open");
 
-            var arrow = document.getElementById("arrow");
+            submenu.classList.toggle("open", shouldOpen);
+            manageToggle.setAttribute("aria-expanded", String(shouldOpen));
+            arrow.textContent = shouldOpen ? "-" : "+";
+        }
 
-            if (menu.style.display == "block") {
-
-                menu.style.display = "none";
-
-                arrow.innerHTML = "+";
-
+        manageToggle.addEventListener("click", () => toggleMenu());
+        manageToggle.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleMenu();
             }
+        });
 
-            else {
+        const currentMenuPage = window.location.pathname.split("/").pop().toLowerCase();
+        const menuLinks = document.querySelectorAll(".sidebar-menu a[data-page]");
+        let activeIsBookSubpage = false;
 
-                menu.style.display = "block";
-
-                arrow.innerHTML = "-";
-
+        menuLinks.forEach((link) => {
+            if (link.dataset.page.toLowerCase() === currentMenuPage) {
+                link.classList.add("active");
+                if (submenu.contains(link)) activeIsBookSubpage = true;
             }
+        });
 
+        if (activeIsBookSubpage) {
+            toggleMenu(true);
+            manageToggle.classList.add("active-parent");
         }
 
         function showSearchError(message) {
@@ -1219,11 +1118,7 @@
                 filteredRows[j].style.display = "";
             }
 
-            /*
-             * Keep exactly 8 visible row spaces so the table and
-             * pagination never jump vertically on the last page.
-             */
-            addEmptyRows(displayedCount);
+            // Show only real matching book records; do not add blank placeholder rows.
 
             renderPagination(filteredRows.length);
 
@@ -1544,7 +1439,18 @@
 
             });
 
-        hideNoBooksMessage();
+        window.BOOKS_LOAD_ERROR = <?php echo json_encode($dbErrorMessage, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT); ?>;
+        if (window.BOOKS_LOAD_ERROR) {
+            var dbMessage = document.getElementById("noBooksMessage");
+            dbMessage.textContent = window.BOOKS_LOAD_ERROR;
+            dbMessage.style.display = "block";
+        } else if (getBookRows().length === 0) {
+            var emptyMessage = document.getElementById("noBooksMessage");
+            emptyMessage.textContent = "No books are currently available in the database.";
+            emptyMessage.style.display = "block";
+        } else {
+            hideNoBooksMessage();
+        }
         renderTable();
 
     </script>
