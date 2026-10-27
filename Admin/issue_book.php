@@ -1257,6 +1257,11 @@ if ($conn instanceof mysqli) {
 
         }
 
+        /* Temporarily hide the in-page top navigation; keep the main sidebar navigation. */
+        .top-navbar {
+            display: none !important;
+        }
+
     </style>
 
 </head>

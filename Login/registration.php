@@ -1,183 +1,310 @@
 <?php
+
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 
 /* Locate the existing project database connection file. */
+
 $conn = $conn ?? null;
+
 $connectionLoaded = ($conn instanceof mysqli);
+
 $baseDirectories = [__DIR__, dirname(__DIR__), dirname(dirname(__DIR__)), dirname(dirname(dirname(__DIR__)))];
+
 $connectionNames = [
+
     'Connection/db.php', 'connection/db.php',
+
     'Database/db.php', 'database/db.php', 'Databse/db.php',
+
     'db.php'
+
 ];
 
 if (!$connectionLoaded) {
+
     foreach ($baseDirectories as $baseDirectory) {
+
         foreach ($connectionNames as $connectionName) {
+
             $connectionPath = $baseDirectory . DIRECTORY_SEPARATOR . $connectionName;
+
             if (is_file($connectionPath)) {
+
                 try {
+
                     require_once $connectionPath;
+
                 } catch (Throwable $connectionException) {
+
                     error_log('Registration database connection error: ' . $connectionException->getMessage());
+
                 }
+
                 if (isset($conn) && $conn instanceof mysqli) {
+
                     $connectionLoaded = true;
+
                     break 2;
+
                 }
+
             }
+
         }
+
     }
+
 }
 
 function h($value): string {
+
     return htmlspecialchars((string)$value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
 }
 
 $values = [
+
     'first_name' => '', 'last_name' => '', 'gender' => '',
+
     'email' => '', 'phoneno' => '', 'address' => '', 'username' => ''
+
 ];
+
 $fieldErrors = [
+
     'first_name' => '', 'last_name' => '', 'gender' => '', 'email' => '',
+
     'phoneno' => '', 'address' => '', 'username' => '', 'password' => '', 'confirm_password' => ''
+
 ];
+
 $formError = '';
+
 $registrationSuccess = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
+
     foreach ($values as $field => $unused) {
+
         $values[$field] = trim((string)($_POST[$field] ?? ''));
+
     }
+
     $password = (string)($_POST['password'] ?? '');
+
     $confirmPassword = (string)($_POST['confirm_password'] ?? '');
 
     if (strlen($values['first_name']) < 2 || strlen($values['first_name']) > 25 || !preg_match('/^[A-Za-z]+$/', $values['first_name'])) {
+
         $fieldErrors['first_name'] = 'First name must contain 2–25 letters only.';
+
     }
+
     if (strlen($values['last_name']) < 2 || strlen($values['last_name']) > 25 || !preg_match('/^[A-Za-z]+$/', $values['last_name'])) {
+
         $fieldErrors['last_name'] = 'Last name must contain 2–25 letters only.';
+
     }
+
     if (!in_array($values['gender'], ['Male', 'Female', 'Other'], true)) {
+
         $fieldErrors['gender'] = 'Please select your gender.';
+
     }
+
     if ($values['email'] === '' || strlen($values['email']) > 30 || !filter_var($values['email'], FILTER_VALIDATE_EMAIL)) {
+
         $fieldErrors['email'] = 'Please enter a valid email address (maximum 30 characters).';
+
     }
+
     if (!preg_match('/^[0-9]{10}$/', $values['phoneno'])) {
+
         $fieldErrors['phoneno'] = 'Phone number must contain exactly 10 digits.';
+
     }
+
     if (strlen($values['address']) < 10 || strlen($values['address']) > 200) {
+
         $fieldErrors['address'] = 'Address must contain 10–200 characters.';
+
     }
+
     if (strlen($values['username']) < 5 || strlen($values['username']) > 25 || !preg_match('/^(?=.*[A-Za-z])[A-Za-z0-9@.]+$/', $values['username'])) {
+
         $fieldErrors['username'] = 'Username must be 5–25 characters and use letters, numbers, @ or .';
+
     }
+
     if (strlen($password) < 5 || strlen($password) > 25 || !preg_match('/^[A-Z][A-Za-z0-9@.]*$/', $password)) {
+
         $fieldErrors['password'] = 'Password must be 5–25 characters, start with a capital letter, and use only letters, numbers, @ or .';
+
     }
+
     if ($confirmPassword === '' || $confirmPassword !== $password) {
+
         $fieldErrors['confirm_password'] = 'Passwords do not match.';
+
     }
 
     $hasFieldErrors = count(array_filter($fieldErrors, static fn($message) => $message !== '')) > 0;
 
     if (!$hasFieldErrors && !$connectionLoaded) {
+
         $formError = 'The database connection could not be loaded. Check that Connection/db.php exists and defines $conn.';
+
     } elseif (!$hasFieldErrors) {
+
         $transactionStarted = false;
+
         try {
+
             $conn->begin_transaction();
+
             $transactionStarted = true;
 
             $usernameCheck = $conn->prepare('SELECT User_id FROM login WHERE Username = ? LIMIT 1');
+
             $usernameCheck->bind_param('s', $values['username']);
+
             $usernameCheck->execute();
+
             $usernameCheck->store_result();
+
             if ($usernameCheck->num_rows > 0) {
+
                 $fieldErrors['username'] = 'This username is already registered. Please choose another.';
+
             }
+
             $usernameCheck->close();
 
             $memberEmailCheck = $conn->prepare('SELECT Member_id FROM member WHERE Email = ? LIMIT 1');
+
             $memberEmailCheck->bind_param('s', $values['email']);
+
             $memberEmailCheck->execute();
+
             $memberEmailCheck->store_result();
+
             $memberEmailExists = $memberEmailCheck->num_rows > 0;
+
             $memberEmailCheck->close();
 
             $adminEmailCheck = $conn->prepare('SELECT Admin_id FROM admin WHERE Email = ? LIMIT 1');
+
             $adminEmailCheck->bind_param('s', $values['email']);
+
             $adminEmailCheck->execute();
+
             $adminEmailCheck->store_result();
+
             $adminEmailExists = $adminEmailCheck->num_rows > 0;
+
             $adminEmailCheck->close();
+
             if ($memberEmailExists || $adminEmailExists) {
+
                 $fieldErrors['email'] = 'This email address is already registered. Please use another.';
+
             }
 
             $hasFieldErrors = count(array_filter($fieldErrors, static fn($message) => $message !== '')) > 0;
+
             if ($hasFieldErrors) {
+
                 $conn->rollback();
+
                 $transactionStarted = false;
+
             } else {
+
                 /*
+
                  * This project currently stores passwords in the format used by its existing login page.
+
                  * Upgrade registration and login together to password_hash()/password_verify() before production use.
+
                  */
+
                 $role = 'Member';
+
                 $loginInsert = $conn->prepare('INSERT INTO login (Username, Password, Role) VALUES (?, ?, ?)');
+
                 $loginInsert->bind_param('sss', $values['username'], $password, $role);
+
                 $loginInsert->execute();
+
                 $userId = (int)$conn->insert_id;
+
                 $loginInsert->close();
 
                 $memberInsert = $conn->prepare(
+
                     'INSERT INTO member (User_id, First_name, Last_name, Gender, Email, Address, Phone_no, Current_Issue, Total_issue)
+
                      VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0)'
+
                 );
+
                 $memberInsert->bind_param(
+
                     'issssss', $userId, $values['first_name'], $values['last_name'],
+
                     $values['gender'], $values['email'], $values['address'], $values['phoneno']
+
                 );
+
                 $memberInsert->execute();
+
                 $memberInsert->close();
+
                 $conn->commit();
+
                 $transactionStarted = false;
+
                 $registrationSuccess = true;
+
             }
+
         } catch (Throwable $exception) {
+
             if ($transactionStarted) {
+
                 try { $conn->rollback(); } catch (Throwable $ignored) {}
+
             }
+
             error_log('Member registration failed: ' . $exception->getMessage());
+
             if ((int)$exception->getCode() === 1062) {
+
                 $formError = 'This username or email is already registered. Please use different details.';
+
             } else {
+
                 $formError = 'Registration could not be completed. Check the database connection and the login/member table structure.';
+
             }
+
         }
+
     }
+
 }
+
 ?>
-
-
 
 <!DOCTYPE html>
 
 <html>
 
-
-
 <head>
 
 <title>Registration</title>
 
-
-
 <style>
-
-
 
 body {
 
@@ -187,13 +314,11 @@ body {
 
     text-align: center;
 
-    background-image: url(Images/library0.png);
+    background-image: url("../Images/library0.png");
 
     background-size: cover;
 
 }
-
-
 
 form {
 
@@ -211,8 +336,6 @@ form {
 
 }
 
-
-
 h1 {
 
     margin-bottom: 30px;
@@ -220,8 +343,6 @@ h1 {
     color: #333;
 
 }
-
-
 
 label {
 
@@ -234,8 +355,6 @@ label {
     margin-bottom: 5px;
 
 }
-
-
 
 input,
 
@@ -259,8 +378,6 @@ textarea {
 
 }
 
-
-
 input:focus,
 
 select:focus,
@@ -270,8 +387,6 @@ textarea:focus {
     border: 1px solid #555;
 
 }
-
-
 
 .form-server-error { margin: 0 0 15px; }
 
@@ -291,8 +406,6 @@ textarea:focus {
 
 }
 
-
-
 input.invalid,
 
 select.invalid,
@@ -303,8 +416,6 @@ textarea.invalid {
 
 }
 
-
-
 input.valid,
 
 select.valid,
@@ -314,8 +425,6 @@ textarea.valid {
     border: 2px solid green;
 
 }
-
-
 
 .show-password {
 
@@ -329,8 +438,6 @@ textarea.valid {
 
 }
 
-
-
 .show-password input {
 
     width: auto;
@@ -339,15 +446,11 @@ textarea.valid {
 
 }
 
-
-
 .show-password label {
 
     margin: 0;
 
 }
-
-
 
 input[type="submit"] {
 
@@ -367,19 +470,13 @@ input[type="submit"] {
 
 }
 
-
-
 input[type="submit"]:hover {
 
     background-color: #555;
 
 }
 
-
-
 /* Back to Login Button */
-
-
 
 .back-login {
 
@@ -405,51 +502,35 @@ input[type="submit"]:hover {
 
 }
 
-
-
-
-
 </style>
-
-
 
 </head>
 
-
-
 <body>
 
-
-
 <h1>Registration</h1>
-
-
 
 <form
 
     id="registrationForm"
 
-    action="register.php"
+    action="<?= h($_SERVER['PHP_SELF']) ?>"
 
     method="post"
 
     novalidate
 
 >
+
 <?php if ($formError !== ''): ?>
+
     <div class="error form-server-error" role="alert"><?= h($formError) ?></div>
+
 <?php endif; ?>
-
-
-
 
     <!-- FIRST NAME -->
 
-
-
     <label for="first_name">First Name:</label>
-
-
 
     <input
 
@@ -467,21 +548,11 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="firstNameError"><?= h($fieldErrors['first_name']) ?></span>
-
-
-
-
 
     <!-- LAST NAME -->
 
-
-
     <label for="last_name">Last Name:</label>
-
-
 
     <input
 
@@ -499,29 +570,15 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="lastNameError"><?= h($fieldErrors['last_name']) ?></span>
-
-
-
-
 
     <!-- GENDER -->
 
-
-
     <label for="gender">Gender:</label>
-
-
 
     <select id="gender" name="gender" required>
 
-
-
         <option value="" <?= $values['gender'] === '' ? 'selected' : '' ?> disabled>Select Gender</option>
-
-
 
         <option value="Male" <?= $values['gender'] === 'Male' ? 'selected' : '' ?>>
 
@@ -529,15 +586,11 @@ input[type="submit"]:hover {
 
         </option>
 
-
-
         <option value="Female" <?= $values['gender'] === 'Female' ? 'selected' : '' ?>>
 
             Female
 
         </option>
-
-
 
         <option value="Other" <?= $values['gender'] === 'Other' ? 'selected' : '' ?>>
 
@@ -545,25 +598,13 @@ input[type="submit"]:hover {
 
         </option>
 
-
-
     </select>
-
-
 
     <span class="error" id="genderError"><?= h($fieldErrors['gender']) ?></span>
 
-
-
-
-
     <!-- EMAIL -->
 
-
-
     <label for="email">Email:</label>
-
-
 
     <input
 
@@ -581,21 +622,11 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="emailError"><?= h($fieldErrors['email']) ?></span>
-
-
-
-
 
     <!-- PHONE -->
 
-
-
     <label for="phoneno">Phone Number:</label>
-
-
 
     <input
 
@@ -613,21 +644,11 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="phoneError"><?= h($fieldErrors['phoneno']) ?></span>
-
-
-
-
 
     <!-- ADDRESS -->
 
-
-
     <label for="address">Address:</label>
-
-
 
     <textarea
 
@@ -643,21 +664,11 @@ input[type="submit"]:hover {
 
     ><?= h($values['address']) ?></textarea>
 
-
-
     <span class="error" id="addressError"><?= h($fieldErrors['address']) ?></span>
-
-
-
-
 
     <!-- USERNAME -->
 
-
-
     <label for="username">Username:</label>
-
-
 
     <input
 
@@ -671,7 +682,7 @@ input[type="submit"]:hover {
 
         maxlength="25"
 
-        pattern="(?=.*[A-Za-z])[A-Za-z0-9\@.]+"
+        pattern="(?=.*[A-Za-z])[A-Za-z0-9@.]+"
 
         title="Username must contain at least one letter and can contain letters, numbers, @ and ."
 
@@ -681,21 +692,11 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="usernameError"><?= h($fieldErrors['username']) ?></span>
-
-
-
-
 
     <!-- PASSWORD -->
 
-
-
     <label for="password">Password:</label>
-
-
 
     <input
 
@@ -709,8 +710,7 @@ input[type="submit"]:hover {
 
         maxlength="25"
 
-        pattern="[A-Z][A-Za-z0-9\@.]*"
-
+        pattern="[A-Z][A-Za-z0-9@.]*"
         title="Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
 
         placeholder="Create New Password"
@@ -719,25 +719,15 @@ input[type="submit"]:hover {
 
     >
 
-
-
     <span class="error" id="passwordError"><?= h($fieldErrors['password']) ?></span>
 
-
-
-
-
     <!-- CONFIRM PASSWORD -->
-
-
 
     <label for="confirm_password">
 
         Confirm Password:
 
     </label>
-
-
 
     <input
 
@@ -751,8 +741,7 @@ input[type="submit"]:hover {
 
         maxlength="25"
 
-        pattern="[A-Z][A-Za-z0-9\@.]*"
-
+        pattern="[A-Z][A-Za-z0-9@.]*"
         title="Password must start with a capital letter and can contain letters, numbers, @ and . (No spaces allowed)"
 
         placeholder="Confirm Password"
@@ -760,8 +749,6 @@ input[type="submit"]:hover {
         required
 
     >
-
-
 
     <span
 
@@ -771,17 +758,9 @@ input[type="submit"]:hover {
 
     ><?= h($fieldErrors['confirm_password']) ?></span>
 
-
-
-
-
     <!-- SHOW PASSWORD -->
 
-
-
     <div class="show-password">
-
-
 
         <input
 
@@ -791,21 +770,13 @@ input[type="submit"]:hover {
 
         >
 
-
-
         <label for="show">
 
             Show Password
 
         </label>
 
-
-
     </div>
-
-
-
-
 
     <input
 
@@ -816,8 +787,6 @@ input[type="submit"]:hover {
         name="signup"
 
     >
-
-
 
         <!-- BACK TO LOGIN -->
 
@@ -835,135 +804,77 @@ input[type="submit"]:hover {
 
     </a>
 
-
-
 </form>
-
-
-
-
 
 <script>
 
-
-
 const form = document.getElementById("registrationForm");
-
-
 
 const firstNameInput =
 
     document.getElementById("first_name");
 
-
-
 const lastNameInput =
 
     document.getElementById("last_name");
-
-
 
 const genderInput =
 
     document.getElementById("gender");
 
-
-
 const emailInput =
 
     document.getElementById("email");
-
-
 
 const phoneInput =
 
     document.getElementById("phoneno");
 
-
-
 const addressInput =
 
     document.getElementById("address");
-
-
 
 const usernameInput =
 
     document.getElementById("username");
 
-
-
 const passwordInput =
 
     document.getElementById("password");
-
-
 
 const confirmPasswordInput =
 
     document.getElementById("confirm_password");
 
-
-
-
-
 function setError(input, errorId, message) {
-
-
 
     document.getElementById(errorId).textContent = message;
 
-
-
     input.classList.add("invalid");
-
-
 
     input.classList.remove("valid");
 
 }
 
-
-
-
-
 function setSuccess(input, errorId) {
-
-
 
     document.getElementById(errorId).textContent = "";
 
-
-
     input.classList.remove("invalid");
-
-
 
     input.classList.add("valid");
 
 }
 
-
-
-
-
 /* FIRST NAME */
 
-
-
 function validateFirstName() {
-
-
 
     const firstName =
 
         firstNameInput.value.trim();
 
-
-
     if (firstName === "") {
-
-
 
         setError(
 
@@ -975,17 +886,11 @@ function validateFirstName() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (firstName.length < 2) {
-
-
 
         setError(
 
@@ -997,17 +902,11 @@ function validateFirstName() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (!/^[A-Za-z]+$/.test(firstName)) {
-
-
 
         setError(
 
@@ -1019,13 +918,9 @@ function validateFirstName() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1035,33 +930,19 @@ function validateFirstName() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* LAST NAME */
 
-
-
 function validateLastName() {
-
-
 
     const lastName =
 
         lastNameInput.value.trim();
 
-
-
     if (lastName === "") {
-
-
 
         setError(
 
@@ -1073,17 +954,11 @@ function validateLastName() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (lastName.length < 2) {
-
-
 
         setError(
 
@@ -1095,17 +970,11 @@ function validateLastName() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (!/^[A-Za-z]+$/.test(lastName)) {
-
-
 
         setError(
 
@@ -1117,13 +986,9 @@ function validateLastName() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1133,27 +998,15 @@ function validateLastName() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* GENDER */
-
-
 
 function validateGender() {
 
-
-
     if (genderInput.value === "") {
-
-
 
         setError(
 
@@ -1165,13 +1018,9 @@ function validateGender() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1181,39 +1030,21 @@ function validateGender() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* EMAIL */
 
-
-
 function validateEmail() {
-
-
 
     const email =
 
         emailInput.value.trim();
 
+    const emailPattern = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
-
-    const emailPattern =
-
-        /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
-
-
-
-    if (email === "") {
-
-
+if (email === "") {
 
         setError(
 
@@ -1225,17 +1056,11 @@ function validateEmail() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (!emailPattern.test(email)) {
-
-
 
         setError(
 
@@ -1247,13 +1072,9 @@ function validateEmail() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1263,33 +1084,19 @@ function validateEmail() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* PHONE */
 
-
-
 function validatePhone() {
-
-
 
     const phone =
 
         phoneInput.value.trim();
 
-
-
     if (phone === "") {
-
-
 
         setError(
 
@@ -1301,17 +1108,11 @@ function validatePhone() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (!/^[0-9]{10}$/.test(phone)) {
-
-
 
         setError(
 
@@ -1323,13 +1124,9 @@ function validatePhone() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1339,33 +1136,19 @@ function validatePhone() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* ADDRESS */
 
-
-
 function validateAddress() {
-
-
 
     const address =
 
         addressInput.value.trim();
 
-
-
     if (address === "") {
-
-
 
         setError(
 
@@ -1377,17 +1160,11 @@ function validateAddress() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (address.length < 10) {
-
-
 
         setError(
 
@@ -1399,13 +1176,9 @@ function validateAddress() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1415,33 +1188,19 @@ function validateAddress() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* USERNAME */
 
-
-
 function validateUsername() {
-
-
 
     const username =
 
         usernameInput.value.trim();
 
-
-
     if (username === "") {
-
-
 
         setError(
 
@@ -1453,17 +1212,11 @@ function validateUsername() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (username.length < 5 || username.length > 25) {
-
-
 
         setError(
 
@@ -1475,17 +1228,11 @@ function validateUsername() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
-    if (!/^(?=.*[A-Za-z])[A-Za-z0-9\@.]+$/.test(username)) {
-
-
+    if (!/^(?=.*[A-Za-z])[A-Za-z0-9@.]+$/.test(username)) {
 
         setError(
 
@@ -1497,13 +1244,9 @@ function validateUsername() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1513,33 +1256,19 @@ function validateUsername() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* PASSWORD */
 
-
-
 function validatePassword() {
-
-
 
     const password =
 
         passwordInput.value;
 
-
-
     if (password === "") {
-
-
 
         setError(
 
@@ -1551,17 +1280,11 @@ function validatePassword() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (password.length < 5 || password.length > 25) {
-
-
 
         setError(
 
@@ -1573,17 +1296,11 @@ function validatePassword() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
-    if (!/^[A-Z][A-Za-z0-9\@.]*$/.test(password)) {
-
-
+    if (!/^[A-Z][A-Za-z0-9@.]*$/.test(password)) {
 
         setError(
 
@@ -1595,13 +1312,9 @@ function validatePassword() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1611,33 +1324,19 @@ function validatePassword() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* CONFIRM PASSWORD */
 
-
-
 function validateConfirmPassword() {
-
-
 
     const confirmPassword =
 
         confirmPasswordInput.value;
 
-
-
     if (confirmPassword === "") {
-
-
 
         setError(
 
@@ -1649,17 +1348,11 @@ function validateConfirmPassword() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
     if (confirmPassword.length < 5 || confirmPassword.length > 25) {
-
-
 
         setError(
 
@@ -1671,17 +1364,11 @@ function validateConfirmPassword() {
 
         );
 
-
-
         return false;
 
     }
 
-
-
-    if (!/^[A-Z][A-Za-z0-9\@.]*$/.test(confirmPassword)) {
-
-
+    if (!/^[A-Z][A-Za-z0-9@.]*$/.test(confirmPassword)) {
 
         setError(
 
@@ -1693,13 +1380,9 @@ function validateConfirmPassword() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     if (
 
@@ -1708,8 +1391,6 @@ function validateConfirmPassword() {
         passwordInput.value
 
     ) {
-
-
 
         setError(
 
@@ -1721,13 +1402,9 @@ function validateConfirmPassword() {
 
         );
 
-
-
         return false;
 
     }
-
-
 
     setSuccess(
 
@@ -1737,27 +1414,17 @@ function validateConfirmPassword() {
 
     );
 
-
-
     return true;
 
 }
 
-
-
-
-
 /* SHOW PASSWORD */
-
-
 
 document
 
 .getElementById("show")
 
 .addEventListener("change", function () {
-
-
 
     const type =
 
@@ -1767,25 +1434,13 @@ document
 
         : "password";
 
-
-
     passwordInput.type = type;
-
-
 
     confirmPasswordInput.type = type;
 
-
-
 });
 
-
-
-
-
 /* LIVE VALIDATION */
-
-
 
 firstNameInput.addEventListener(
 
@@ -1795,8 +1450,6 @@ firstNameInput.addEventListener(
 
 );
 
-
-
 lastNameInput.addEventListener(
 
     "input",
@@ -1804,8 +1457,6 @@ lastNameInput.addEventListener(
     validateLastName
 
 );
-
-
 
 genderInput.addEventListener(
 
@@ -1815,8 +1466,6 @@ genderInput.addEventListener(
 
 );
 
-
-
 emailInput.addEventListener(
 
     "input",
@@ -1824,8 +1473,6 @@ emailInput.addEventListener(
     validateEmail
 
 );
-
-
 
 phoneInput.addEventListener(
 
@@ -1835,8 +1482,6 @@ phoneInput.addEventListener(
 
 );
 
-
-
 addressInput.addEventListener(
 
     "input",
@@ -1844,8 +1489,6 @@ addressInput.addEventListener(
     validateAddress
 
 );
-
-
 
 usernameInput.addEventListener(
 
@@ -1855,8 +1498,6 @@ usernameInput.addEventListener(
 
 );
 
-
-
 passwordInput.addEventListener(
 
     "input",
@@ -1864,8 +1505,6 @@ passwordInput.addEventListener(
     validatePassword
 
 );
-
-
 
 confirmPasswordInput.addEventListener(
 
@@ -1875,21 +1514,13 @@ confirmPasswordInput.addEventListener(
 
 );
 
-
-
-
-
 /* FINAL FORM VALIDATION */
-
-
 
 form.addEventListener(
 
     "submit",
 
     function(event) {
-
-
 
         const firstNameValid = validateFirstName();
 
@@ -1908,8 +1539,6 @@ form.addEventListener(
         const passwordValid = validatePassword();
 
         const confirmPasswordValid = validateConfirmPassword();
-
-
 
         const valid =
 
@@ -1931,33 +1560,31 @@ form.addEventListener(
 
             confirmPasswordValid;
 
-
-
         if (!valid) {
 
             event.preventDefault();
 
         }
 
-
-
     }
 
 );
 
-
-
 </script>
-
-
-
 
 <?php if ($registrationSuccess): ?>
+
 <script>
+
     alert("Account created successfully!");
+
     window.location.href = "login_form.php";
+
 </script>
+
 <?php endif; ?>
+
 </body>
 
 </html>
+ 

@@ -1,6 +1,38 @@
 <?php
 declare(strict_types=1);
+
+/* Use the exact session keys created by login_form.php. */
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 date_default_timezone_set('Asia/Kolkata');
+
+/* Handle logout here so the session is actually destroyed. */
+if (isset($_GET['logout']) && $_GET['logout'] === '1') {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $cookie = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000, $cookie['path'], $cookie['domain'], $cookie['secure'], $cookie['httponly']);
+    }
+    session_destroy();
+    header('Location: ../Login/login_form.php');
+    exit;
+}
+
+$sessionUserId = filter_var($_SESSION['User_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+$sessionRole = (string)($_SESSION['Role'] ?? $_SESSION['role'] ?? '');
+if ($sessionUserId === false || $sessionUserId === null) {
+    header('Location: ../Login/login_form.php');
+    exit;
+}
+if ($sessionRole !== 'Member') {
+    if ($sessionRole === 'Admin') {
+        header('Location: ../Admin/Admin_Home.php');
+    } else {
+        header('Location: ../Login/login_form.php');
+    }
+    exit;
+}
 
 /* Database connection: supports Connection/db.php or db.php in the project. */
 $conn = null;
@@ -57,53 +89,22 @@ function member_portal_json_response(array $data, int $status = 200): never {
     exit;
 }
 
-/*
-  Identify the member with a URL parameter passed by the login redirect:
-  member_home.php?user_id=2
-  A username can also be supplied for simple local/demo setups:
-  member_home.php?username=rahulpatil
-*/
-$requestedUserId = null;
-if (isset($_GET['user_id']) && is_scalar($_GET['user_id'])) {
-    $parsedUserId = filter_var((string)$_GET['user_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    if ($parsedUserId !== false) $requestedUserId = (int)$parsedUserId;
-}
-$requestedMemberId = null;
-if (isset($_GET['member_id']) && is_scalar($_GET['member_id'])) {
-    $parsedMemberId = filter_var((string)$_GET['member_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
-    if ($parsedMemberId !== false) $requestedMemberId = (int)$parsedMemberId;
-}
-$requestedUsername = '';
-if (isset($_GET['username']) && is_scalar($_GET['username'])) {
-    $requestedUsername = trim((string)$_GET['username']);
-}
-
+/* Identify the member from the authenticated login session, not a URL parameter. */
 $member = null;
 if ($conn instanceof mysqli) {
     try {
         $memberSelect = "SELECT m.Member_id, m.User_id, m.First_name, m.Last_name, m.Email, m.Address, m.Phone_no, l.Username, l.Role
-                         FROM member m INNER JOIN login l ON l.User_id = m.User_id ";
-        if ($requestedUserId !== null) {
-            $stmt = $conn->prepare($memberSelect . "WHERE m.User_id = ? AND l.Role = 'Member' LIMIT 1");
-            $stmt->bind_param('i', $requestedUserId);
-            $stmt->execute();
-            $member = $stmt->get_result()->fetch_assoc() ?: null;
-            $stmt->close();
-        } elseif ($requestedMemberId !== null) {
-            $stmt = $conn->prepare($memberSelect . "WHERE m.Member_id = ? AND l.Role = 'Member' LIMIT 1");
-            $stmt->bind_param('i', $requestedMemberId);
-            $stmt->execute();
-            $member = $stmt->get_result()->fetch_assoc() ?: null;
-            $stmt->close();
-        } elseif ($requestedUsername !== '') {
-            $stmt = $conn->prepare($memberSelect . "WHERE l.Username = ? AND l.Role = 'Member' LIMIT 1");
-            $stmt->bind_param('s', $requestedUsername);
-            $stmt->execute();
-            $member = $stmt->get_result()->fetch_assoc() ?: null;
-            $stmt->close();
-        }
+                         FROM member m
+                         INNER JOIN login l ON l.User_id = m.User_id
+                         WHERE m.User_id = ? AND l.User_id = ? AND l.Role = 'Member'
+                         LIMIT 1";
+        $stmt = $conn->prepare($memberSelect);
+        $stmt->bind_param('ii', $sessionUserId, $sessionUserId);
+        $stmt->execute();
+        $member = $stmt->get_result()->fetch_assoc() ?: null;
+        $stmt->close();
     } catch (Throwable $e) {
-        error_log('Member portal could not identify the requested member: ' . $e->getMessage());
+        error_log('Member portal could not identify the session member: ' . $e->getMessage());
     }
 }
 
@@ -111,11 +112,7 @@ $memberAuthMessage = '';
 if (!($conn instanceof mysqli)) {
     $memberAuthMessage = $dbLoadError ?: 'The library database is unavailable. Please check the connection settings.';
 } elseif (!$member) {
-    if ($requestedUserId === null && $requestedMemberId === null && $requestedUsername === '') {
-        $memberAuthMessage = 'Member not identified. Open this page with a member User_id, for example member_home.php?user_id=2.';
-    } else {
-        $memberAuthMessage = 'No matching Member account was found. Check the user_id in the page URL and the User_id link between the login and member tables.';
-    }
+    $memberAuthMessage = 'No member record is linked to this login. Check that member.User_id matches login.User_id.';
 }
 $memberId = $member ? (int)$member['Member_id'] : 0;
 $memberName = $member ? trim((string)$member['First_name'] . ' ' . (string)$member['Last_name']) : '';
@@ -1616,7 +1613,7 @@ if ($portalAction === 'request_issue') {
 
 
         <a
-            href="login_form.php"
+            href="?logout=1"
             class="logout">
 
             Logout
@@ -2346,7 +2343,7 @@ async function requestBookIssue(bookId) {
         const body = new URLSearchParams();
         body.set("action", "request_issue");
         body.set("book_id", String(book.bookId));
-        const requestUrl = window.location.pathname + "?user_id=" + encodeURIComponent(currentMember.userId) + "&action=request_issue";
+        const requestUrl = window.location.pathname + "?action=request_issue";
         const response = await fetch(requestUrl, {
             method: "POST",
             credentials: "same-origin",
