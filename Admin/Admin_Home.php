@@ -99,9 +99,14 @@ if ($connectionLoaded && isset($conn) && $conn instanceof mysqli) {
         'SELECT COUNT(DISTINCT `Member_id`) AS `value` FROM `issue_return` WHERE `Return_date` IS NULL AND `Due_date` < CURDATE()',
         $queryError
     );
+    // Calculate fines currently due for overdue books that have not been returned.
+    // This matches return_book.php: overdue days multiplied by fine_setting.Fine_per_day.
     $totalFineToCollect = dashboard_scalar(
         $conn,
-        'SELECT COALESCE(SUM(COALESCE(`Fine`, 0)), 0) AS `value` FROM `issue_return` WHERE `Return_date` IS NULL',
+        'SELECT COALESCE(SUM(GREATEST(DATEDIFF(CURDATE(), `ir`.`Due_date`), 0) * COALESCE(`fs`.`Fine_per_day`, 0)), 0) AS `value` '
+        . 'FROM `issue_return` AS `ir` '
+        . 'LEFT JOIN `fine_setting` AS `fs` ON `fs`.`Id` = 1 '
+        . 'WHERE `ir`.`Return_date` IS NULL AND `ir`.`Due_date` < CURDATE()',
         $queryError
     );
     if ($totalBooks !== null && $issuedBooks !== null) {
