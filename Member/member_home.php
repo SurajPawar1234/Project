@@ -212,7 +212,7 @@ if ($conn instanceof mysqli) {
         }
 
         try {
-            $stmt = $conn->prepare("SELECT r.Request_id, r.Book_id, b.Title, r.Request_date, r.Status FROM issue_request r INNER JOIN book b ON b.Book_id = r.Book_id WHERE r.Member_id = ? ORDER BY r.Request_date DESC, r.Request_id DESC");
+            $stmt = $conn->prepare("SELECT r.Request_id, r.Book_id, b.Title, r.Request_date, r.Status FROM issue_request r INNER JOIN book b ON b.Book_id = r.Book_id WHERE r.Member_id = ? ORDER BY r.Request_date DESC, r.Request_id DESC LIMIT 5");
             $stmt->bind_param('i', $memberId);
             $stmt->execute();
             $result = $stmt->get_result();
