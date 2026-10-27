@@ -1,3 +1,387 @@
+<?php
+declare(strict_types=1);
+date_default_timezone_set('Asia/Kolkata');
+
+/* Database connection: supports Connection/db.php or db.php in the project. */
+$conn = null;
+$dbLoadError = '';
+$dbCandidates = [
+    __DIR__ . '/Connection/db.php',
+    dirname(__DIR__) . '/Connection/db.php',
+    dirname(__DIR__, 2) . '/Connection/db.php',
+    __DIR__ . '/db.php',
+    dirname(__DIR__) . '/db.php',
+];
+foreach (array_unique($dbCandidates) as $dbFile) {
+    if (!is_file($dbFile)) continue;
+    try {
+        require_once $dbFile;
+    } catch (Throwable $e) {
+        $dbLoadError = 'Unable to load the database connection. Check Connection/db.php.';
+        error_log('Member portal connection include failed: ' . $e->getMessage());
+    }
+    if (!($conn instanceof mysqli)) {
+        foreach (['con', 'connection', 'mysqli'] as $connectionVar) {
+            if (isset($$connectionVar) && $$connectionVar instanceof mysqli) {
+                $conn = $$connectionVar;
+                break;
+            }
+        }
+    }
+    if ($conn instanceof mysqli) break;
+}
+if (!($conn instanceof mysqli) && $dbLoadError === '') {
+    $dbLoadError = 'Database connection was not found. Place this page where it can access Connection/db.php.';
+}
+if ($conn instanceof mysqli) {
+    $conn->set_charset('utf8mb4');
+}
+
+function member_portal_h($value): string {
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+function member_portal_json($value): string {
+    return json_encode($value, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) ?: 'null';
+}
+function member_portal_date($value, bool $withTime = false): string {
+    if ($value === null || trim((string)$value) === '') return '—';
+    $timestamp = strtotime((string)$value);
+    if ($timestamp === false) return '—';
+    return date($withTime ? 'd/m/Y H:i' : 'd/m/Y', $timestamp);
+}
+function member_portal_json_response(array $data, int $status = 200): never {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
+}
+
+/*
+  Identify the member with a URL parameter passed by the login redirect:
+  member_home.php?user_id=2
+  A username can also be supplied for simple local/demo setups:
+  member_home.php?username=rahulpatil
+*/
+$requestedUserId = null;
+if (isset($_GET['user_id']) && is_scalar($_GET['user_id'])) {
+    $parsedUserId = filter_var((string)$_GET['user_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($parsedUserId !== false) $requestedUserId = (int)$parsedUserId;
+}
+$requestedMemberId = null;
+if (isset($_GET['member_id']) && is_scalar($_GET['member_id'])) {
+    $parsedMemberId = filter_var((string)$_GET['member_id'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($parsedMemberId !== false) $requestedMemberId = (int)$parsedMemberId;
+}
+$requestedUsername = '';
+if (isset($_GET['username']) && is_scalar($_GET['username'])) {
+    $requestedUsername = trim((string)$_GET['username']);
+}
+
+$member = null;
+if ($conn instanceof mysqli) {
+    try {
+        $memberSelect = "SELECT m.Member_id, m.User_id, m.First_name, m.Last_name, m.Email, m.Address, m.Phone_no, l.Username, l.Role
+                         FROM member m INNER JOIN login l ON l.User_id = m.User_id ";
+        if ($requestedUserId !== null) {
+            $stmt = $conn->prepare($memberSelect . "WHERE m.User_id = ? AND l.Role = 'Member' LIMIT 1");
+            $stmt->bind_param('i', $requestedUserId);
+            $stmt->execute();
+            $member = $stmt->get_result()->fetch_assoc() ?: null;
+            $stmt->close();
+        } elseif ($requestedMemberId !== null) {
+            $stmt = $conn->prepare($memberSelect . "WHERE m.Member_id = ? AND l.Role = 'Member' LIMIT 1");
+            $stmt->bind_param('i', $requestedMemberId);
+            $stmt->execute();
+            $member = $stmt->get_result()->fetch_assoc() ?: null;
+            $stmt->close();
+        } elseif ($requestedUsername !== '') {
+            $stmt = $conn->prepare($memberSelect . "WHERE l.Username = ? AND l.Role = 'Member' LIMIT 1");
+            $stmt->bind_param('s', $requestedUsername);
+            $stmt->execute();
+            $member = $stmt->get_result()->fetch_assoc() ?: null;
+            $stmt->close();
+        }
+    } catch (Throwable $e) {
+        error_log('Member portal could not identify the requested member: ' . $e->getMessage());
+    }
+}
+
+$memberAuthMessage = '';
+if (!($conn instanceof mysqli)) {
+    $memberAuthMessage = $dbLoadError ?: 'The library database is unavailable. Please check the connection settings.';
+} elseif (!$member) {
+    if ($requestedUserId === null && $requestedMemberId === null && $requestedUsername === '') {
+        $memberAuthMessage = 'Member not identified. Open this page with a member User_id, for example member_home.php?user_id=2.';
+    } else {
+        $memberAuthMessage = 'No matching Member account was found. Check the user_id in the page URL and the User_id link between the login and member tables.';
+    }
+}
+$memberId = $member ? (int)$member['Member_id'] : 0;
+$memberName = $member ? trim((string)$member['First_name'] . ' ' . (string)$member['Last_name']) : '';
+$currentMemberData = [
+    'id' => $member ? (string)$memberId : '',
+    'userId' => $member ? (string)$member['User_id'] : '',
+    'name' => $memberName,
+    'username' => $member ? (string)$member['Username'] : '',
+    'email' => $member ? (string)$member['Email'] : '',
+    'mobile' => $member ? (string)$member['Phone_no'] : '',
+    'address' => $member ? (string)$member['Address'] : '',
+];
+
+$books = [];
+$issuedBooks = [];
+$memberRequests = [];
+$activeAnnouncements = [];
+$libraryDetails = [
+    'name' => '', 'address' => '', 'openingTime' => '', 'closingTime' => '',
+    'workingDays' => '', 'holidaysInfo' => '', 'contactNumber' => '', 'email' => ''
+];
+$finePerDay = 0.0;
+$loadWarnings = [];
+
+if ($conn instanceof mysqli) {
+    try {
+        $bookSql = "SELECT b.Book_id, b.Title, b.Author, b.ISBN, b.Category, b.Status, b.Quantity,
+                           GREATEST(COALESCE(b.Quantity, 0) - COALESCE(active.ActiveCount, 0), 0) AS AvailableCopies
+                    FROM book b
+                    LEFT JOIN (SELECT Book_id, COUNT(*) AS ActiveCount FROM issue_return WHERE Return_date IS NULL GROUP BY Book_id) active
+                      ON active.Book_id = b.Book_id
+                    ORDER BY b.Book_id ASC";
+        $result = $conn->query($bookSql);
+        while ($row = $result->fetch_assoc()) {
+            $availableCopies = (int)$row['AvailableCopies'];
+            $books[] = [
+                'bookId' => (int)$row['Book_id'],
+                'name' => (string)$row['Title'],
+                'author' => (string)$row['Author'],
+                'isbn' => (string)$row['ISBN'],
+                'category' => (string)$row['Category'],
+                'status' => $availableCopies > 0 ? 'Available' : 'Issued',
+                'availableCopies' => $availableCopies,
+            ];
+        }
+        $result->free();
+    } catch (Throwable $e) {
+        $loadWarnings[] = 'Books could not be loaded from the database.';
+        error_log('Member portal book query failed: ' . $e->getMessage());
+    }
+
+    try {
+        $fineResult = $conn->query('SELECT Fine_per_day FROM fine_setting ORDER BY Id LIMIT 1');
+        if ($fineResult instanceof mysqli_result) {
+            $fineRow = $fineResult->fetch_assoc();
+            $finePerDay = $fineRow ? (float)$fineRow['Fine_per_day'] : 0.0;
+            $fineResult->free();
+        }
+    } catch (Throwable $e) {
+        error_log('Member portal fine setting query failed: ' . $e->getMessage());
+    }
+
+    if ($memberId > 0) {
+        try {
+            $stmt = $conn->prepare("SELECT ir.Issue_id, ir.Book_id, b.Title, b.Author, b.ISBN, ir.Issue_date, ir.Due_date, ir.Status, ir.Fine FROM issue_return ir INNER JOIN book b ON b.Book_id = ir.Book_id WHERE ir.Member_id = ? AND ir.Return_date IS NULL ORDER BY ir.Issue_date DESC, ir.Issue_id DESC");
+            $stmt->bind_param('i', $memberId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $today = new DateTimeImmutable('today');
+            while ($row = $result->fetch_assoc()) {
+                $storedFine = (float)($row['Fine'] ?? 0);
+                $due = DateTimeImmutable::createFromFormat('!Y-m-d', (string)$row['Due_date']);
+                $fine = $storedFine;
+                $status = (string)($row['Status'] ?: 'Issued');
+                if ($due instanceof DateTimeImmutable && $due < $today) {
+                    $daysOverdue = (int)$due->diff($today)->days;
+                    $fine = max($storedFine, $daysOverdue * $finePerDay);
+                    $status = 'Overdue';
+                }
+                $issuedBooks[] = [
+                    'issueId' => (int)$row['Issue_id'],
+                    'bookId' => (int)$row['Book_id'],
+                    'name' => (string)$row['Title'],
+                    'author' => (string)$row['Author'],
+                    'isbn' => (string)$row['ISBN'],
+                    'issueDate' => member_portal_date($row['Issue_date']),
+                    'dueDate' => member_portal_date($row['Due_date']),
+                    'fine' => '₹' . number_format($fine, 2),
+                    'fineAmount' => $fine,
+                    'status' => $status,
+                ];
+            }
+            $stmt->close();
+        } catch (Throwable $e) {
+            $loadWarnings[] = 'Your current issued books could not be loaded.';
+            error_log('Member portal issued books query failed: ' . $e->getMessage());
+        }
+
+        try {
+            $stmt = $conn->prepare("SELECT r.Request_id, r.Book_id, b.Title, r.Request_date, r.Status FROM issue_request r INNER JOIN book b ON b.Book_id = r.Book_id WHERE r.Member_id = ? ORDER BY r.Request_date DESC, r.Request_id DESC");
+            $stmt->bind_param('i', $memberId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $memberRequests[] = [
+                    'requestId' => (int)$row['Request_id'],
+                    'memberId' => (string)$memberId,
+                    'bookId' => (int)$row['Book_id'],
+                    'bookTitle' => (string)$row['Title'],
+                    'bookName' => (string)$row['Title'],
+                    'title' => (string)$row['Title'],
+                    'requestDate' => member_portal_date($row['Request_date'], true),
+                    'requestedAt' => (string)$row['Request_date'],
+                    'status' => (string)$row['Status'],
+                ];
+            }
+            $stmt->close();
+        } catch (Throwable $e) {
+            $loadWarnings[] = 'Your requests could not be loaded.';
+            error_log('Member portal requests query failed: ' . $e->getMessage());
+        }
+    }
+
+    try {
+        $result = $conn->query("SELECT title, message FROM announcements WHERE start_date <= NOW() AND end_date >= NOW() ORDER BY start_date ASC, announcement_id ASC");
+        while ($row = $result->fetch_assoc()) {
+            $activeAnnouncements[] = ['title' => (string)$row['title'], 'message' => (string)$row['message']];
+        }
+        $result->free();
+    } catch (Throwable $e) {
+        error_log('Member portal announcements query failed: ' . $e->getMessage());
+    }
+
+    try {
+        $result = $conn->query('SELECT Library_name, Address, Opening_time, Closing_time, Working_days, Holidays_info, Contact_number, Email FROM library_details ORDER BY Id LIMIT 1');
+        if ($result instanceof mysqli_result) {
+            $row = $result->fetch_assoc();
+            if ($row) {
+                $formatTime = static function ($value): string {
+                    if ($value === null || trim((string)$value) === '') return '';
+                    $timestamp = strtotime((string)$value);
+                    return $timestamp === false ? (string)$value : date('h:i A', $timestamp);
+                };
+                $libraryDetails = [
+                    'name' => (string)$row['Library_name'],
+                    'address' => (string)$row['Address'],
+                    'openingTime' => $formatTime($row['Opening_time']),
+                    'closingTime' => $formatTime($row['Closing_time']),
+                    'workingDays' => (string)$row['Working_days'],
+                    'holidaysInfo' => (string)$row['Holidays_info'],
+                    'contactNumber' => (string)$row['Contact_number'],
+                    'email' => (string)$row['Email'],
+                ];
+            }
+            $result->free();
+        }
+    } catch (Throwable $e) {
+        error_log('Member portal library details query failed: ' . $e->getMessage());
+    }
+}
+
+/* Same-page POST endpoint used by the member's Request Issue button. */
+$portalAction = isset($_GET['action']) ? (string)$_GET['action'] : (isset($_POST['action']) ? (string)$_POST['action'] : '');
+if ($portalAction === 'active_announcements') {
+    if (!($conn instanceof mysqli)) member_portal_json_response(['success' => false, 'message' => 'Database connection is unavailable.'], 500);
+    try {
+        $result = $conn->query("SELECT title, message FROM announcements WHERE start_date <= NOW() AND end_date >= NOW() ORDER BY start_date ASC, announcement_id ASC");
+        $items = [];
+        while ($row = $result->fetch_assoc()) $items[] = ['title' => (string)$row['title'], 'message' => (string)$row['message']];
+        $result->free();
+        member_portal_json_response(['success' => true, 'announcements' => $items]);
+    } catch (Throwable $e) {
+        error_log('Member portal active announcement refresh failed: ' . $e->getMessage());
+        member_portal_json_response(['success' => false, 'message' => 'Announcements could not be refreshed.'], 500);
+    }
+}
+if ($portalAction === 'request_issue') {
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') member_portal_json_response(['success' => false, 'message' => 'Use the Request Issue button to send a request.'], 405);
+    if (!($conn instanceof mysqli)) member_portal_json_response(['success' => false, 'message' => $dbLoadError ?: 'Database connection is unavailable.'], 500);
+    if (!$member || $memberId <= 0) member_portal_json_response(['success' => false, 'message' => 'No member was identified. Open this page with a valid user_id in the URL.'], 401);
+    // Require a same-host Origin header when the browser supplies one.
+    $origin = isset($_SERVER['HTTP_ORIGIN']) ? (string)$_SERVER['HTTP_ORIGIN'] : '';
+    if ($origin !== '') {
+        $originHost = strtolower((string)parse_url($origin, PHP_URL_HOST));
+        $requestHost = strtolower(preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')));
+        if ($originHost !== '' && $requestHost !== '' && $originHost !== $requestHost) {
+            member_portal_json_response(['success' => false, 'message' => 'Cross-origin request rejected.'], 403);
+        }
+    }
+    $bookId = filter_var($_POST['book_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if (!$bookId) member_portal_json_response(['success' => false, 'message' => 'Please choose a valid book.'], 422);
+
+    try {
+        $conn->begin_transaction();
+        $stmt = $conn->prepare('SELECT Book_id, Title, Quantity FROM book WHERE Book_id = ? FOR UPDATE');
+        $stmt->bind_param('i', $bookId);
+        $stmt->execute();
+        $bookRow = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$bookRow) {
+            $conn->rollback();
+            member_portal_json_response(['success' => false, 'message' => 'That book was not found.'], 404);
+        }
+
+        $stmt = $conn->prepare('SELECT COUNT(*) AS total FROM issue_return WHERE Book_id = ? AND Return_date IS NULL');
+        $stmt->bind_param('i', $bookId);
+        $stmt->execute();
+        $activeCount = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmt->close();
+        $availableCopies = (int)$bookRow['Quantity'] - $activeCount;
+        if ($availableCopies <= 0) {
+            $conn->rollback();
+            member_portal_json_response(['success' => false, 'message' => 'This book is currently unavailable.'], 409);
+        }
+
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM issue_return WHERE Member_id = ? AND Book_id = ? AND Return_date IS NULL");
+        $stmt->bind_param('ii', $memberId, $bookId);
+        $stmt->execute();
+        $alreadyIssued = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmt->close();
+        if ($alreadyIssued > 0) {
+            $conn->rollback();
+            member_portal_json_response(['success' => false, 'message' => 'You already have this book issued.'], 409);
+        }
+
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM issue_request WHERE Member_id = ? AND Book_id = ? AND Status IN ('Pending','Approved')");
+        $stmt->bind_param('ii', $memberId, $bookId);
+        $stmt->execute();
+        $duplicate = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmt->close();
+        if ($duplicate > 0) {
+            $conn->rollback();
+            member_portal_json_response(['success' => false, 'message' => 'You already have an active request for this book.'], 409);
+        }
+
+        $requestLimit = 3;
+        $limitResult = $conn->query('SELECT Request_limit FROM library_details ORDER BY Id LIMIT 1');
+        if ($limitResult instanceof mysqli_result) {
+            $limitRow = $limitResult->fetch_assoc();
+            if ($limitRow && isset($limitRow['Request_limit'])) $requestLimit = max(0, (int)$limitRow['Request_limit']);
+            $limitResult->free();
+        }
+        $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM issue_request WHERE Member_id = ? AND Status IN ('Pending','Approved')");
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $activeRequestCount = (int)($stmt->get_result()->fetch_assoc()['total'] ?? 0);
+        $stmt->close();
+        if ($activeRequestCount >= $requestLimit) {
+            $conn->rollback();
+            member_portal_json_response(['success' => false, 'message' => 'You have reached the library request limit (' . $requestLimit . '). Wait for an existing request to be processed before requesting another book.'], 409);
+        }
+
+        $stmt = $conn->prepare("INSERT INTO issue_request (Member_id, Book_id, Request_date, Status) VALUES (?, ?, NOW(), 'Pending')");
+        $stmt->bind_param('ii', $memberId, $bookId);
+        $stmt->execute();
+        $requestId = (int)$conn->insert_id;
+        $stmt->close();
+        $conn->commit();
+        member_portal_json_response(['success' => true, 'message' => 'Issue request submitted successfully.', 'requestId' => $requestId]);
+    } catch (Throwable $e) {
+        try { $conn->rollback(); } catch (Throwable $ignored) {}
+        error_log('Member portal request submission failed: ' . $e->getMessage());
+        member_portal_json_response(['success' => false, 'message' => 'The request could not be saved. Please check the database connection and try again.'], 500);
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -1232,7 +1616,7 @@
 
 
         <a
-            href="login_form.html"
+            href="login_form.php"
             class="logout">
 
             Logout
@@ -1263,6 +1647,14 @@
 
 <main>
 
+<?php if ($memberAuthMessage !== '' || $loadWarnings): ?>
+    <div role="status" style="background:#fff8e8;border:1px solid #e6d5a8;color:#5f4b17;padding:12px 16px;border-radius:5px;margin-bottom:18px;font-size:14px;line-height:1.5;">
+        <?php if ($memberAuthMessage !== ''): ?><?= member_portal_h($memberAuthMessage) ?><?php endif; ?>
+        <?php if ($loadWarnings): ?><?= $memberAuthMessage !== '' ? '<br>' : '' ?><?= member_portal_h(implode(' ', $loadWarnings)) ?><?php endif; ?>
+    </div>
+<?php endif; ?>
+
+
 
     <!-- =================================================
          WELCOME
@@ -1271,7 +1663,7 @@
     <div class="welcome-card" id="home-section">
 
         <h2>
-            Welcome
+            Welcome<?= $member ? ', ' . member_portal_h($memberName) : '' ?>
         </h2>
 
     </div>
@@ -1449,17 +1841,17 @@
 
         <div class="library-detail-row">
             <div class="library-detail-label">Working Days</div>
-            <div class="library-detail-value">Monday to Saturday</div>
+            <div class="library-detail-value" id="workingDays"></div>
         </div>
 
         <div class="library-detail-row">
             <div class="library-detail-label">Sunday</div>
-            <div class="library-detail-value">Closed</div>
+            <div class="library-detail-value" id="sundayInfo"></div>
         </div>
 
         <div class="library-detail-row">
             <div class="library-detail-label">Holidays</div>
-            <div class="library-detail-value">Closed</div>
+            <div class="library-detail-value" id="holidaysInfo"></div>
         </div>
 
         <div class="library-detail-row">
@@ -1758,50 +2150,14 @@
 ================================================= */
 
 /* Demo records for the member-page UI. Replace with database data later. */
-let books = [
-    { bookId: 1,  name: "Database Management System", author: "Raghu Ramakrishnan", isbn: "9780072465631", category: "Computer Science", status: "Available" },
-    { bookId: 2,  name: "Web Development", author: "Jon Duckett", isbn: "9781118008188", category: "Web Development", status: "Available" },
-    { bookId: 3,  name: "Computer Networks", author: "Andrew S. Tanenbaum", isbn: "9780132126953", category: "Computer Networks", status: "Issued" },
-    { bookId: 4,  name: "Java Programming", author: "Herbert Schildt", isbn: "9781260440232", category: "Programming", status: "Available" },
-    { bookId: 5,  name: "Operating System", author: "Abraham Silberschatz", isbn: "9781119800361", category: "Computer Science", status: "Available" },
-    { bookId: 6,  name: "Python Crash Course", author: "Eric Matthes", isbn: "9781718502703", category: "Programming", status: "Available" },
-    { bookId: 7,  name: "Clean Code", author: "Robert C. Martin", isbn: "9780132350884", category: "Software Engineering", status: "Issued" },
-    { bookId: 8,  name: "Artificial Intelligence: A Modern Approach", author: "Stuart Russell", isbn: "9780134610993", category: "Artificial Intelligence", status: "Available" },
-    { bookId: 9,  name: "Data Structures and Algorithms in Java", author: "Robert Lafore", isbn: "9780672324536", category: "Programming", status: "Available" },
-    { bookId: 10, name: "Machine Learning with Python", author: "Andreas C. Müller", isbn: "9781449369415", category: "Artificial Intelligence", status: "Available" },
-    { bookId: 11, name: "Software Engineering", author: "Ian Sommerville", isbn: "9780133943030", category: "Software Engineering", status: "Available" },
-    { bookId: 12, name: "Introduction to Algorithms", author: "Thomas H. Cormen", isbn: "9780262046305", category: "Computer Science", status: "Issued" },
-    { bookId: 13, name: "Computer Organization", author: "Carl Hamacher", isbn: "9780071204119", category: "Computer Science", status: "Available" },
-    { bookId: 14, name: "Cloud Computing", author: "Rajkumar Buyya", isbn: "9780470887998", category: "Cloud Computing", status: "Available" },
-    { bookId: 15, name: "Database System Concepts", author: "Abraham Silberschatz", isbn: "9780078022159", category: "Computer Science", status: "Available" }
-];
+const books = <?= member_portal_json($books) ?>;
+let issuedBooks = <?= member_portal_json($issuedBooks) ?>;
+const memberRequests = <?= member_portal_json($memberRequests) ?>;
+const currentMember = <?= member_portal_json($currentMemberData) ?>;
 
-let issuedBooks = [];
-
-/* Read issue requests created by the member page or admin Issue Book page. */
 function getMemberIssueRequests() {
-    try {
-        const stored = JSON.parse(localStorage.getItem("libraryIssueRequests") || "[]");
-        if (!Array.isArray(stored)) return [];
-
-        return stored.filter(request => {
-            const memberId = String(request.memberId ?? request.member_id ?? "");
-            const username = String(request.username ?? "").trim().toLowerCase();
-
-            return memberId === String(currentMember.id) ||
-                (username && username === String(currentMember.username).toLowerCase());
-        });
-    } catch (error) {
-        return [];
-    }
+    return Array.isArray(memberRequests) ? memberRequests : [];
 }
-
-/* Demo identity used only by this front-end sample. */
-const currentMember = {
-    id: "1",
-    name: "Rahul Patil",
-    username: "rahulpatil"
-};
 
 const BOOKS_PER_PAGE = 10;
 let currentBooksPage = 1;
@@ -1948,12 +2304,7 @@ function changeBooksPage(page) {
 }
 
 function getIssueRequests() {
-    try {
-        const value = JSON.parse(localStorage.getItem("libraryIssueRequests") || "[]");
-        return Array.isArray(value) ? value : [];
-    } catch (error) {
-        return [];
-    }
+    return getMemberIssueRequests();
 }
 
 function isActiveIssueRequest(bookId) {
@@ -1968,66 +2319,50 @@ function isActiveIssueRequest(bookId) {
     });
 }
 
-function requestBookIssue(bookId) {
+async function requestBookIssue(bookId) {
     const book = books.find(item => String(item.bookId) === String(bookId));
 
-    if (!book || String(book.status).toLowerCase() !== "available") {
-        alert("This book is not currently available.");
+    if (!currentMember || !currentMember.id) {
+        alert("Please log in with your Member account before requesting a book.");
+        return;
+    }
+    if (!book || String(book.status).toLowerCase() !== "available" || Number(book.availableCopies) <= 0) {
+        alert("This book is currently unavailable.");
         return;
     }
 
-    const requests = getIssueRequests();
-    const activeStatuses = ["pending", "approve", "approved"];
-    const duplicate = requests.some(request => {
-        const requestMemberId = String(request.memberId ?? request.member_id ?? "");
+    const duplicate = getIssueRequests().some(request => {
         const requestBookId = String(request.bookId ?? request.book_id ?? "");
         const status = String(request.status || "Pending").toLowerCase();
-        return requestMemberId === currentMember.id &&
-            requestBookId === String(book.bookId) &&
-            activeStatuses.includes(status);
+        return requestBookId === String(book.bookId) && ["pending", "approve", "approved"].includes(status);
     });
-
     if (duplicate) {
         alert("You already have an active request for this book.");
         return;
     }
-
-    if (!confirm(`Send an issue request for "${book.name}"?`)) {
-        return;
-    }
-
-    const now = new Date();
-    const localDate = [
-        now.getFullYear(),
-        String(now.getMonth() + 1).padStart(2, "0"),
-        String(now.getDate()).padStart(2, "0")
-    ].join("-");
-
-    requests.push({
-        requestId: `REQ-${Date.now()}`,
-        memberId: currentMember.id,
-        memberName: currentMember.name,
-        username: currentMember.username,
-        bookId: String(book.bookId),
-        bookName: book.name,
-        bookTitle: book.name,
-        title: book.name,
-        status: "Pending",
-        requestDate: localDate,
-        requestedAt: now.toISOString(),
-        createdAt: now.toISOString()
-    });
+    if (!confirm(`Send an issue request for "${book.name}"?`)) return;
 
     try {
-        localStorage.setItem("libraryIssueRequests", JSON.stringify(requests));
+        const body = new URLSearchParams();
+        body.set("action", "request_issue");
+        body.set("book_id", String(book.bookId));
+        const requestUrl = window.location.pathname + "?user_id=" + encodeURIComponent(currentMember.userId) + "&action=request_issue";
+        const response = await fetch(requestUrl, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "Accept": "application/json" },
+            body: body.toString()
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            alert(result.message || "The issue request could not be submitted.");
+            return;
+        }
+        alert(result.message || "Issue request submitted successfully.");
+        window.location.reload();
     } catch (error) {
-        alert("The request could not be saved in this browser. Please try again.");
-        return;
+        alert("Could not contact the server. Check that Apache and MySQL are running, then try again.");
     }
-
-    renderBooksPage();
-    loadMyRequests();
-    alert("Issue request submitted successfully.");
 }
 
 
@@ -2435,28 +2770,12 @@ document
 ================================================= */
 
 function openProfile() {
-
-    /*
-       No dummy profile values are used.
-       These values should later come from
-       the logged-in member/database.
-    */
-
-    document.getElementById("profileUsername").textContent = "";
-
-    document.getElementById("profileName").textContent = "";
-
-    document.getElementById("profileEmail").textContent = "";
-
-    document.getElementById("profileMobile").textContent = "";
-
-    document.getElementById("profileAddress").textContent = "";
-
-
-    document
-        .getElementById("profileOverlay")
-        .style.display = "flex";
-
+    document.getElementById("profileUsername").textContent = currentMember.username || "—";
+    document.getElementById("profileName").textContent = currentMember.name || "—";
+    document.getElementById("profileEmail").textContent = currentMember.email || "—";
+    document.getElementById("profileMobile").textContent = currentMember.mobile || "—";
+    document.getElementById("profileAddress").textContent = currentMember.address || "—";
+    document.getElementById("profileOverlay").style.display = "flex";
 }
 
 
@@ -2496,69 +2815,29 @@ document
    ANNOUNCEMENTS
 ================================================= */
 
-function loadAnnouncements() {
-
-    const track =
-        document.getElementById("announcementTrack");
-
-
-    track.innerHTML = "";
-
-
-    const announcements =
-        JSON.parse(
-            localStorage.getItem("libraryAnnouncements") || "[]"
-        );
-
-
-    const now =
-        new Date();
-
-
-    const activeAnnouncements =
-        announcements.filter(announcement => {
-
-            const start =
-                new Date(announcement.startDate);
-
-            const end =
-                new Date(announcement.endDate);
-
-
-            return (
-                now >= start &&
-                now <= end
-            );
-
+async function loadAnnouncements() {
+    const track = document.getElementById("announcementTrack");
+    try {
+        const response = await fetch(window.location.pathname + "?action=active_announcements", {
+            credentials: "same-origin",
+            headers: { "Accept": "application/json" },
+            cache: "no-store"
         });
-
-
-    if (activeAnnouncements.length === 0) {
-
+        const result = await response.json();
+        if (!response.ok || !result.success || !Array.isArray(result.announcements)) {
+            track.innerHTML = "";
+            return;
+        }
         track.innerHTML = "";
-
-        return;
+        result.announcements.forEach(announcement => {
+            const item = document.createElement("div");
+            item.className = "announcement-item";
+            item.textContent = `${announcement.title}: ${announcement.message}`;
+            track.appendChild(item);
+        });
+    } catch (error) {
+        track.innerHTML = "";
     }
-
-
-    activeAnnouncements.forEach(announcement => {
-
-        const item =
-            document.createElement("div");
-
-
-        item.className =
-            "announcement-item";
-
-
-        item.textContent =
-            `${announcement.title}: ${announcement.message}`;
-
-
-        track.appendChild(item);
-
-    });
-
 }
 
 
@@ -2567,24 +2846,17 @@ function loadAnnouncements() {
    LIBRARY DETAILS
 ================================================= */
 
-/*
-   Keep these values blank until they are connected
-   to your library_details database table.
-*/
-const libraryDetails = {
-    name: "",
-    address: "",
-    openingTime: "",
-    closingTime: "",
-    contactNumber: ""
-};
+const libraryDetails = <?= member_portal_json($libraryDetails) ?>;
 
 function loadLibraryDetails() {
-    document.getElementById("libraryName").textContent = libraryDetails.name;
-    document.getElementById("libraryAddress").textContent = libraryDetails.address;
-    document.getElementById("openingTime").textContent = libraryDetails.openingTime;
-    document.getElementById("closingTime").textContent = libraryDetails.closingTime;
-    document.getElementById("contactNumber").textContent = libraryDetails.contactNumber;
+    document.getElementById("libraryName").textContent = libraryDetails.name || "—";
+    document.getElementById("libraryAddress").textContent = libraryDetails.address || "—";
+    document.getElementById("openingTime").textContent = libraryDetails.openingTime || "—";
+    document.getElementById("closingTime").textContent = libraryDetails.closingTime || "—";
+    document.getElementById("workingDays").textContent = libraryDetails.workingDays || "—";
+    document.getElementById("sundayInfo").textContent = libraryDetails.holidaysInfo || "—";
+    document.getElementById("holidaysInfo").textContent = libraryDetails.holidaysInfo || "—";
+    document.getElementById("contactNumber").textContent = libraryDetails.contactNumber || "—";
 }
 
 
@@ -2619,17 +2891,9 @@ loadBooks();
 loadIssuedBooks();
 loadMyRequests();
 
-window.addEventListener("storage", function(event) {
-    if (event.key === "libraryIssueRequests") {
-        loadMyRequests();
-        renderBooksPage();
-    }
-});
-
 document.addEventListener("visibilitychange", function() {
     if (!document.hidden) {
-        loadMyRequests();
-        renderBooksPage();
+        loadAnnouncements();
     }
 });
 

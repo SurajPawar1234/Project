@@ -1,3 +1,171 @@
+<?php
+declare(strict_types=1);
+date_default_timezone_set('Asia/Kolkata');
+
+/** Emit a JSON response and terminate the request. */
+function announcement_json_response(int $status, array $payload): void
+{
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
+/** Locate the project's existing MySQLi connection without requiring a fixed folder layout. */
+function announcement_get_connection(): mysqli
+{
+    $dir = __DIR__;
+    $candidates = [];
+    for ($level = 0; $level < 6; $level++) {
+        $candidates[] = $dir . DIRECTORY_SEPARATOR . 'Connection' . DIRECTORY_SEPARATOR . 'db.php';
+        $candidates[] = $dir . DIRECTORY_SEPARATOR . 'db.php';
+        $parent = dirname($dir);
+        if ($parent === $dir) break;
+        $dir = $parent;
+    }
+
+    foreach (array_unique($candidates) as $file) {
+        if (is_file($file)) {
+            require_once $file;
+            if (isset($conn) && $conn instanceof mysqli) {
+                $conn->set_charset('utf8mb4');
+                return $conn;
+            }
+        }
+    }
+    throw new RuntimeException('Could not find a db.php file that defines the MySQLi connection variable $conn.');
+}
+
+function announcement_length(string $value): int
+{
+    return function_exists('mb_strlen') ? mb_strlen($value, 'UTF-8') : strlen($value);
+}
+
+function announcement_parse_datetime($value): ?DateTimeImmutable
+{
+    if (!is_string($value) || $value === '') return null;
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d\\TH:i', $value);
+    $errors = DateTimeImmutable::getLastErrors();
+    if (!$date || ($errors !== false && ($errors['warning_count'] > 0 || $errors['error_count'] > 0))) return null;
+    if ($date->format('Y-m-d\\TH:i') !== $value) return null;
+    return $date;
+}
+
+function announcement_is_active(array $row): bool
+{
+    try {
+        $now = new DateTimeImmutable('now');
+        $start = new DateTimeImmutable((string)$row['start_date']);
+        $end = new DateTimeImmutable((string)$row['end_date']);
+        return $now >= $start && $now <= $end;
+    } catch (Throwable $e) {
+        return false;
+    }
+}
+
+/* The API runs only when ?action=... is supplied; the normal request renders the page below. */
+if (isset($_GET['action'])) {
+    try {
+        $conn = announcement_get_connection();
+        $action = (string)$_GET['action'];
+
+        if ($action === 'list') {
+            if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+                announcement_json_response(405, ['ok' => false, 'message' => 'Use GET to load announcements.']);
+            }
+            $result = $conn->query('SELECT announcement_id, title, message, start_date, end_date, created_at FROM announcements ORDER BY created_at DESC, announcement_id DESC');
+            $records = [];
+            while ($row = $result->fetch_assoc()) {
+                $records[] = [
+                    'announcementId' => (int)$row['announcement_id'],
+                    'title' => (string)$row['title'],
+                    'message' => (string)$row['message'],
+                    'startDate' => (new DateTimeImmutable((string)$row['start_date']))->format('Y-m-d\\TH:i'),
+                    'endDate' => (new DateTimeImmutable((string)$row['end_date']))->format('Y-m-d\\TH:i'),
+                    'createdAt' => (string)$row['created_at'],
+                ];
+            }
+            announcement_json_response(200, ['ok' => true, 'announcements' => $records]);
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            announcement_json_response(405, ['ok' => false, 'message' => 'Use POST for this operation.']);
+        }
+        $raw = file_get_contents('php://input');
+        $input = json_decode($raw ?: '', true);
+        if (!is_array($input)) {
+            announcement_json_response(400, ['ok' => false, 'message' => 'Invalid request data.']);
+        }
+
+        if ($action === 'create' || $action === 'update') {
+            $title = trim((string)($input['title'] ?? ''));
+            $message = trim((string)($input['message'] ?? ''));
+            $startValue = $input['startDate'] ?? null;
+            $endValue = $input['endDate'] ?? null;
+            $startDate = announcement_parse_datetime($startValue);
+            $endDate = announcement_parse_datetime($endValue);
+
+            if ($title === '' || announcement_length($title) < 3 || announcement_length($title) > 100) {
+                announcement_json_response(422, ['ok' => false, 'message' => 'Title must be 3–100 characters long.']);
+            }
+            if ($message === '' || announcement_length($message) < 10 || announcement_length($message) > 1000) {
+                announcement_json_response(422, ['ok' => false, 'message' => 'Message must be 10–1000 characters long.']);
+            }
+            if (!$startDate || !$endDate) {
+                announcement_json_response(422, ['ok' => false, 'message' => 'Enter valid start and end dates and times.']);
+            }
+            if ($endDate <= $startDate) {
+                announcement_json_response(422, ['ok' => false, 'message' => 'End Date & Time must be after Start Date & Time.']);
+            }
+
+            $startSql = $startDate->format('Y-m-d H:i:s');
+            $endSql = $endDate->format('Y-m-d H:i:s');
+
+            if ($action === 'create') {
+                $stmt = $conn->prepare('INSERT INTO announcements (title, message, start_date, end_date) VALUES (?, ?, ?, ?)');
+                $stmt->bind_param('ssss', $title, $message, $startSql, $endSql);
+                $stmt->execute();
+                announcement_json_response(201, ['ok' => true, 'message' => 'Announcement published successfully.', 'announcementId' => (int)$conn->insert_id]);
+            }
+
+            $id = filter_var($input['announcementId'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (!$id) announcement_json_response(422, ['ok' => false, 'message' => 'Invalid announcement ID.']);
+            $check = $conn->prepare('SELECT announcement_id, start_date, end_date FROM announcements WHERE announcement_id = ?');
+            $check->bind_param('i', $id);
+            $check->execute();
+            $old = $check->get_result()->fetch_assoc();
+            if (!$old) announcement_json_response(404, ['ok' => false, 'message' => 'Announcement not found. Refresh the list and try again.']);
+            if (!announcement_is_active($old)) announcement_json_response(409, ['ok' => false, 'message' => 'This announcement can only be edited during its active period.']);
+
+            $stmt = $conn->prepare('UPDATE announcements SET title = ?, message = ?, start_date = ?, end_date = ? WHERE announcement_id = ?');
+            $stmt->bind_param('ssssi', $title, $message, $startSql, $endSql, $id);
+            $stmt->execute();
+            announcement_json_response(200, ['ok' => true, 'message' => 'Announcement updated successfully.']);
+        }
+
+        if ($action === 'delete') {
+            $id = filter_var($input['announcementId'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+            if (!$id) announcement_json_response(422, ['ok' => false, 'message' => 'Invalid announcement ID.']);
+            $check = $conn->prepare('SELECT announcement_id, start_date, end_date FROM announcements WHERE announcement_id = ?');
+            $check->bind_param('i', $id);
+            $check->execute();
+            $old = $check->get_result()->fetch_assoc();
+            if (!$old) announcement_json_response(404, ['ok' => false, 'message' => 'Announcement not found. It may already have been deleted.']);
+            if (!announcement_is_active($old)) announcement_json_response(409, ['ok' => false, 'message' => 'This announcement can only be deleted during its active period.']);
+            $stmt = $conn->prepare('DELETE FROM announcements WHERE announcement_id = ?');
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            announcement_json_response(200, ['ok' => true, 'message' => 'Announcement deleted successfully.']);
+        }
+
+        announcement_json_response(400, ['ok' => false, 'message' => 'Unknown announcement action.']);
+    } catch (Throwable $e) {
+        error_log('Announcements PHP error: ' . $e->getMessage());
+        announcement_json_response(500, ['ok' => false, 'message' => 'Database request failed. Check that Connection/db.php defines $conn and that the announcements table exists.']);
+    }
+}
+?>
 <!DOCTYPE html>
 
 <html>
@@ -18,111 +186,68 @@
 
         }
 
-        /* Left Sidebar */
-
+        /* Shared latest admin sidebar menu */
         .sidebar {
-
             width: 220px;
-
             height: 100vh;
-
             background-color: #333;
-
             position: fixed;
-
             left: 0;
-
             top: 0;
-
             color: white;
-
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 500;
         }
-
         .sidebar h2 {
-
+            flex: 0 0 auto;
             text-align: center;
-
             padding: 20px 0;
-
             margin: 0;
-
             background-color: #222;
-
         }
-
-        .sidebar a,
-
-        .manage {
-
+        .sidebar-menu {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
+        }
+        .sidebar a {
             display: block;
-
             color: white;
-
             text-decoration: none;
-
-            padding: 15px 20px;
-
+            padding: 14px 20px;
             border-bottom: 1px solid #555;
-
+        }
+        .sidebar a:hover { background-color: #555; }
+        .sidebar a.active {
+            background-color: #4b4b4b;
+            border-left: 4px solid #fff;
+            padding-left: 16px;
+        }
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
             cursor: pointer;
-
+            user-select: none;
         }
-
-        .sidebar a:hover,
-
-        .manage:hover {
-
-            background-color: rgba(255, 255, 255, .11);
-
-        }
-
-        .arrow {
-
-            float: right;
-
-        }
-
-        .submenu {
-
-            display: none;
-
-            background-color: #444;
-
-        }
-
-        .submenu a {
-
-            padding-left: 40px;
-
-        }
-
-        /* Active Menu */
-
-        .active {
-
-            background-color: rgba(255, 255, 255, .11);
-
-        }
-
-        /* Logout */
-
+        .manage:hover { background-color: #555; }
+        .manage:focus-visible { outline: 2px solid white; outline-offset: -3px; }
+        .arrow { float: right; }
+        .submenu { display: none; background-color: #444; }
+        .submenu.open { display: block; }
+        .submenu a { padding-left: 40px; font-size: 13px; }
+        .submenu a.active { padding-left: 36px; }
         .logout {
-
-            position: absolute;
-
-            bottom: 10px;
-
+            flex: 0 0 auto;
             width: 100%;
-
+            padding-top: 8px;
+            background-color: #333;
         }
-
-        .logout a {
-
-            background-color: #222;
-
-            text-align: center;
-
-        }
+        .logout a { background-color: #222; text-align: center; margin: 0; }
 
         /* Main Content */
 
@@ -524,278 +649,131 @@
         }
 
     
-        /* Content layout refresh (sidebar/menu remains unchanged) */
+        /* Shared content-card styling to match the other admin pages */
         .main {
-            padding: 28px 32px 42px;
+            margin-left: 220px;
+            padding: 0 25px 25px;
             min-width: 0;
         }
-
-        .top,
-        .announcement-form,
-        .recent {
-            border: 1px solid #e0e4e7;
-            border-radius: 10px;
-            box-shadow: 0 4px 16px rgba(25, 40, 50, 0.045);
-            overflow: hidden;
-        }
-
         .top {
-            margin-top: 2px;
-            padding: 28px 30px;
-            border-top: 4px solid #465660;
-            background: linear-gradient(120deg, #ffffff 0%, #f7f9fa 100%);
+            margin-top: 10px;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
         }
-
-        .page-heading { max-width: 900px; }
-
         .top h1 {
             margin: 0;
-            color: #28343b;
-            text-align: left;
-            font-size: 30px;
-            line-height: 1.25;
-            letter-spacing: -0.4px;
+            text-align: center;
+            color: #333;
+            font-size: 36px;
         }
-
         .announcement-form,
         .recent {
-            margin-top: 22px;
-            padding: 26px 30px 30px;
-            background: #fff;
+            background-color: #fff;
+            margin-top: 25px;
+            padding: 25px;
+            border: 1px solid #ddd;
+            border-radius: 0;
+            box-shadow: none;
+            overflow: visible;
         }
-
-        .announcement-form h2,
-        .recent h2 {
-            margin: 0;
-            color: #29363e;
-            font-size: 22px;
-            line-height: 1.35;
-        }
-
-        #announcementForm {
-            max-width: 1180px;
-        }
-
-        .form-group {
-            min-width: 0;
+        /* Keep the title card and Add New Announcement card visually connected.
+           This is a spacing-only adjustment; original colors and card styling stay unchanged. */
+        .announcement-form { margin-top: 12px; }
+        .announcement-form h2 {
+            margin-top: 0;
             margin-bottom: 20px;
+            color: #333;
+            font-size: 24px;
+            text-align: center;
         }
-
-        .form-group label {
-            margin-bottom: 9px;
-            color: #344149;
-            font-size: 14px;
+        .recent h2 {
+            margin-top: 0;
+            margin-bottom: 18px;
+            color: #333;
+            font-size: 24px;
         }
-
+        .form-group { min-width: 0; margin-bottom: 18px; }
+        .form-group label { color: #333; font-size: 15px; margin-bottom: 8px; }
         .form-group input,
         .form-group textarea {
-            border: 1px solid #cbd2d7;
-            border-radius: 5px;
-            background: #fff;
-            color: #263238;
-            padding: 12px 13px;
+            width: 100%;
+            padding: 11px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 0;
+            font-family: Arial, sans-serif;
             font-size: 15px;
-            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+            background: #fff;
+            color: #333;
+            box-shadow: none;
         }
-
-        .form-group input {
-            min-height: 45px;
-        }
-
-        .form-group textarea {
-            min-height: 135px;
-            height: 135px;
-            line-height: 1.5;
-        }
-
+        .form-group input { min-height: 42px; }
+        .form-group textarea { min-height: 120px; height: 120px; resize: vertical; line-height: 1.45; }
         .form-group input:focus,
         .form-group textarea:focus {
-            border-color: #637680;
-            box-shadow: 0 0 0 3px rgba(70, 86, 96, 0.10);
+            border-color: #465660;
             outline: none;
+            box-shadow: none;
         }
-
         .form-group input.invalid,
         .form-group textarea.invalid,
         .form-group input.invalid:focus,
         .form-group textarea.invalid:focus {
-            border: 1px solid #c9302c !important;
-            box-shadow: 0 0 0 2px rgba(201, 48, 44, 0.08);
+            border: 2px solid #c9302c !important;
+            outline: none;
+            box-shadow: none;
         }
-
-        .form-error {
-            font-size: 13px;
-            margin-top: 7px;
-        }
-
-        .date-row {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 22px;
-            margin-top: 2px;
-        }
-
-        .button-area {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            margin-top: 6px;
-            padding-top: 4px;
-        }
-
+        .form-error { font-size: 13px; margin-top: 6px; }
+        .date-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+        .button-area { display: block; margin-top: 5px; padding-top: 0; }
         .btn {
-            min-height: 43px;
-            margin: 0;
-            padding: 11px 20px;
-            border-radius: 5px;
-            font-size: 14px;
-            transition: background-color 0.15s ease, transform 0.15s ease;
+            min-height: auto;
+            padding: 11px 22px;
+            border: none;
+            border-radius: 0;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            margin-right: 10px;
         }
-
-        .publish-btn {
-            background: #465660;
-            color: #fff;
-        }
-
-        .publish-btn:hover { background: #37434a; }
-        .publish-btn:active,
-        .clear-btn:active { transform: translateY(1px); }
-
-        .clear-btn {
-            background: #eef0f1;
-            color: #334149;
-        }
-
-        .clear-btn:hover { background: #e0e4e6; }
-
-        .recent { padding-bottom: 22px; }
-        .table-wrap {
-            width: 100%;
-            max-width: 100%;
-            overflow-x: auto;
-            overflow-y: hidden;
-            border: 1px solid #dfe3e6;
-            border-radius: 6px;
-        }
-
-        .recent table {
-            width: 100%;
-            min-width: 980px;
-            border-collapse: separate;
-            border-spacing: 0;
-            margin: 0;
-        }
-
+        .publish-btn { background-color: #333; color: #fff; }
+        .publish-btn:hover { background-color: #222; }
+        .clear-btn { background-color: #ddd; color: #222; }
+        .clear-btn:hover { background-color: #ccc; }
+        .table-wrap { width: 100%; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+        .recent table { width: 100%; min-width: 900px; border-collapse: collapse; }
         .recent th,
-        .recent td {
-            padding: 13px 14px;
-            border: 0;
-            border-bottom: 1px solid #e4e8eb;
-            border-right: 1px solid #e4e8eb;
-            text-align: left;
-            line-height: 1.45;
-        }
-
-        .recent th {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background: #f1f4f5;
-            color: #36434a;
-            font-size: 13px;
-            font-weight: 700;
-            white-space: nowrap;
-        }
-
-        .recent td {
-            color: #3b474e;
-            font-size: 14px;
-            vertical-align: top;
-            overflow-wrap: anywhere;
-            background: #fff;
-        }
-
-        .recent tbody tr:last-child td { border-bottom: 0; }
-        .recent th:last-child,
-        .recent td:last-child { border-right: 0; }
-        .recent tbody tr:hover td { background: #fafcfc; }
-
-        .recent td:nth-child(1) { min-width: 160px; }
-        .recent td:nth-child(2) { min-width: 250px; }
-        .recent td:nth-child(3),
-        .recent td:nth-child(4) { min-width: 160px; }
-        .recent td:nth-child(5) { min-width: 110px; }
-        .recent td:nth-child(6) { min-width: 145px; }
-
-        .edit-btn,
-        .delete-btn {
-            border-radius: 4px;
-            padding: 8px 12px;
-            font-size: 13px;
-            font-weight: 600;
-        }
-
+        .recent td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        .recent th { background-color: #eee; color: #333; white-space: nowrap; }
+        .recent td { vertical-align: top; overflow-wrap: anywhere; }
+        .edit-btn { border-radius: 0; padding: 7px 13px; font-size: 14px; }
+        .delete-btn { border-radius: 0; padding: 7px 13px; font-size: 14px; }
         .scheduled,
         .published,
-        .expired {
-            display: inline-block;
-            padding: 5px 9px;
-            border-radius: 999px;
-            font-size: 12px;
-            line-height: 1.25;
-            white-space: nowrap;
-        }
-
-        .scheduled {
-            color: #6a5a20;
-            background: #fff5ce;
-        }
-
-        .published {
-            color: #23633a;
-            background: #e4f5e9;
-        }
-
-        .expired {
-            color: #9c2929;
-            background: #fde8e8;
-        }
-
-        .no-data {
-            padding: 28px 16px;
-            color: #66737a;
-            background: #fbfcfc;
-            font-size: 14px;
-        }
-
-        @media (max-width: 1000px) {
-            .main { padding: 22px 22px 32px; }
-            .announcement-form,
-            .recent { padding: 22px; }
-        }
+        .expired { display: inline; padding: 0; border-radius: 0; font-size: inherit; line-height: inherit; white-space: normal; background: transparent; }
+        .scheduled { color: #555; }
+        .published { color: #222; }
+        .expired { color: #b30000; }
+        .no-data { text-align: center; padding: 20px; color: #555; background: #fff; font-size: 15px; }
 
         @media (max-width: 800px) {
-            .main { padding: 18px 16px 28px; }
-            .top { padding: 23px; }
-            .top h1 { font-size: 27px; }
+            .sidebar { width: 180px; }
+            .main { margin-left: 180px; padding: 0 15px 20px; }
             .date-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
-            .announcement-form,
-            .recent { padding: 20px; }
             .recent { overflow: visible; }
             .table-wrap { overflow-x: auto; }
-            .recent table { min-width: 980px; }
-            .button-area { flex-wrap: wrap; }
+            .recent table { min-width: 900px; }
         }
-
-        @media (max-width: 520px) {
-            .main { padding: 14px 12px 24px; }
-            .top { padding: 20px; }
-            .top h1 { font-size: 24px; }
-            .announcement-form,
-            .recent { padding: 17px; }
-            .announcement-form h2,
-            .recent h2 { font-size: 20px; }
-            .button-area { align-items: stretch; flex-direction: column; }
-            .button-area .btn { width: 100%; }
+        @media (max-width: 540px) {
+            .sidebar { width: 150px; }
+            .sidebar a, .manage { padding: 12px; font-size: 13px; }
+            .sidebar h2 { font-size: 20px; }
+            .main { margin-left: 150px; padding: 0 10px 15px; }
+            .top, .announcement-form, .recent { padding: 14px; }
+            .top h1 { font-size: 27px; }
+            .button-area .btn { margin-bottom: 8px; }
+            .logout { padding-top: 8px; }
         }
 
     </style>
@@ -804,93 +782,31 @@
 
 <body>
 
-    <!-- Sidebar -->
-
-    <div class="sidebar">
-
+    <!-- Shared latest admin sidebar menu -->
+    <aside class="sidebar">
         <h2>Library</h2>
+        <nav class="sidebar-menu" aria-label="Admin navigation">
+            <a href="admin_home.php">Dashboard</a>
+            <a href="my_profile.php">My Profile</a>
+            <a href="library_profile.php">Library Profile</a>
 
-        <a href="admin_home.html">Dashboard</a>
+            <div class="manage" id="manageBooksToggle" role="button" tabindex="0"
+                 aria-expanded="false" aria-controls="submenu" onclick="toggleMenu()" onkeydown="handleMenuKeydown(event)">
+                Manage Books <span class="arrow" id="arrow">+</span>
+            </div>
+            <div class="submenu" id="submenu">
+                <a href="view_books.php">View All Books</a>
+                <a href="add_book.php">Add Book</a>
+                <a href="update_book.php">Update / Delete Book</a>
+            </div>
 
-        <a href="my_profile.html">My Profile</a>
-
-        <!-- Manage Books -->
-
-        <div class="manage" onclick="toggleMenu()">
-
-            Manage Books
-
-            <span class="arrow" id="arrow">+</span>
-
-        </div>
-
-        <!-- Manage Books Submenu -->
-
-        <div class="submenu" id="submenu">
-
-            <a href="view_books.html">
-
-                View All Books
-
-            </a>
-
-            <a href="add_book.html">
-
-                Add Book
-
-            </a>
-
-            <a href="update_book.html">
-
-                Update / Return Book
-
-            </a>
-
-        </div>
-
-        <a href="issue_book.html">
-
-            Issue Book
-
-        </a>
-
-        <a href="return_book.html">
-
-            Return Book
-
-        </a>
-
-        <a href="returned_books.html">
-
-            Recent Returned Books
-
-        </a>
-
-        <a href="members.html">
-
-            Members Details
-
-        </a>
-
-        <a href="announcements.html" class="active">
-
-            Announcements
-
-        </a>
-
-        <!-- Logout -->
-
-        <div class="logout">
-
-            <a href="login_form.html">
-
-                Logout
-
-            </a>
-
-        </div>
-
-    </div>
+            <a href="issue_book.php">Issue Book</a>
+            <a href="return_book.php">Return Book</a>
+            <a href="members.php">Members Details</a>
+            <a href="announcements.php" class="active" aria-current="page">Announcements</a>
+        </nav>
+        <div class="logout"><a href="../login/login_form.php">Logout</a></div>
+    </aside>
 
     <!-- Main Content -->
 
@@ -1117,49 +1033,23 @@
         ========================================== */
 
         function toggleMenu() {
-
-            var menu =
-
-                document.getElementById("submenu");
-
-            var arrow =
-
-                document.getElementById("arrow");
-
-            if (menu.style.display === "block") {
-
-                menu.style.display = "none";
-
-                arrow.innerHTML = "+";
-
-            } else {
-
-                menu.style.display = "block";
-
-                arrow.innerHTML = "-";
-
-            }
-
+            var menu = document.getElementById("submenu");
+            var arrow = document.getElementById("arrow");
+            var toggle = document.getElementById("manageBooksToggle");
+            var isOpen = menu.classList.toggle("open");
+            arrow.textContent = isOpen ? "-" : "+";
+            toggle.setAttribute("aria-expanded", String(isOpen));
         }
 
-        /* ==========================================
+        function handleMenuKeydown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleMenu();
+            }
+        }
 
-           ANNOUNCEMENT DATA
-
-        ========================================== */
-
-        var announcements =
-
-            JSON.parse(
-
-                localStorage.getItem(
-
-                    "libraryAnnouncements"
-
-                )
-
-            ) || [];
-
+        /* Announcement records are loaded from MySQL through this PHP page. */
+        var announcements = [];
         var editIndex = -1;
 
         /* ==========================================
@@ -1169,129 +1059,17 @@
         ========================================== */
 
         function setDefaultDateTime() {
-
             var now = new Date();
+            var year = now.getFullYear();
+            var month = String(now.getMonth() + 1).padStart(2, "0");
+            var day = String(now.getDate()).padStart(2, "0");
+            var hours = String(now.getHours()).padStart(2, "0");
+            var minutes = String(now.getMinutes()).padStart(2, "0");
+            var currentDateTime = year + "-" + month + "-" + day + "T" + hours + ":" + minutes;
 
-            var year =
-
-                now.getFullYear();
-
-            var month =
-
-                String(
-
-                    now.getMonth() + 1
-
-                ).padStart(2, "0");
-
-            var day =
-
-                String(
-
-                    now.getDate()
-
-                ).padStart(2, "0");
-
-            var hours =
-
-                String(
-
-                    now.getHours()
-
-                ).padStart(2, "0");
-
-            var minutes =
-
-                String(
-
-                    now.getMinutes()
-
-                ).padStart(2, "0");
-
-            var currentDateTime =
-
-                year + "-" +
-
-                month + "-" +
-
-                day + "T" +
-
-                hours + ":" +
-
-                minutes;
-
-            document.getElementById(
-
-                "startDate"
-
-            ).value =
-
-                currentDateTime;
-
-            /* Default end date = 7 days */
-
-            var endDate =
-
-                new Date(now);
-
-            endDate.setDate(
-
-                endDate.getDate() + 7
-
-            );
-
-            var endYear =
-
-                endDate.getFullYear();
-
-            var endMonth =
-
-                String(
-
-                    endDate.getMonth() + 1
-
-                ).padStart(2, "0");
-
-            var endDay =
-
-                String(
-
-                    endDate.getDate()
-
-                ).padStart(2, "0");
-
-            var endHours =
-
-                String(
-
-                    endDate.getHours()
-
-                ).padStart(2, "0");
-
-            var endMinutes =
-
-                String(
-
-                    endDate.getMinutes()
-
-                ).padStart(2, "0");
-
-            document.getElementById(
-
-                "endDate"
-
-            ).value =
-
-                endYear + "-" +
-
-                endMonth + "-" +
-
-                endDay + "T" +
-
-                endHours + ":" +
-
-                endMinutes;
-
+            // Keep Start Date & Time convenient, but let the librarian choose the End Date & Time.
+            document.getElementById("startDate").value = currentDateTime;
+            document.getElementById("endDate").value = "";
         }
 
         setDefaultDateTime();
@@ -1717,254 +1495,61 @@
 
 
         /* ==========================================
-
-           ADD / UPDATE ANNOUNCEMENT
-
+           ADD / UPDATE ANNOUNCEMENT (MySQL via PHP)
         ========================================== */
-
-        document
-
-            .getElementById(
-
-                "announcementForm"
-
-            )
-
-            .addEventListener(
-
-                "submit",
-
-                function (event) {
-
-                    event.preventDefault();
-
-                    if (!validateAnnouncementForm()) {
-                        return;
-                    }
-
-                    var title =
-
-                        document.getElementById(
-
-                            "title"
-
-                        ).value.trim();
-
-                    var message =
-
-                        document.getElementById(
-
-                            "message"
-
-                        ).value.trim();
-
-                    var startDate =
-
-                        document.getElementById(
-
-                            "startDate"
-
-                        ).value;
-
-                    var endDate =
-
-                        document.getElementById(
-
-                            "endDate"
-
-                        ).value;
-
-                    if (
-
-                        title === "" ||
-
-                        message === "" ||
-
-                        startDate === "" ||
-
-                        endDate === ""
-
-                    ) {
-
-                        alert(
-
-                            "Please fill all the fields."
-
-                        );
-
-                        return;
-
-                    }
-
-                    var start =
-
-                        new Date(
-
-                            startDate
-
-                        );
-
-                    var end =
-
-                        new Date(
-
-                            endDate
-
-                        );
-
-                    /*
-
-                     * End must be after start
-
-                     */
-
-                    if (end <= start) {
-
-                        alert(
-
-                            "End Date & Time must be after Start Date & Time."
-
-                        );
-
-                        return;
-
-                    }
-
-                    /*
-
-                     * When editing, check that
-
-                     * the announcement is still
-
-                     * within its active period.
-
-                     */
-
-                    if (editIndex !== -1) {
-
-                        var oldAnnouncement =
-
-                            announcements[
-
-                                editIndex
-
-                            ];
-
-                        var oldStatus =
-
-                            getStatus(
-
-                                oldAnnouncement
-
-                            );
-
-                        if (
-
-                            oldStatus !==
-
-                            "Published"
-
-                        ) {
-
-                            alert(
-
-                                "This announcement can no longer be edited because it is outside its active period."
-
-                            );
-
-                            clearForm();
-
-                            return;
-
-                        }
-
-                    }
-
-                    var announcement = {
-
-                        title:
-
-                            title,
-
-                        message:
-
-                            message,
-
-                        startDate:
-
-                            startDate,
-
-                        endDate:
-
-                            endDate
-
-                    };
-
-                    /* UPDATE */
-
-                    if (editIndex !== -1) {
-
-                        announcements[
-
-                            editIndex
-
-                        ] =
-
-                            announcement;
-
-                        alert(
-
-                            "Announcement updated successfully."
-
-                        );
-
-                        editIndex = -1;
-
-                        document.getElementById(
-
-                            "formTitle"
-
-                        ).innerText =
-
-                            "Add New Announcement";
-
-                        document.getElementById(
-
-                            "submitButton"
-
-                        ).innerText =
-
-                            "Publish Announcement";
-
-                    }
-
-                    /* ADD */
-
-                    else {
-
-                        announcements.unshift(
-
-                            announcement
-
-                        );
-
-                        alert(
-
-                            "Announcement published successfully."
-
-                        );
-
-                    }
-
-                    saveAnnouncements();
-
-                    displayAnnouncements();
-
-                    clearForm();
-
-                }
-
-            );
+        document.getElementById("announcementForm").addEventListener("submit", async function (event) {
+            event.preventDefault();
+            if (!validateAnnouncementForm()) return;
+
+            var title = document.getElementById("title").value.trim();
+            var message = document.getElementById("message").value.trim();
+            var startDate = document.getElementById("startDate").value;
+            var endDate = document.getElementById("endDate").value;
+
+            if (!title || !message || !startDate || !endDate) {
+                alert("Please fill all the fields.");
+                return;
+            }
+            if (new Date(endDate) <= new Date(startDate)) {
+                alert("End Date & Time must be after Start Date & Time.");
+                return;
+            }
+
+            var editing = editIndex !== -1;
+            var oldAnnouncement = editing ? announcements[editIndex] : null;
+            if (editing && !oldAnnouncement) {
+                alert("This announcement is no longer available. The list will be refreshed.");
+                await loadAnnouncements(false);
+                clearForm();
+                return;
+            }
+            if (editing && getStatus(oldAnnouncement) !== "Published") {
+                alert("This announcement can no longer be edited because it is outside its active period.");
+                clearForm();
+                return;
+            }
+
+            var payload = {
+                title: title,
+                message: message,
+                startDate: startDate,
+                endDate: endDate
+            };
+            if (editing) payload.announcementId = oldAnnouncement.announcementId;
+
+            var submitButton = document.getElementById("submitButton");
+            submitButton.disabled = true;
+            try {
+                await apiRequest(editing ? "update" : "create", payload);
+                alert(editing ? "Announcement updated successfully." : "Announcement published successfully.");
+                await loadAnnouncements(false);
+                clearForm();
+            } catch (error) {
+                alert(error.message || "The announcement could not be saved. Please try again.");
+            } finally {
+                submitButton.disabled = false;
+            }
+        });
 
         /* ==========================================
 
@@ -2009,197 +1594,85 @@
         }
 
         /* ==========================================
-
            EDIT ANNOUNCEMENT
-
         ========================================== */
-
         function editAnnouncement(index) {
+            var announcement = announcements[index];
+            if (!announcement) return;
 
-            var announcement =
-
-                announcements[index];
-
-            /*
-
-             * Check active period
-
-             */
-
-            var status =
-
-                getStatus(
-
-                    announcement
-
-                );
-
-            if (status !== "Published") {
-
-                alert(
-
-                    "This announcement can only be edited during its active period."
-
-                );
-
+            if (getStatus(announcement) !== "Published") {
+                alert("This announcement can only be edited during its active period.");
                 return;
-
             }
 
-            document.getElementById(
-
-                "title"
-
-            ).value =
-
-                announcement.title;
-
-            document.getElementById(
-
-                "message"
-
-            ).value =
-
-                announcement.message;
-
-            document.getElementById(
-
-                "startDate"
-
-            ).value =
-
-                announcement.startDate;
-
-            document.getElementById(
-
-                "endDate"
-
-            ).value =
-
-                announcement.endDate;
-
+            document.getElementById("title").value = announcement.title;
+            document.getElementById("message").value = announcement.message;
+            document.getElementById("startDate").value = announcement.startDate;
+            document.getElementById("endDate").value = announcement.endDate;
             clearValidationErrors();
-
-            editIndex =
-
-                index;
-
-            document.getElementById(
-
-                "formTitle"
-
-            ).innerText =
-
-                "Update Announcement";
-
-            document.getElementById(
-
-                "submitButton"
-
-            ).innerText =
-
-                "Update Announcement";
-
-            window.scrollTo({
-
-                top: 0,
-
-                behavior: "smooth"
-
-            });
-
+            editIndex = index;
+            document.getElementById("formTitle").innerText = "Update Announcement";
+            document.getElementById("submitButton").innerText = "Update Announcement";
+            window.scrollTo({ top: 0, behavior: "smooth" });
         }
 
         /* ==========================================
-
            DELETE ANNOUNCEMENT
-
         ========================================== */
+        async function deleteAnnouncement(index) {
+            var announcement = announcements[index];
+            if (!announcement) return;
 
-        function deleteAnnouncement(index) {
-
-            var announcement =
-
-                announcements[index];
-
-            /*
-
-             * Check active period
-
-             */
-
-            var status =
-
-                getStatus(
-
-                    announcement
-
-                );
-
-            if (status !== "Published") {
-
-                alert(
-
-                    "This announcement can only be deleted during its active period."
-
-                );
-
+            if (getStatus(announcement) !== "Published") {
+                alert("This announcement can only be deleted during its active period.");
                 return;
-
             }
+            if (!confirm("Are you sure you want to delete this announcement?")) return;
 
-            var confirmDelete =
-
-                confirm(
-
-                    "Are you sure you want to delete this announcement?"
-
-                );
-
-            if (confirmDelete) {
-
-                announcements.splice(
-
-                    index,
-
-                    1
-
-                );
-
-                saveAnnouncements();
-
-                displayAnnouncements();
-
-                alert(
-
-                    "Announcement deleted successfully."
-
-                );
-
+            try {
+                await apiRequest("delete", { announcementId: announcement.announcementId });
+                if (editIndex === index) clearForm();
+                await loadAnnouncements(false);
+                alert("Announcement deleted successfully.");
+            } catch (error) {
+                alert(error.message || "The announcement could not be deleted. Please try again.");
             }
-
         }
 
         /* ==========================================
-
-           SAVE ANNOUNCEMENTS
-
+           PHP API HELPERS / LOAD DATABASE RECORDS
         ========================================== */
+        async function apiRequest(action, payload) {
+            var options = { method: payload ? "POST" : "GET", headers: { "Accept": "application/json" } };
+            if (payload) {
+                options.headers["Content-Type"] = "application/json";
+                options.body = JSON.stringify(payload);
+            }
+            var response = await fetch(window.location.pathname + "?action=" + encodeURIComponent(action), options);
+            var data;
+            try {
+                data = await response.json();
+            } catch (_) {
+                throw new Error("The server returned an unexpected response. Check the PHP error log.");
+            }
+            if (!response.ok || !data || data.ok !== true) {
+                throw new Error((data && data.message) || "The database request failed.");
+            }
+            return data;
+        }
 
-        function saveAnnouncements() {
-
-            localStorage.setItem(
-
-                "libraryAnnouncements",
-
-                JSON.stringify(
-
-                    announcements
-
-                )
-
-            );
-
+        async function loadAnnouncements(showError) {
+            try {
+                var result = await apiRequest("list");
+                announcements = Array.isArray(result.announcements) ? result.announcements : [];
+                displayAnnouncements();
+            } catch (error) {
+                var table = document.getElementById("announcementTable");
+                table.innerHTML = '<tr><td colspan="6" class="no-data">' + escapeHTML(error.message || "Unable to load announcements from the database.") + '</td></tr>';
+                if (showError) {
+                    alert("Could not load announcements from MySQL. Check Connection/db.php and the announcements table.\n\n" + (error.message || "Unknown error"));
+                }
+            }
         }
 
         /* ==========================================

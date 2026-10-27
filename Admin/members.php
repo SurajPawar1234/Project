@@ -1,3 +1,216 @@
+<?php
+declare(strict_types=1);
+
+/* Member Details: database-backed page and same-page JSON actions. */
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+function member_json_response(int $status, array $payload): never {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+function member_find_connection_file(): ?string {
+    $dir = __DIR__;
+    for ($i = 0; $i < 7; $i++) {
+        $candidates = [
+            $dir . DIRECTORY_SEPARATOR . 'Connection' . DIRECTORY_SEPARATOR . 'db.php',
+            $dir . DIRECTORY_SEPARATOR . 'connection' . DIRECTORY_SEPARATOR . 'db.php',
+            $dir . DIRECTORY_SEPARATOR . 'db.php',
+        ];
+        foreach ($candidates as $candidate) {
+            if (is_file($candidate)) return $candidate;
+        }
+        $parent = dirname($dir);
+        if ($parent === $dir) break;
+        $dir = $parent;
+    }
+    return null;
+}
+
+function member_h($value): string {
+    return htmlspecialchars((string)($value ?? ''), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+$conn = null;
+$dbReady = false;
+$dbError = '';
+$dbFile = member_find_connection_file();
+try {
+    if ($dbFile === null) {
+        throw new RuntimeException('Connection/db.php or db.php could not be found.');
+    }
+    require_once $dbFile;
+    if (!isset($conn) || !($conn instanceof mysqli)) {
+        throw new RuntimeException('The connection file must create a MySQLi connection named $conn.');
+    }
+    $conn->set_charset('utf8mb4');
+    $dbReady = true;
+} catch (Throwable $e) {
+    $dbError = 'Database connection is not available. Check Connection/db.php and the $conn variable.';
+    error_log('Member Details page: ' . $e->getMessage());
+}
+
+/* JSON API requests are used by the existing Update and Delete dialogs. */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $rawBody = file_get_contents('php://input');
+    $input = json_decode($rawBody ?: '', true);
+    if (!is_array($input)) $input = $_POST;
+    $action = (string)($input['action'] ?? '');
+
+    if (!in_array($action, ['update_member', 'delete_member'], true)) {
+        member_json_response(400, ['ok' => false, 'message' => 'Invalid request.']);
+    }
+    if (!$dbReady || !($conn instanceof mysqli)) {
+        member_json_response(500, ['ok' => false, 'message' => $dbError ?: 'Database connection is not available.']);
+    }
+
+    $memberId = filter_var($input['member_id'] ?? null, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+    if ($memberId === false || $memberId === null) {
+        member_json_response(400, ['ok' => false, 'message' => 'A valid Member ID is required.']);
+    }
+
+    try {
+        if ($action === 'update_member') {
+            $username = trim((string)($input['username'] ?? ''));
+            $password = (string)($input['password'] ?? '');
+            if (strlen($username) < 3 || strlen($username) > 25 || !preg_match('/^[A-Za-z][A-Za-z0-9._]*$/', $username)) {
+                member_json_response(422, ['ok' => false, 'message' => 'Username must be 3–25 characters, start with a letter, and contain only letters, numbers, dots, or underscores.']);
+            }
+            if ($password !== '') {
+                if (strlen($password) < 8 || strlen($password) > 25 || !preg_match('/^[A-Z]/', $password) || !preg_match('/[A-Za-z]/', $password) || !preg_match('/\d/', $password) || preg_match('/\s/', $password)) {
+                    member_json_response(422, ['ok' => false, 'message' => 'Password must be 8–25 characters, start with a capital letter, contain a letter and a number, and contain no spaces.']);
+                }
+            }
+
+            $stmt = $conn->prepare('SELECT User_id FROM member WHERE Member_id = ? LIMIT 1');
+            $stmt->bind_param('i', $memberId);
+            $stmt->execute();
+            $member = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if (!$member) member_json_response(404, ['ok' => false, 'message' => 'Member not found. Refresh the page and try again.']);
+            if ($member['User_id'] === null) {
+                member_json_response(409, ['ok' => false, 'message' => 'This member has no linked login account, so its credentials cannot be updated here.']);
+            }
+            $userId = (int)$member['User_id'];
+
+            $stmt = $conn->prepare('SELECT User_id FROM login WHERE Username = ? AND User_id <> ? LIMIT 1');
+            $stmt->bind_param('si', $username, $userId);
+            $stmt->execute();
+            $duplicate = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if ($duplicate) member_json_response(409, ['ok' => false, 'message' => 'This username is already used by another account.']);
+
+            if ($password === '') {
+                $stmt = $conn->prepare("UPDATE login SET Username = ? WHERE User_id = ? AND Role = 'Member'");
+                $stmt->bind_param('si', $username, $userId);
+            } else {
+                /* Keep the existing project's current login storage format for compatibility. */
+                $stmt = $conn->prepare("UPDATE login SET Username = ?, Password = ? WHERE User_id = ? AND Role = 'Member'");
+                $stmt->bind_param('ssi', $username, $password, $userId);
+            }
+            $stmt->execute();
+            $changed = $stmt->affected_rows;
+            $stmt->close();
+
+            $stmt = $conn->prepare("SELECT Username FROM login WHERE User_id = ? AND Role = 'Member' LIMIT 1");
+            $stmt->bind_param('i', $userId);
+            $stmt->execute();
+            $updated = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if (!$updated) member_json_response(409, ['ok' => false, 'message' => 'No linked Member login record was updated.']);
+            member_json_response(200, ['ok' => true, 'message' => 'Member credentials updated successfully.', 'username' => $updated['Username']]);
+        }
+
+        /* A member may be deleted only when every issued book has been returned. */
+        $conn->begin_transaction();
+        $stmt = $conn->prepare('SELECT User_id FROM member WHERE Member_id = ? FOR UPDATE');
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $member = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+        if (!$member) {
+            $conn->rollback();
+            member_json_response(404, ['ok' => false, 'message' => 'Member not found. Refresh the page and try again.']);
+        }
+
+        /* Return_date IS NULL means the member currently has a book that has not been returned. */
+        $stmt = $conn->prepare('SELECT Issue_id FROM issue_return WHERE Member_id = ? AND Return_date IS NULL FOR UPDATE');
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $activeIssues = $stmt->get_result()->num_rows;
+        $stmt->close();
+        if ($activeIssues > 0) {
+            $conn->rollback();
+            member_json_response(409, [
+                'ok' => false,
+                'message' => 'Cannot delete this member because they currently have ' . $activeIssues . ' book(s) that have not been returned. Return all issued books first.'
+            ]);
+        }
+
+        $userId = $member['User_id'] === null ? null : (int)$member['User_id'];
+
+        /* No active issues remain. Remove rows owned by this member so foreign keys do not block deletion. */
+        $stmt = $conn->prepare('DELETE FROM issue_request WHERE Member_id = ?');
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $stmt->close();
+
+        /* Returned issue history is removed as part of the explicit member deletion. */
+        $stmt = $conn->prepare('DELETE FROM issue_return WHERE Member_id = ? AND Return_date IS NOT NULL');
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $stmt->close();
+
+        $stmt = $conn->prepare('DELETE FROM member WHERE Member_id = ?');
+        $stmt->bind_param('i', $memberId);
+        $stmt->execute();
+        $deletedMembers = $stmt->affected_rows;
+        $stmt->close();
+        if ($deletedMembers !== 1) {
+            throw new RuntimeException('The member record was not deleted.');
+        }
+
+        if ($userId !== null) {
+            $stmt = $conn->prepare("DELETE FROM login WHERE User_id = ? AND Role = 'Member' AND NOT EXISTS (SELECT 1 FROM member WHERE User_id = ?) AND NOT EXISTS (SELECT 1 FROM admin WHERE User_id = ?)");
+            $stmt->bind_param('iii', $userId, $userId, $userId);
+            $stmt->execute();
+            $stmt->close();
+        }
+        $conn->commit();
+        member_json_response(200, ['ok' => true, 'message' => 'Member deleted successfully. The member login, requests, and returned-issue records were also removed.']);
+    } catch (Throwable $e) {
+        try { if ($conn instanceof mysqli) $conn->rollback(); } catch (Throwable $ignored) {}
+        error_log('Member Details action error: ' . $e->getMessage());
+        if ($e instanceof mysqli_sql_exception && (int)$e->getCode() === 1451) {
+            member_json_response(409, ['ok' => false, 'message' => 'This member is still linked to other library records, so the database blocked deletion. Check for related records in other tables.']);
+        }
+        member_json_response(500, ['ok' => false, 'message' => 'The member could not be deleted because the database operation failed. Check the PHP error log for details.']);
+    }
+}
+
+$members = [];
+if ($dbReady && $conn instanceof mysqli) {
+    try {
+        $sql = "SELECT m.Member_id, m.User_id,
+                       TRIM(CONCAT(COALESCE(m.First_name, ''), ' ', COALESCE(m.Last_name, ''))) AS Member_name,
+                       COALESCE(l.Username, '') AS Username,
+                       m.Email, m.Phone_no, m.Address, m.Total_issue,
+                       (SELECT COUNT(*) FROM issue_return ir WHERE ir.Member_id = m.Member_id AND ir.Return_date IS NULL) AS Pending_returns
+                FROM member m
+                LEFT JOIN login l ON l.User_id = m.User_id AND l.Role = 'Member'
+                ORDER BY m.Member_id ASC";
+        $result = $conn->query($sql);
+        $members = $result->fetch_all(MYSQLI_ASSOC);
+        $result->free();
+    } catch (Throwable $e) {
+        error_log('Member Details query error: ' . $e->getMessage());
+        $dbError = 'Could not load member records. Verify the member, login, issue_return, and issue_request tables.';
+        $members = [];
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +226,7 @@
             color: #333;
         }
 
-        /* Sidebar - preserved from the original page */
+        /* Sidebar - shared latest menu */
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -22,14 +235,25 @@
             left: 0;
             top: 0;
             color: white;
-            overflow-y: auto;
-            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 500;
         }
         .sidebar h2 {
+            flex: 0 0 auto;
             text-align: center;
             padding: 20px 0;
             margin: 0;
             background-color: #222;
+        }
+        .sidebar-menu {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
         }
         .sidebar a {
             display: block;
@@ -38,18 +262,32 @@
             padding: 14px 20px;
             border-bottom: 1px solid #555;
         }
-        .sidebar a:hover, .sidebar a.active { background-color: #555; }
+        .sidebar a:hover { background-color: #555; }
+        .sidebar a.active {
+            background-color: #4b4b4b;
+            border-left: 4px solid #fff;
+            padding-left: 16px;
+        }
         .manage {
             padding: 14px 20px;
             border-bottom: 1px solid #555;
             cursor: pointer;
+            user-select: none;
         }
         .manage:hover { background-color: #555; }
+        .manage:focus-visible { outline: 2px solid white; outline-offset: -3px; }
         .arrow { float: right; }
         .submenu { display: none; background-color: #444; }
-        .submenu a { padding-left: 40px; }
-        .logout { position: absolute; bottom: 10px; width: 100%; }
-        .logout a { background-color: #222; text-align: center; }
+        .submenu.open { display: block; }
+        .submenu a { padding-left: 40px; font-size: 13px; }
+        .submenu a.active { padding-left: 36px; }
+        .logout {
+            flex: 0 0 auto;
+            width: 100%;
+            padding-top: 8px;
+            background-color: #333;
+        }
+        .logout a { background-color: #222; text-align: center; margin: 0; }
 
         /* Main layout and page header */
         .main {
@@ -205,6 +443,15 @@
             color: #333;
             margin: 0 0 18px;
             font-size: 26px;
+        }
+        .server-message {
+            margin: 0 0 16px;
+            padding: 12px 14px;
+            border: 1px solid #e0b4b4;
+            border-radius: 4px;
+            background: #fff5f5;
+            color: #a12626;
+            line-height: 1.45;
         }
         .table-wrap {
             width: 100%;
@@ -391,31 +638,36 @@
             .search { gap: 8px; }
             .search-btn, .filter-btn { padding: 0 12px; }
             .filter-popup { padding: 22px; }
-            .logout { position: static; margin-top: 20px; }
+            .logout { position: static; margin-top: 0; }
         }
     </style>
 </head>
 <body>
-    <aside class="sidebar">
+    <!-- Sidebar: latest shared menu -->
+    <aside class="sidebar" aria-label="Admin navigation">
         <h2>Library</h2>
-        <a href="admin_home.html">Dashboard</a>
-        <a href="my_profile.html">My Profile</a>
+        <nav class="sidebar-menu" aria-label="Main menu">
+            <a href="admin_home.php">Dashboard</a>
+            <a href="my_profile.php">My Profile</a>
+            <a href="library_profile.php">Library Profile</a>
 
-        <div class="manage" onclick="toggleMenu()">
-            Manage Books <span class="arrow" id="arrow">+</span>
-        </div>
-        <div class="submenu" id="submenu">
-            <a href="view_books.html">View All Books</a>
-            <a href="add_book.html">Add Book</a>
-            <a href="update_book.html">Update / Delete Book</a>
-        </div>
+            <div class="manage" id="manageBooksToggle" role="button" tabindex="0"
+                 aria-expanded="false" aria-controls="submenu" onclick="toggleMenu()">
+                Manage Books
+                <span class="arrow" id="arrow" aria-hidden="true">+</span>
+            </div>
+            <div class="submenu" id="submenu">
+                <a href="view_books.php">View All Books</a>
+                <a href="add_book.php">Add Book</a>
+                <a href="update_book.php">Update / Delete Book</a>
+            </div>
 
-        <a href="issue_book.html">Issue Book</a>
-        <a href="return_book.html">Return Book</a>
-        <a href="returned_books.html">Recent Returned Books</a>
-        <a href="members.html" class="active">Members Details</a>
-        <a href="announcement.html">Announcements</a>
-        <div class="logout"><a href="login_form.html">Logout</a></div>
+            <a href="issue_book.php">Issue Book</a>
+            <a href="return_book.php">Return Book</a>
+            <a href="members.php" class="active" aria-current="page">Members Details</a>
+            <a href="announcements.php">Announcements</a>
+        </nav>
+        <div class="logout"><a href="../login/login_form.php">Logout</a></div>
     </aside>
 
     <main class="main">
@@ -444,6 +696,9 @@
 
         <section class="members">
             <h2>Library Members</h2>
+            <?php if ($dbError !== ''): ?>
+                <div class="server-message" role="alert"><?= member_h($dbError) ?></div>
+            <?php endif; ?>
             <div class="table-wrap">
                 <table id="memberTable">
                     <thead>
@@ -460,174 +715,22 @@
                         </tr>
                     </thead>
                     <tbody id="memberTableBody">
-                        <tr data-member-id="1001">
-                            <td>1001</td>
-                            <td>Aarav Joshi</td>
-                            <td class="username-cell">aarav.joshi</td>
-                            <td>aarav.joshi@example.com</td>
-                            <td>9876543210</td>
-                            <td>Baramati, Pune</td>
-                            <td>2</td>
-                            <td class="current-issues-cell">1</td>
+                        <?php foreach ($members as $member): ?>
+                        <tr data-member-id="<?= (int)$member['Member_id'] ?>">
+                            <td><?= (int)$member['Member_id'] ?></td>
+                            <td><?= member_h($member['Member_name']) ?></td>
+                            <td class="username-cell"><?= member_h($member['Username']) ?></td>
+                            <td><?= member_h($member['Email']) ?></td>
+                            <td><?= member_h($member['Phone_no']) ?></td>
+                            <td><?= member_h($member['Address']) ?></td>
+                            <td><?= (int)$member['Total_issue'] ?></td>
+                            <td class="current-issues-cell"><?= (int)$member['Pending_returns'] ?></td>
                             <td class="action-cell">
                                 <button type="button" class="update" onclick="openUpdate(this)">Update</button>
                                 <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
                             </td>
                         </tr>
-                        <tr data-member-id="1002">
-                            <td>1002</td>
-                            <td>Ananya Patil</td>
-                            <td class="username-cell">ananya.patil</td>
-                            <td>ananya.patil@example.com</td>
-                            <td>9876501234</td>
-                            <td>Phaltan, Satara</td>
-                            <td>0</td>
-                            <td class="current-issues-cell">0</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1003">
-                            <td>1003</td>
-                            <td>Rohan Shinde</td>
-                            <td class="username-cell">rohan.shinde</td>
-                            <td>rohan.shinde@example.com</td>
-                            <td>9867012345</td>
-                            <td>MIDC Road, Baramati</td>
-                            <td>1</td>
-                            <td class="current-issues-cell">1</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1004">
-                            <td>1004</td>
-                            <td>Sneha Pawar</td>
-                            <td class="username-cell">sneha.pawar</td>
-                            <td>sneha.pawar@example.com</td>
-                            <td>9856012345</td>
-                            <td>Indapur, Pune</td>
-                            <td>3</td>
-                            <td class="current-issues-cell">2</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1005">
-                            <td>1005</td>
-                            <td>Omkar Jadhav</td>
-                            <td class="username-cell">omkar.jadhav</td>
-                            <td>omkar.jadhav@example.com</td>
-                            <td>9845012345</td>
-                            <td>Bhigwan, Pune</td>
-                            <td>0</td>
-                            <td class="current-issues-cell">0</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1006">
-                            <td>1006</td>
-                            <td>Priya More</td>
-                            <td class="username-cell">priya.more</td>
-                            <td>priya.more@example.com</td>
-                            <td>9834012345</td>
-                            <td>Someshwar Nagar, Pune</td>
-                            <td>1</td>
-                            <td class="current-issues-cell">1</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1007">
-                            <td>1007</td>
-                            <td>Siddharth Deshmukh</td>
-                            <td class="username-cell">siddharth.d</td>
-                            <td>siddharth.d@example.com</td>
-                            <td>9823012345</td>
-                            <td>Morgaon, Pune</td>
-                            <td>2</td>
-                            <td class="current-issues-cell">1</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1008">
-                            <td>1008</td>
-                            <td>Kavya Kulkarni</td>
-                            <td class="username-cell">kavya.kulkarni</td>
-                            <td>kavya.kulkarni@example.com</td>
-                            <td>9812012345</td>
-                            <td>Phaltan Road, Baramati</td>
-                            <td>0</td>
-                            <td class="current-issues-cell">0</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1009">
-                            <td>1009</td>
-                            <td>Aditya Bhosale</td>
-                            <td class="username-cell">aditya.bhosale</td>
-                            <td>aditya.bhosale@example.com</td>
-                            <td>9801012345</td>
-                            <td>Nira, Pune</td>
-                            <td>1</td>
-                            <td class="current-issues-cell">1</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1010">
-                            <td>1010</td>
-                            <td>Isha Gaikwad</td>
-                            <td class="username-cell">isha.gaikwad</td>
-                            <td>isha.gaikwad@example.com</td>
-                            <td>9790012345</td>
-                            <td>Jalochi, Baramati</td>
-                            <td>0</td>
-                            <td class="current-issues-cell">0</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1011">
-                            <td>1011</td>
-                            <td>Vedant Salunkhe</td>
-                            <td class="username-cell">vedant.salunkhe</td>
-                            <td>vedant.salunkhe@example.com</td>
-                            <td>9789012345</td>
-                            <td>Malegaon, Baramati</td>
-                            <td>2</td>
-                            <td class="current-issues-cell">2</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
-                        <tr data-member-id="1012">
-                            <td>1012</td>
-                            <td>Mira Chavan</td>
-                            <td class="username-cell">mira.chavan</td>
-                            <td>mira.chavan@example.com</td>
-                            <td>9778012345</td>
-                            <td>Wagholi, Pune</td>
-                            <td>0</td>
-                            <td class="current-issues-cell">0</td>
-                            <td class="action-cell">
-                                <button type="button" class="update" onclick="openUpdate(this)">Update</button>
-                                <button type="button" class="delete" onclick="deleteMember(this)">Delete</button>
-                            </td>
-                        </tr>
+                        <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
@@ -711,16 +814,23 @@
         const searchValidation = document.getElementById("searchValidation");
         const memberTableBody = document.getElementById("memberTableBody");
         let currentEditingRow = null;
-        // Front-end demo only. Real passwords must be handled and hashed by PHP on the server.
-        const demoPasswords = new Map();
 
         function toggleMenu() {
             const menu = document.getElementById("submenu");
             const arrow = document.getElementById("arrow");
-            const isOpen = menu.style.display === "block";
-            menu.style.display = isOpen ? "none" : "block";
-            arrow.textContent = isOpen ? "+" : "-";
+            const toggle = document.getElementById("manageBooksToggle");
+            const willOpen = !menu.classList.contains("open");
+            menu.classList.toggle("open", willOpen);
+            arrow.textContent = willOpen ? "-" : "+";
+            toggle.setAttribute("aria-expanded", String(willOpen));
         }
+
+        document.getElementById("manageBooksToggle").addEventListener("keydown", function(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                toggleMenu();
+            }
+        });
 
         function showSearchError(message) {
             searchInput.classList.add("search-input-invalid");
@@ -939,16 +1049,42 @@
             closeFilter();
         }
 
-        function deleteMember(button) {
-            if (!confirm("Are you sure you want to delete this member?")) return;
+        async function deleteMember(button) {
+            const rowToDelete = button.closest("tr");
+            if (!rowToDelete) return;
+            const memberIdForConfirm = rowToDelete.dataset.memberId || rowToDelete.cells[0]?.textContent.trim();
+            const memberNameForConfirm = rowToDelete.cells[1]?.textContent.trim() || "this member";
+            if (!confirm("Delete member " + memberNameForConfirm + " (ID " + memberIdForConfirm + ")?\n\nA member can be deleted only if they have no books currently awaiting return. Returned-issue history and related requests will also be deleted.")) return;
             const row = button.closest("tr");
-            if (row) {
+            if (!row) return;
+            const memberId = row.dataset.memberId || row.cells[0]?.textContent.trim();
+            button.disabled = true;
+            try {
+                const result = await sendMemberAction({ action: "delete_member", member_id: memberId });
                 const index = originalOrder.indexOf(row);
                 if (index !== -1) originalOrder.splice(index, 1);
                 row.remove();
                 currentPage = 1;
                 renderTable();
+                alert(result.message || "Member deleted successfully.");
+            } catch (error) {
+                alert(error.message || "Could not delete this member.");
+                button.disabled = false;
             }
+        }
+
+        async function sendMemberAction(payload) {
+            const response = await fetch(window.location.pathname + window.location.search, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Accept": "application/json" },
+                body: JSON.stringify(payload),
+                credentials: "same-origin"
+            });
+            let result;
+            try { result = await response.json(); }
+            catch (_) { throw new Error("The server returned an unreadable response. Confirm that this page is opened through XAMPP/PHP."); }
+            if (!response.ok || !result.ok) throw new Error(result.message || "The request failed.");
+            return result;
         }
 
         function showFieldError(inputId, errorId, message) {
@@ -1059,33 +1195,47 @@
             return !message;
         }
 
-        function saveMemberUpdate() {
+        async function saveMemberUpdate() {
             if (!currentEditingRow) return;
 
             const usernameValid = validateEditUsername();
             const passwordValid = validateEditPassword();
             const confirmValid = validateConfirmPassword();
-
             if (!usernameValid || !passwordValid || !confirmValid) return;
 
-            const memberId = currentEditingRow.cells[0].textContent.trim();
+            const memberId = currentEditingRow.dataset.memberId || currentEditingRow.cells[0].textContent.trim();
             const updatedUsername = document.getElementById("editUsername").value.trim();
             const newPassword = document.getElementById("editPassword").value;
-
-            currentEditingRow.querySelector(".username-cell").textContent = updatedUsername;
-
-            // Passwords are not printed in the table. This is only an in-browser demo;
-            // the map is volatile and clears on refresh, not a secure password store.
-            if (newPassword !== "") demoPasswords.set(memberId, newPassword);
-
             const success = document.getElementById("updateSuccess");
-            success.textContent = "Member credentials updated successfully for this test session.";
+            const saveButton = document.querySelector(".save-update");
+            success.style.color = "#24723a";
+            success.textContent = "Saving changes...";
             success.style.display = "block";
+            saveButton.disabled = true;
 
-            renderTable();
-            window.setTimeout(() => {
-                if (document.getElementById("editOverlay").style.display !== "none") closeEdit();
-            }, 900);
+            try {
+                const result = await sendMemberAction({
+                    action: "update_member",
+                    member_id: memberId,
+                    username: updatedUsername,
+                    password: newPassword
+                });
+                currentEditingRow.querySelector(".username-cell").textContent = result.username || updatedUsername;
+                document.getElementById("editPassword").value = "";
+                document.getElementById("confirmPassword").value = "";
+                success.style.color = "#24723a";
+                success.textContent = result.message || "Member credentials updated successfully.";
+                renderTable();
+                window.setTimeout(() => {
+                    if (document.getElementById("editOverlay").style.display !== "none") closeEdit();
+                }, 900);
+            } catch (error) {
+                success.style.color = "#d93025";
+                success.textContent = error.message || "Could not save the changes.";
+                success.style.display = "block";
+            } finally {
+                saveButton.disabled = false;
+            }
         }
 
         document.getElementById("editUsername").addEventListener("input", validateEditUsername);

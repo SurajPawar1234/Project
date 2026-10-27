@@ -187,7 +187,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     echo "
     <script>
         alert('Login successful!');
-        window.location.href = '../Admin/Admin_Home.html';
+        window.location.href = '../Admin/Admin_Home.php';
     </script>
     ";
 
@@ -200,7 +200,7 @@ elseif ($user["Role"] === "Member") {
     echo "
     <script>
         alert('Login successful!');
-        window.location.href = '../Member/member_home.html';
+        window.location.href = '../Member/member_home.php';
     </script>
     ";
 
@@ -522,7 +522,7 @@ $conn->close();
 
     <!-- LINKS -->
 
-    <a href="Forgot_password.html">
+    <a href="Forgot_password.php">
         Forgot Password?
     </a>
 
@@ -530,7 +530,7 @@ $conn->close();
     <br>
 
 
-    <a href="Registration.html">
+    <a href="Registration.php">
         Create New Account
     </a>
 

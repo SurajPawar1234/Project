@@ -1438,11 +1438,11 @@ $fineJsValues = [
 
         <nav class="sidebar-menu" aria-label="Admin menu">
 
-            <a href="admin_home.html" data-page="admin_home.html">Dashboard</a>
+            <a href="admin_home.php" data-page="admin_home.php">Dashboard</a>
 
-            <a href="my_profile.html" data-page="my_profile.html">My Profile</a>
+            <a href="my_profile.php" data-page="my_profile.php">My Profile</a>
 
-            <a href="library_profile.html" data-page="library_profile.html">Library Profile</a>
+            <a href="library_profile.php" data-page="library_profile.php">Library Profile</a>
 
 
 
@@ -1464,23 +1464,23 @@ $fineJsValues = [
 
             <div class="submenu" id="submenu">
 
-                <a href="view_books.html" data-page="view_books.html">View All Books</a>
+                <a href="view_books.php" data-page="view_books.php">View All Books</a>
 
-                <a href="add_book.html" data-page="add_book.html">Add Book</a>
+                <a href="add_book.php" data-page="add_book.php">Add Book</a>
 
-                <a href="update_book.html" data-page="update_book.html">Update/Delete Book</a>
+                <a href="update_book.php" data-page="update_book.php">Update/Delete Book</a>
 
             </div>
 
 
 
-            <a href="issue_book.html" data-page="issue_book.html">Issue Book</a>
+            <a href="issue_book.php" data-page="issue_book.php">Issue Book</a>
 
-            <a href="return_book.html" data-page="return_book.html">Return Book</a>
+            <a href="return_book.php" data-page="return_book.php">Return Book</a>
 
-            <a href="members.html" data-page="members.html">Members Details</a>
+            <a href="members.php" data-page="members.php">Members Details</a>
 
-            <a href="announcement.html" data-page="announcement.html">Announcements</a>
+            <a href="announcements.php" data-page="announcements.php">Announcements</a>
 
         </nav>
 
@@ -1488,7 +1488,7 @@ $fineJsValues = [
 
         <div class="logout">
 
-            <a href="login_form.html">Logout</a>
+            <a href="../login/login_form.php">Logout</a>
 
         </div>
 

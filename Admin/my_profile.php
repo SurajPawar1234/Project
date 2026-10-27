@@ -22,7 +22,7 @@ if (!is_scalar($userIdValue) || !ctype_digit((string)$userIdValue) || (int)$user
 }
 
 if (strcasecmp($userRole, 'Admin') !== 0) {
-    header('Location: ../Member/member_home.html');
+    header('Location: ../Member/member_home.php');
     exit;
 }
 
@@ -1249,9 +1249,9 @@ try {
         <h2>Library</h2>
 
         <nav class="sidebar-menu" aria-label="Admin menu">
-            <a href="Admin_Home.html" data-page="Admin_Home.html">Dashboard</a>
+            <a href="Admin_Home.php" data-page="Admin_Home.php">Dashboard</a>
             <a href="my_profile.php" data-page="my_profile.php">My Profile</a>
-            <a href="library_profile.html" data-page="library_profile.html">Library Profile</a>
+            <a href="library_profile.php" data-page="library_profile.php">Library Profile</a>
 
             <!-- Manage Books -->
             <div class="manage" id="manageToggle" role="button" tabindex="0"
@@ -1261,20 +1261,20 @@ try {
             </div>
 
             <div class="submenu" id="submenu">
-                <a href="view_books.html" data-page="view_books.html">View All Books</a>
-                <a href="add_book.html" data-page="add_book.html">Add Book</a>
-                <a href="update_book.html" data-page="update_book.html">Update/Delete Book</a>
+                <a href="view_books.php" data-page="view_books.php">View All Books</a>
+                <a href="add_book.php" data-page="add_book.php">Add Book</a>
+                <a href="update_book.php" data-page="update_book.php">Update/Delete Book</a>
             </div>
 
-            <a href="issue_book.html" data-page="issue_book.html">Issue Book</a>
-            <a href="return_book.html" data-page="return_book.html">Return Book</a>
+            <a href="issue_book.php" data-page="issue_book.php">Issue Book</a>
+            <a href="return_book.php" data-page="return_book.php">Return Book</a>
             <!-- Recent Returned Books is intentionally removed. -->
-            <a href="members.html" data-page="members.html">Members Details</a>
-            <a href="announcement.html" data-page="announcement.html">Announcements</a>
+            <a href="members.php" data-page="members.php">Members Details</a>
+            <a href="announcements.php" data-page="announcements.php">Announcements</a>
         </nav>
 
         <div class="logout">
-            <a href="logout.php">Logout</a>
+            <a href="../login/login_form.php">Logout</a>
         </div>
     </div>
 

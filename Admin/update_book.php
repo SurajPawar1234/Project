@@ -523,7 +523,7 @@ if ($booksJson === false) {
         <h2>Library</h2>
 
         <nav class="sidebar-menu" aria-label="Admin menu">
-            <a href="admin_home.html" data-page="admin_home.html">Dashboard</a>
+            <a href="admin_home.php" data-page="admin_home.php">Dashboard</a>
             <a href="my_profile.php" data-page="my_profile.php">My Profile</a>
             <a href="library_profile.php" data-page="library_profile.php">Library Profile</a>
 
@@ -539,14 +539,14 @@ if ($booksJson === false) {
                 <a href="update_book.php" data-page="update_book.php">Update / Delete Book</a>
             </div>
 
-            <a href="issue_book.html" data-page="issue_book.html">Issue Book</a>
-            <a href="return_book.html" data-page="return_book.html">Return Book</a>
-            <a href="members.html" data-page="members.html">Members Details</a>
-            <a href="announcement.html" data-page="announcement.html">Announcements</a>
+            <a href="issue_book.php" data-page="issue_book.php">Issue Book</a>
+            <a href="return_book.php" data-page="return_book.php">Return Book</a>
+            <a href="members.php" data-page="members.php">Members Details</a>
+            <a href="announcements.php" data-page="announcements.php">Announcements</a>
         </nav>
 
         <div class="logout">
-            <a href="logout.php">Logout</a>
+            <a href="../login/login_form.php">Logout</a>
         </div>
     </div>
 

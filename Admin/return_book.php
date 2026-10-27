@@ -1,3 +1,227 @@
+<?php
+declare(strict_types=1);
+
+mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+
+$conn = null;
+$dbConnectionError = '';
+$connectionCandidates = [];
+$dir = __DIR__;
+for ($level = 0; $level < 6; $level++) {
+    $connectionCandidates[] = $dir . DIRECTORY_SEPARATOR . 'Connection' . DIRECTORY_SEPARATOR . 'db.php';
+    $connectionCandidates[] = $dir . DIRECTORY_SEPARATOR . 'db.php';
+    $parent = dirname($dir);
+    if ($parent === $dir) break;
+    $dir = $parent;
+}
+$connectionCandidates = array_values(array_unique($connectionCandidates));
+$connectionFile = null;
+foreach ($connectionCandidates as $candidate) {
+    if (is_file($candidate)) {
+        $connectionFile = $candidate;
+        break;
+    }
+}
+
+if ($connectionFile === null) {
+    $dbConnectionError = 'Connection file not found. Expected Connection/db.php or db.php.';
+} else {
+    try {
+        require_once $connectionFile;
+        if (!isset($conn) || !($conn instanceof mysqli)) {
+            $dbConnectionError = 'The database connection file must create a MySQLi connection named $conn.';
+        } else {
+            $conn->set_charset('utf8mb4');
+        }
+    } catch (Throwable $e) {
+        $dbConnectionError = 'Could not connect to the library database. Check the settings in Connection/db.php.';
+    }
+}
+
+function returnBookJsonResponse(array $payload, int $status = 200): never {
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+    exit;
+}
+
+function returnBookRequireConnection(?mysqli $conn, string $dbConnectionError): mysqli {
+    if (!($conn instanceof mysqli)) {
+        throw new RuntimeException($dbConnectionError !== '' ? $dbConnectionError : 'Database connection is unavailable.');
+    }
+    return $conn;
+}
+
+function returnBookSettings(mysqli $conn): array {
+    $settings = [
+        'finePerDay' => 0.0,
+        'upiId' => '',
+        'number' => '',
+        'upiQrData' => ''
+    ];
+    $result = $conn->query('SELECT Fine_per_day, Upi_id, Number, Upi_qr FROM fine_setting ORDER BY Id LIMIT 1');
+    $row = $result->fetch_assoc();
+    if ($row) {
+        $settings['finePerDay'] = (float)($row['Fine_per_day'] ?? 0);
+        $settings['upiId'] = (string)($row['Upi_id'] ?? '');
+        $settings['number'] = (string)($row['Number'] ?? '');
+        $qr = $row['Upi_qr'] ?? '';
+        if (is_string($qr) && $qr !== '') {
+            $settings['upiQrData'] = base64_encode($qr);
+        }
+    }
+    return $settings;
+}
+
+function returnBookFetchRecords(mysqli $conn, bool $returned): array {
+    $where = $returned ? 'ir.Return_date IS NOT NULL' : 'ir.Return_date IS NULL';
+    $sql = "SELECT
+                ir.Issue_id AS issueId,
+                ir.Member_id AS memberId,
+                CONCAT(m.First_name, ' ', m.Last_name) AS memberName,
+                ir.Book_id AS bookId,
+                b.Title AS title,
+                b.Author AS author,
+                b.ISBN AS isbn,
+                COALESCE(b.Category, 'Other') AS category,
+                b.Year AS year,
+                ir.Issue_date AS issueDate,
+                ir.Due_date AS dueDate,
+                ir.Return_date AS returnDate,
+                COALESCE(ir.Fine, 0) AS storedFine,
+                ir.Payment_method AS payment,
+                CASE
+                    WHEN ir.Return_date IS NULL THEN GREATEST(DATEDIFF(CURDATE(), ir.Due_date), 0) * COALESCE(fs.Fine_per_day, 0)
+                    ELSE COALESCE(ir.Fine, 0)
+                END AS fineAmount
+            FROM issue_return ir
+            INNER JOIN member m ON m.Member_id = ir.Member_id
+            INNER JOIN book b ON b.Book_id = ir.Book_id
+            LEFT JOIN fine_setting fs ON fs.Id = 1
+            WHERE $where
+            ORDER BY ir.Issue_date DESC, ir.Issue_id DESC";
+    $result = $conn->query($sql);
+    $records = [];
+    while ($row = $result->fetch_assoc()) {
+        $fineAmount = (float)($row['fineAmount'] ?? 0);
+        $records[] = [
+            'issueId' => (string)$row['issueId'],
+            'memberId' => (string)$row['memberId'],
+            'memberName' => (string)$row['memberName'],
+            'id' => (string)$row['bookId'],
+            'title' => (string)$row['title'],
+            'author' => (string)$row['author'],
+            'isbn' => (string)$row['isbn'],
+            'category' => (string)($row['category'] ?? 'Other'),
+            'year' => (string)($row['year'] ?? ''),
+            'issueDate' => (string)$row['issueDate'],
+            'dueDate' => (string)$row['dueDate'],
+            'returnDate' => (string)($row['returnDate'] ?? ''),
+            'fine' => '₹' . number_format($fineAmount, 2, '.', ''),
+            'fineAmount' => $fineAmount,
+            'payment' => (string)(($row['payment'] ?? '') !== '' ? $row['payment'] : '-')
+        ];
+    }
+    return $records;
+}
+
+$action = (string)($_GET['action'] ?? '');
+if ($action !== '') {
+    try {
+        $db = returnBookRequireConnection($conn, $dbConnectionError);
+        if ($action === 'list_records' && $_SERVER['REQUEST_METHOD'] === 'GET') {
+            returnBookJsonResponse([
+                'success' => true,
+                'issuedRecords' => returnBookFetchRecords($db, false),
+                'returnedBooks' => returnBookFetchRecords($db, true),
+                'settings' => returnBookSettings($db)
+            ]);
+        }
+
+        if ($action === 'return_book' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+            $input = json_decode((string)file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                returnBookJsonResponse(['success' => false, 'message' => 'Invalid request data.'], 400);
+            }
+            $issueId = filter_var($input['issueId'] ?? null, FILTER_VALIDATE_INT);
+            $paymentMethod = strtoupper(trim((string)($input['paymentMethod'] ?? '')));
+            if (!$issueId || $issueId < 1) {
+                returnBookJsonResponse(['success' => false, 'message' => 'Invalid issue record. Refresh the page and try again.'], 400);
+            }
+
+            $db->begin_transaction();
+            try {
+                $stmt = $db->prepare('SELECT Issue_id, Member_id, Due_date, Return_date FROM issue_return WHERE Issue_id = ? FOR UPDATE');
+                $stmt->bind_param('i', $issueId);
+                $stmt->execute();
+                $issue = $stmt->get_result()->fetch_assoc();
+                $stmt->close();
+
+                if (!$issue) {
+                    $db->rollback();
+                    returnBookJsonResponse(['success' => false, 'message' => 'Issue record not found. Refresh the page and try again.'], 404);
+                }
+                if (!empty($issue['Return_date'])) {
+                    $db->rollback();
+                    returnBookJsonResponse(['success' => false, 'message' => 'This book has already been returned. Refresh the page.'], 409);
+                }
+
+                $settings = returnBookSettings($db);
+                $fineStmt = $db->prepare('SELECT GREATEST(DATEDIFF(CURDATE(), ?), 0) AS lateDays');
+                $fineStmt->bind_param('s', $issue['Due_date']);
+                $fineStmt->execute();
+                $lateDays = (int)($fineStmt->get_result()->fetch_assoc()['lateDays'] ?? 0);
+                $fineStmt->close();
+                $fineAmount = round($lateDays * (float)$settings['finePerDay'], 2);
+
+                $storedPayment = null;
+                if ($fineAmount > 0) {
+                    if (!in_array($paymentMethod, ['UPI', 'CASH'], true)) {
+                        $db->rollback();
+                        returnBookJsonResponse([
+                            'success' => false,
+                            'message' => 'A fine of ₹' . number_format($fineAmount, 2) . ' is due. Choose UPI or Cash and confirm payment before returning this book.'
+                        ], 422);
+                    }
+                    $storedPayment = $paymentMethod === 'UPI' ? 'UPI' : 'Cash';
+                }
+
+                $update = $db->prepare("UPDATE issue_return SET Return_date = CURDATE(), Status = 'Returned', Fine = ?, Payment_method = ? WHERE Issue_id = ? AND Return_date IS NULL");
+                $update->bind_param('dsi', $fineAmount, $storedPayment, $issueId);
+                $update->execute();
+                if ($update->affected_rows !== 1) {
+                    $update->close();
+                    throw new RuntimeException('The issue record changed before it could be returned. Refresh and try again.');
+                }
+                $update->close();
+
+                $memberId = (int)$issue['Member_id'];
+                $memberUpdate = $db->prepare('UPDATE member SET Current_Issue = CASE WHEN Current_Issue > 0 THEN Current_Issue - 1 ELSE 0 END WHERE Member_id = ?');
+                $memberUpdate->bind_param('i', $memberId);
+                $memberUpdate->execute();
+                $memberUpdate->close();
+
+                $db->commit();
+                returnBookJsonResponse([
+                    'success' => true,
+                    'message' => 'Book returned successfully.',
+                    'fineAmount' => $fineAmount,
+                    'paymentMethod' => $storedPayment
+                ]);
+            } catch (Throwable $e) {
+                try { $db->rollback(); } catch (Throwable $ignored) {}
+                throw $e;
+            }
+        }
+
+        returnBookJsonResponse(['success' => false, 'message' => 'Unsupported action.'], 400);
+    } catch (Throwable $e) {
+        $message = $e instanceof RuntimeException ? $e->getMessage() : 'A database error occurred. Check your database tables and Connection/db.php.';
+        returnBookJsonResponse(['success' => false, 'message' => $message], 500);
+    }
+}
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,7 +232,7 @@
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Arial, sans-serif; background-color: #f2f2f2; }
 
-        /* Sidebar */
+        /* Sidebar - shared latest menu */
         .sidebar {
             width: 220px;
             height: 100vh;
@@ -17,18 +241,59 @@
             left: 0;
             top: 0;
             color: white;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 500;
         }
-        .sidebar h2 { text-align: center; padding: 20px 0; margin: 0; background-color: #222; }
-        .sidebar a { display: block; color: white; text-decoration: none; padding: 14px 20px; border-bottom: 1px solid #555; }
+        .sidebar h2 {
+            flex: 0 0 auto;
+            text-align: center;
+            padding: 20px 0;
+            margin: 0;
+            background-color: #222;
+        }
+        .sidebar-menu {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            scrollbar-width: thin;
+            scrollbar-color: #666 #333;
+        }
+        .sidebar a {
+            display: block;
+            color: white;
+            text-decoration: none;
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+        }
         .sidebar a:hover { background-color: #555; }
-        .manage { padding: 14px 20px; border-bottom: 1px solid #555; cursor: pointer; }
+        .sidebar a.active {
+            background-color: #4b4b4b;
+            border-left: 4px solid #fff;
+            padding-left: 16px;
+        }
+        .manage {
+            padding: 14px 20px;
+            border-bottom: 1px solid #555;
+            cursor: pointer;
+            user-select: none;
+        }
         .manage:hover { background-color: #555; }
+        .manage:focus-visible { outline: 2px solid white; outline-offset: -3px; }
         .arrow { float: right; }
-        .submenu { display: block; background-color: #444; }
+        .submenu { display: none; background-color: #444; }
+        .submenu.open { display: block; }
         .submenu a { padding-left: 40px; font-size: 13px; }
-        .logout { position: absolute; bottom: 10px; width: 100%; }
-        .logout a { background-color: #222; text-align: center; }
+        .submenu a.active { padding-left: 36px; }
+        .logout {
+            flex: 0 0 auto;
+            width: 100%;
+            padding-top: 8px;
+            background-color: #333;
+        }
+        .logout a { background-color: #222; text-align: center; margin: 0; }
 
         /* Main */
         .main { margin-left: 220px; padding: 0 25px 25px; }
@@ -543,27 +808,32 @@
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar">
+    <!-- Sidebar: latest shared menu -->
+    <aside class="sidebar" aria-label="Admin navigation">
         <h2>Library</h2>
-        <a href="admin_home.html">Dashboard</a>
-        <a href="my_profile.html">My Profile</a>
-        <div class="manage" onclick="toggleMenu()">
-            Manage Books
-            <span class="arrow" id="arrow">-</span>
-        </div>
-        <div class="submenu" id="submenu">
-            <a href="view_books.html">View All Books</a>
-            <a href="add_book.html">Add Book</a>
-            <a href="update_book.html">Update / Delete Book</a>
-        </div>
-        <a href="issue_book.html">Issue Book</a>
-        <a href="return_book.html">Return Book</a>
-        <a href="returned_books.html">Recent Returned Books</a>
-        <a href="members.html">Members Details</a>
-        <a href="announcement.html" class="active">Announcements</a>
-        <div class="logout"><a href="login_form.html">Logout</a></div>
-    </div>
+        <nav class="sidebar-menu" aria-label="Main menu">
+            <a href="admin_home.php">Dashboard</a>
+            <a href="my_profile.php">My Profile</a>
+            <a href="library_profile.php">Library Profile</a>
+
+            <div class="manage" id="manageBooksToggle" role="button" tabindex="0"
+                 aria-expanded="false" aria-controls="submenu" onclick="toggleMenu()">
+                Manage Books
+                <span class="arrow" id="arrow" aria-hidden="true">+</span>
+            </div>
+            <div class="submenu" id="submenu">
+                <a href="view_books.php">View All Books</a>
+                <a href="add_book.php">Add Book</a>
+                <a href="update_book.php">Update / Delete Book</a>
+            </div>
+
+            <a href="issue_book.php">Issue Book</a>
+            <a href="return_book.php" class="active" aria-current="page">Return Book</a>
+            <a href="members.php">Members Details</a>
+            <a href="announcements.php">Announcements</a>
+        </nav>
+        <div class="logout"><a href="../login/login_form.php">Logout</a></div>
+    </aside>
 
     <!-- Main -->
     <div class="main">
@@ -896,9 +1166,9 @@
             <button type="button" class="upi-close" onclick="closeUpiModal()">&times;</button>
             <h2>Pay Using UPI</h2>
             <p class="upi-intro">Scan the QR code to pay the fine amount.</p>
-            <img class="upi-qr" alt="UPI QR Code" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAXIAAAFyAQAAAADAX2ykAAACa0lEQVR4nO2bQYrcMBBFX0WGXrohB5ijqG+QI4W+mX2UOUDAXg7I/CwkuT09E4YhbmcUSgtBW29RUJTqV5XaxGfW+O1TODjvvPPOO++883/irawORjOzy2wGLAZzPbscaI/zO/NRkjSB/ZSkoU8wnsEuBEmSXvOPtsf5nfm5RKiua6zG55M0ADmwj7XH+QfxcQqCuQNY6q38D+1x/q/47u63xeHFoE+dAYj5WHuc35ev/u0FzCDm72I0gP5XPt22QL6a/c5/sLbiiaB8P2+3ehYlafhq9jv/wdI7Kx8M75y6f5vk7TJ3eWM83w6D7ALYhcUOtcf5vfgSoUMvSUprJRwEfYI4gQaC/H5uki/5N0qqviQ7Gfra6YgVcf+2xtf4ZZtrgZBdKylRo9v92zAfZGYddgGISuXzaKetiP669jv//ioB29ckvMYqEEoka8Lro7b52Yz4bHlgBHNH9ip9wuwp3fOPtsf5ffg1664yagolHQ9VX9VM7PHbHr/xbxFZU6mFyp3NVmK7f1vjN/qZqCqYbzVTyb9e/zbKV1+ut7KmkEVWjt9SHyXXV23yZUI0Pr0YUctmXKjxx9IJgixO+PuNNvnX/aug2/2cu5J5efy2ym8mvIKExSHIICSL09mIAxgE2TH2OP8I/vZ+Ulczy3KLPpFf6uTC+EB7nN+ZL1Mj1tFCQlc7lSFS3o60x/md+FU/w+bBRrwVwVC97/n3P+B1fUow5obkYtnJ43nx9+1t8m/eT+ZPc5e0UVXzyfVVm/y2+ZhbG+vo967J4fdzi/zb95Or0tpUvV7/tsqb/7/beeedd9555w/nfwOuyCcLiws8JwAAAABJRU5ErkJggg==">
-            <p class="upi-id"><strong>UPI ID:</strong> library@upi</p>
-            <p class="upi-number"><strong>Payment Number:</strong> 9876543210</p>
+            <img class="upi-qr" id="upiQrImage" alt="UPI QR Code" src="">
+            <p class="upi-id"><strong>UPI ID:</strong> <span id="upiIdValue">Not configured</span></p>
+            <p class="upi-number"><strong>Payment Number:</strong> <span id="upiNumberValue">Not configured</span></p>
             <p class="upi-note">Scan the QR code using any UPI app and pay the exact fine amount of ₹<span id="upiFineAmount">0</span>.</p>
             <button type="button" class="upi-paid-btn" onclick="confirmFinePayment('upi')">I Have Paid ₹<span id="upiPaidAmount">0</span></button>
         </div>
@@ -908,37 +1178,23 @@
         function toggleMenu() {
             var menu = document.getElementById('submenu');
             var arrow = document.getElementById('arrow');
-            if (menu.style.display === 'block') {
-                menu.style.display = 'none';
-                arrow.innerHTML = '+';
-            } else {
-                menu.style.display = 'block';
-                arrow.innerHTML = '-';
-            }
+            var toggle = document.getElementById('manageBooksToggle');
+            var willOpen = !menu.classList.contains('open');
+            menu.classList.toggle('open', willOpen);
+            arrow.textContent = willOpen ? '-' : '+';
+            toggle.setAttribute('aria-expanded', String(willOpen));
         }
 
-        /* Client-side test data: issued records are hidden until search/filter is used. */
-        var issuedRecords = [
-            {memberId:'M001', memberName:'Rahul Patil', id:'1', title:'Java Programming', author:'Herbert Schildt', isbn:'9780071808552', issueDate:'2026-09-20', dueDate:'2026-10-04', fine:'₹0', fineAmount:0, category:'Programming', year:'2022'},
-            {memberId:'M002', memberName:'Amit Jadhav', id:'2', title:'Database System Concepts', author:'Abraham Silberschatz', isbn:'9780078022159', issueDate:'2026-09-18', dueDate:'2026-10-02', fine:'₹50', fineAmount:50, category:'Database', year:'2020'},
-            {memberId:'M003', memberName:'Sneha More', id:'3', title:'Clean Code', author:'Robert Martin', isbn:'9780132350884', issueDate:'2026-09-25', dueDate:'2026-10-09', fine:'₹0', fineAmount:0, category:'Software Engineering', year:'2008'},
-            {memberId:'M004', memberName:'Neha Shinde', id:'4', title:'Computer Networks', author:'Andrew Tanenbaum', isbn:'9780132126953', issueDate:'2026-09-21', dueDate:'2026-10-05', fine:'₹20', fineAmount:20, category:'Networking', year:'2011'},
-            {memberId:'M005', memberName:'Rohan Pawar', id:'5', title:'Artificial Intelligence: A Modern Approach', author:'Stuart Russell', isbn:'9780134610993', issueDate:'2026-09-28', dueDate:'2026-10-12', fine:'₹0', fineAmount:0, category:'Artificial Intelligence', year:'2021'},
-            {memberId:'M006', memberName:'Pooja Deshmukh', id:'6', title:'The Great Gatsby', author:'F. Scott Fitzgerald', isbn:'9780743273565', issueDate:'2026-09-17', dueDate:'2026-10-01', fine:'₹10', fineAmount:10, category:'Fiction', year:'1925'},
-            {memberId:'M007', memberName:'Vikas Kale', id:'7', title:'A Brief History of Time', author:'Stephen Hawking', isbn:'9780553380163', issueDate:'2026-09-30', dueDate:'2026-10-14', fine:'₹0', fineAmount:0, category:'Science', year:'1988'},
-            {memberId:'M008', memberName:'Priya Chavan', id:'8', title:'The Psychology of Money', author:'Morgan Housel', isbn:'9780857197689', issueDate:'2026-09-24', dueDate:'2026-10-08', fine:'₹0', fineAmount:0, category:'Finance', year:'2020'},
-            {memberId:'M009', memberName:'Kiran Sutar', id:'9', title:'Pride and Prejudice', author:'Jane Austen', isbn:'9780141439518', issueDate:'2026-09-14', dueDate:'2026-09-28', fine:'₹30', fineAmount:30, category:'Romance', year:'1813'},
-            {memberId:'M010', memberName:'Snehal Pawar', id:'10', title:'History of Modern India', author:'Bipan Chandra', isbn:'9788125032735', issueDate:'2026-09-22', dueDate:'2026-10-06', fine:'₹0', fineAmount:0, category:'History', year:'2019'},
-            {memberId:'M011', memberName:'Tejas More', id:'11', title:'The Selfish Gene', author:'Richard Dawkins', isbn:'9780199291151', issueDate:'2026-09-19', dueDate:'2026-10-03', fine:'₹15', fineAmount:15, category:'Science', year:'2016'},
-            {memberId:'M012', memberName:'Sakshi Jagtap', id:'12', title:'The Art of Computer Programming', author:'Donald Knuth', isbn:'9780201896831', issueDate:'2026-09-26', dueDate:'2026-10-10', fine:'₹0', fineAmount:0, category:'Computer Science', year:'2011'}
-        ];
+        document.getElementById('manageBooksToggle').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleMenu();
+            }
+        });
 
-        var returnedBooks = [
-            {memberId:'M014', memberName:'Priya Sharma', id:'105', title:'Operating System', author:'William Stallings', isbn:'9780134670955', issueDate:'2026-09-05', dueDate:'2026-09-19', returnDate:'2026-09-20', fine:'₹50', fineAmount:50, payment:'UPI', category:'Operating Systems'},
-            {memberId:'M015', memberName:'Akash Joshi', id:'108', title:'Python Crash Course', author:'Eric Matthes', isbn:'9781593279288', issueDate:'2026-09-10', dueDate:'2026-09-24', returnDate:'2026-09-23', fine:'₹0', fineAmount:0, payment:'-', category:'Data Science'},
-            {memberId:'M017', memberName:'Megha Patil', id:'112', title:'Computer Architecture', author:'Carl Hamacher', isbn:'9780073529573', issueDate:'2026-09-01', dueDate:'2026-09-15', returnDate:'2026-09-16', fine:'₹20', fineAmount:20, payment:'Cash', category:'Computer Science'},
-            {memberId:'M019', memberName:'Nikhil More', id:'117', title:'Data Science Handbook', author:'Jake VanderPlas', isbn:'9781491912058', issueDate:'2026-09-12', dueDate:'2026-09-26', returnDate:'2026-09-26', fine:'₹0', fineAmount:0, payment:'-', category:'Data Science'}
-        ];
+        /* Records are loaded from the library database; no demo records are embedded. */
+        var issuedRecords = [];
+        var returnedBooks = [];
 
         var currentResults = [];
         var currentPage = 1;
@@ -1044,7 +1300,7 @@
             }
 
             return issuedRecords.filter(function(record) {
-                return record.title.toLowerCase().includes(lower);
+                return record.title.toLowerCase().includes(lower) || record.isbn.toLowerCase().includes(lower);
             });
         }
 
@@ -1133,7 +1389,7 @@
                     '<td>' + escapeHtml(formatIndianDate(record.dueDate)) + '</td>' +
                     '<td class="' + fineClass + '">' + escapeHtml(record.fine) + '</td>' +
                     '<td><div class="action-buttons">' +
-                        '<button type="button" class="return-btn" onclick="returnBook(\'' + record.id.replace(/'/g, "\\'") + '\')">Return</button>' +
+                        '<button type="button" class="return-btn" onclick="returnBook(\'' + String(record.issueId).replace(/'/g, "\\'") + '\')">Return</button>' +
                     '</div></td>';
                 tbody.appendChild(row);
             });
@@ -1300,13 +1556,13 @@
                 if (query.length === 13) {
                     return returnedBooks.filter(function(record) { return record.isbn === query; });
                 }
-                return returnedBooks.filter(function(record) { return record.id === query; });
+                return returnedBooks.filter(function(record) { return record.id === query || record.memberId === query; });
             }
 
             return returnedBooks.filter(function(record) {
                 return record.memberId.toLowerCase().includes(lower) ||
                        record.memberName.toLowerCase().includes(lower) ||
-                       record.title.toLowerCase().includes(lower);
+                       record.title.toLowerCase().includes(lower) || record.isbn.toLowerCase().includes(lower);
             });
         }
 
@@ -1515,7 +1771,7 @@
         }
 
         function openFinePaymentModal(record) {
-            pendingReturnBookId = String(record.id);
+            pendingReturnBookId = String(record.issueId);
             selectedPaymentMethod = 'upi';
             document.getElementById('fineMemberId').textContent = record.memberId;
             document.getElementById('fineMemberName').textContent = record.memberName;
@@ -1545,7 +1801,7 @@
 
         function payFine() {
             if (!pendingReturnBookId) return;
-            var record = issuedRecords.find(function(item) { return item.id === pendingReturnBookId; });
+            var record = issuedRecords.find(function(item) { return String(item.issueId) === pendingReturnBookId; });
             if (!record) { closePaymentModal(); return; }
 
             if (selectedPaymentMethod === 'upi') {
@@ -1566,47 +1822,46 @@
             if (event.target === document.getElementById('upiModal')) closeUpiModal();
         }
 
-        function completeReturn(record, paymentMethod) {
-            var returnRecord = {
-                memberId: record.memberId,
-                memberName: record.memberName,
-                id: record.id,
-                title: record.title,
-                author: record.author,
-                isbn: record.isbn,
-                issueDate: record.issueDate,
-                dueDate: record.dueDate,
-                returnDate: todayISO(),
-                fine: record.fine,
-                fineAmount: record.fineAmount,
-                payment: paymentMethod,
-                category: record.category || 'Other'
-            };
-            returnedBooks.unshift(returnRecord);
-            issuedRecords = issuedRecords.filter(function(item) { return item.id !== String(record.id); });
-            currentResults = applyFiltersToResults(getSearchMatches());
-            currentPage = Math.min(currentPage, Math.max(1, Math.ceil(currentResults.length / rowsPerPage)));
-            renderResults();
-            renderReturnedBooks();
+        async function completeReturn(record, paymentMethod) {
+            try {
+                var response = await fetch(window.location.pathname + '?action=return_book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ issueId: record.issueId, paymentMethod: paymentMethod || '' })
+                });
+                var payload = await response.json();
+                if (!response.ok || !payload.success) {
+                    alert(payload.message || 'The book could not be returned. Please try again.');
+                    return false;
+                }
+                await loadRecordsFromDatabase();
+                return true;
+            } catch (error) {
+                alert('Unable to save the return to the database. Check your PHP/MySQL connection and try again.');
+                return false;
+            }
         }
 
-        function confirmFinePayment(method) {
+        async function confirmFinePayment(method) {
             if (!pendingReturnBookId) return;
-            var record = issuedRecords.find(function(item) { return item.id === pendingReturnBookId; });
+            var record = issuedRecords.find(function(item) { return String(item.issueId) === pendingReturnBookId; });
             if (!record) {
                 closeUpiModal();
                 closePaymentModal();
                 return;
             }
 
-            completeReturn(record, method === 'upi' ? 'UPI' : 'Cash');
+            var paymentLabel = method === 'upi' ? 'UPI' : 'Cash';
+            var saved = await completeReturn(record, paymentLabel);
+            if (!saved) return;
+
             closeUpiModal();
             closePaymentModal();
-            alert('Fine of ₹' + Number(record.fineAmount).toFixed(2) + ' paid by ' + (method === 'upi' ? 'UPI' : 'Cash') + '. Book returned successfully.');
+            alert('Fine of ₹' + Number(record.fineAmount).toFixed(2) + ' recorded as paid by ' + paymentLabel + '. Book returned successfully.');
         }
 
-        function returnBook(bookId) {
-            var record = issuedRecords.find(function(item) { return item.id === String(bookId); });
+        async function returnBook(issueId) {
+            var record = issuedRecords.find(function(item) { return String(item.issueId) === String(issueId); });
             if (!record) return;
 
             if (record.fineAmount > 0) {
@@ -1617,19 +1872,58 @@
             var confirmed = confirm('Are you sure you want to return this book?');
             if (!confirmed) return;
 
-            completeReturn(record, '-');
-            alert('Book returned successfully!');
+            var saved = await completeReturn(record, '');
+            if (saved) alert('Book returned successfully!');
         }
 
-        /* Initial state: issued records are shown with the default due-date filter applied. */
-        currentResults = applyFiltersToResults(issuedRecords.slice());
-        currentPage = 1;
-        renderResults();
+        async function loadRecordsFromDatabase() {
+            var response = await fetch(window.location.pathname + '?action=list_records', {
+                headers: { 'Accept': 'application/json' },
+                cache: 'no-store'
+            });
+            var payload = await response.json();
+            if (!response.ok || !payload.success) {
+                throw new Error(payload.message || 'Could not load library records.');
+            }
 
-        /* Initial state: all returned records are shown. */
-        returnedCurrentResults = returnedBooks.slice();
-        returnedCurrentPage = 1;
-        renderReturnedBooks();
+            issuedRecords = Array.isArray(payload.issuedRecords) ? payload.issuedRecords : [];
+            returnedBooks = Array.isArray(payload.returnedBooks) ? payload.returnedBooks : [];
+            var settings = payload.settings || {};
+
+            document.getElementById('upiIdValue').textContent = settings.upiId || 'Not configured';
+            document.getElementById('upiNumberValue').textContent = settings.number || 'Not configured';
+            var qrImage = document.getElementById('upiQrImage');
+            if (settings.upiQrData) {
+                qrImage.src = 'data:image/jpeg;base64,' + settings.upiQrData;
+                qrImage.alt = 'Library UPI QR code';
+                qrImage.style.display = 'block';
+            } else {
+                qrImage.removeAttribute('src');
+                qrImage.alt = 'UPI QR code not configured in library settings';
+                qrImage.style.display = 'none';
+            }
+
+            currentResults = applyFiltersToResults(getSearchMatches());
+            currentPage = Math.min(currentPage, Math.max(1, Math.ceil(currentResults.length / rowsPerPage)));
+            renderResults();
+
+            returnedCurrentResults = applyReturnedFiltersToResults(getReturnedSearchMatches());
+            returnedCurrentPage = Math.min(returnedCurrentPage, Math.max(1, Math.ceil(returnedCurrentResults.length / returnedRowsPerPage)));
+            renderReturnedBooks();
+        }
+
+        /* Initial data is fetched from PHP/MySQL; there are no embedded demo records. */
+        loadRecordsFromDatabase().catch(function(error) {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('emptyState').textContent = 'Could not load issued books from the database. Open this page through XAMPP and check Connection/db.php.';
+            document.getElementById('bookTableBody').innerHTML = '';
+            document.getElementById('pagination').innerHTML = '';
+            document.getElementById('returnedEmptyState').style.display = 'block';
+            document.getElementById('returnedEmptyState').textContent = 'Could not load returned books from the database. Check your PHP/MySQL connection.';
+            document.getElementById('returnedBooksTableBody').innerHTML = '';
+            document.getElementById('returnedPagination').innerHTML = '';
+            console.error(error);
+        });
     </script>
 </body>
 </html>
