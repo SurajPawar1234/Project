@@ -776,6 +776,68 @@ if (isset($_GET['action'])) {
             .logout { padding-top: 8px; }
         }
 
+
+        /* In-app dialogs: avoid native JavaScript alert()/confirm() in PHP Desktop. */
+        .app-dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.48);
+            align-items: center;
+            justify-content: center;
+        }
+        .app-dialog-overlay.open { display: flex; }
+        .app-dialog-box {
+            width: 460px;
+            max-width: 100%;
+            background: #fff;
+            color: #333;
+            border: 1px solid #ddd;
+            box-shadow: 0 12px 38px rgba(0, 0, 0, 0.28);
+            padding: 26px;
+        }
+        .app-dialog-box h2 {
+            margin: 0 0 14px;
+            color: #333;
+            font-size: 22px;
+            line-height: 1.3;
+        }
+        .app-dialog-box p {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.55;
+            white-space: pre-line;
+            overflow-wrap: anywhere;
+        }
+        .app-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 24px;
+        }
+        .app-dialog-actions button {
+            min-width: 90px;
+            padding: 10px 17px;
+            border: 0;
+            border-radius: 0;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .app-dialog-cancel { background: #ddd; color: #222; }
+        .app-dialog-cancel:hover { background: #ccc; }
+        .app-dialog-ok { background: #333; color: #fff; }
+        .app-dialog-ok:hover { background: #222; }
+        .app-dialog-ok.danger { background: #b30000; }
+        .app-dialog-ok.danger:hover { background: #8f0000; }
+        .app-dialog-actions button:focus-visible { outline: 2px solid #465660; outline-offset: 3px; }
+        @media (max-width: 540px) {
+            .app-dialog-box { padding: 20px; }
+            .app-dialog-box h2 { font-size: 20px; }
+        }
+
     </style>
 
 </head>
@@ -1024,6 +1086,19 @@ if (isset($_GET['action'])) {
 
     </div>
 
+    <!-- Custom dialog overlay stays inside the desktop app window. -->
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <section class="app-dialog-box" role="alertdialog" aria-modal="true"
+                 aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage">
+            <h2 id="appDialogTitle">Notice</h2>
+            <p id="appDialogMessage"></p>
+            <div class="app-dialog-actions">
+                <button type="button" id="appDialogCancel" class="app-dialog-cancel">Cancel</button>
+                <button type="button" id="appDialogOk" class="app-dialog-ok">OK</button>
+            </div>
+        </section>
+    </div>
+
     <script>
 
         /* ==========================================
@@ -1031,6 +1106,98 @@ if (isset($_GET['action'])) {
            MANAGE BOOKS MENU
 
         ========================================== */
+
+        /* Custom in-app message/confirmation dialogs for PHP Desktop. */
+        var appDialogResolver = null;
+        var appDialogPreviousFocus = null;
+
+        function showAppDialog(message, options) {
+            options = options || {};
+            var overlay = document.getElementById("appDialogOverlay");
+            var title = document.getElementById("appDialogTitle");
+            var messageElement = document.getElementById("appDialogMessage");
+            var cancelButton = document.getElementById("appDialogCancel");
+            var okButton = document.getElementById("appDialogOk");
+            var isConfirm = options.confirm === true;
+
+            // Finish any prior dialog safely before opening another one.
+            if (typeof appDialogResolver === "function") {
+                var previousResolver = appDialogResolver;
+                appDialogResolver = null;
+                previousResolver(false);
+            }
+
+            title.textContent = options.title || (isConfirm ? "Please Confirm" : "Notice");
+            messageElement.textContent = String(message == null ? "" : message);
+            cancelButton.textContent = options.cancelText || "Cancel";
+            cancelButton.style.display = isConfirm ? "inline-block" : "none";
+            okButton.textContent = options.okText || (isConfirm ? "Continue" : "OK");
+            okButton.classList.toggle("danger", options.danger === true);
+            appDialogPreviousFocus = document.activeElement;
+            overlay.classList.add("open");
+            overlay.setAttribute("aria-hidden", "false");
+            document.body.style.overflow = "hidden";
+
+            return new Promise(function (resolve) {
+                appDialogResolver = resolve;
+                // Default to Cancel for confirmations to avoid accidental deletion on Enter.
+                (isConfirm ? cancelButton : okButton).focus();
+            });
+        }
+
+        function finishAppDialog(confirmed) {
+            var overlay = document.getElementById("appDialogOverlay");
+            overlay.classList.remove("open");
+            overlay.setAttribute("aria-hidden", "true");
+            document.body.style.overflow = "";
+            var resolver = appDialogResolver;
+            appDialogResolver = null;
+            if (typeof resolver === "function") resolver(Boolean(confirmed));
+            if (appDialogPreviousFocus && typeof appDialogPreviousFocus.focus === "function") {
+                appDialogPreviousFocus.focus();
+            }
+            appDialogPreviousFocus = null;
+        }
+
+        function showAppMessage(message, title) {
+            return showAppDialog(message, { title: title || "Notice" });
+        }
+
+        function showAppConfirm(message, title, options) {
+            options = options || {};
+            options.confirm = true;
+            options.title = title || "Please Confirm";
+            return showAppDialog(message, options);
+        }
+
+        document.getElementById("appDialogOk").addEventListener("click", function () {
+            finishAppDialog(true);
+        });
+        document.getElementById("appDialogCancel").addEventListener("click", function () {
+            finishAppDialog(false);
+        });
+        document.getElementById("appDialogOverlay").addEventListener("click", function (event) {
+            if (event.target === this && document.getElementById("appDialogCancel").style.display !== "none") {
+                finishAppDialog(false);
+            }
+        });
+        document.addEventListener("keydown", function (event) {
+            var overlay = document.getElementById("appDialogOverlay");
+            if (!overlay.classList.contains("open")) return;
+            if (event.key === "Escape") {
+                event.preventDefault();
+                finishAppDialog(false);
+            } else if (event.key === "Enter" && event.target.tagName !== "TEXTAREA") {
+                // Let the focused dialog button handle Enter; do not submit the underlying form.
+                if (event.target === document.getElementById("appDialogOk")) {
+                    event.preventDefault();
+                    finishAppDialog(true);
+                } else if (event.target === document.getElementById("appDialogCancel")) {
+                    event.preventDefault();
+                    finishAppDialog(false);
+                }
+            }
+        });
 
         function toggleMenu() {
             var menu = document.getElementById("submenu");
@@ -1507,24 +1674,24 @@ if (isset($_GET['action'])) {
             var endDate = document.getElementById("endDate").value;
 
             if (!title || !message || !startDate || !endDate) {
-                alert("Please fill all the fields.");
+                await showAppMessage("Please fill all the fields.", "Incomplete form");
                 return;
             }
             if (new Date(endDate) <= new Date(startDate)) {
-                alert("End Date & Time must be after Start Date & Time.");
+                await showAppMessage("End Date & Time must be after Start Date & Time.", "Invalid date range");
                 return;
             }
 
             var editing = editIndex !== -1;
             var oldAnnouncement = editing ? announcements[editIndex] : null;
             if (editing && !oldAnnouncement) {
-                alert("This announcement is no longer available. The list will be refreshed.");
+                await showAppMessage("This announcement is no longer available. The list will be refreshed.", "Announcement unavailable");
                 await loadAnnouncements(false);
                 clearForm();
                 return;
             }
             if (editing && getStatus(oldAnnouncement) !== "Published") {
-                alert("This announcement can no longer be edited because it is outside its active period.");
+                await showAppMessage("This announcement can no longer be edited because it is outside its active period.", "Announcement inactive");
                 clearForm();
                 return;
             }
@@ -1541,11 +1708,11 @@ if (isset($_GET['action'])) {
             submitButton.disabled = true;
             try {
                 await apiRequest(editing ? "update" : "create", payload);
-                alert(editing ? "Announcement updated successfully." : "Announcement published successfully.");
+                await showAppMessage(editing ? "Announcement updated successfully." : "Announcement published successfully.", "Success");
                 await loadAnnouncements(false);
                 clearForm();
             } catch (error) {
-                alert(error.message || "The announcement could not be saved. Please try again.");
+                await showAppMessage(error.message || "The announcement could not be saved. Please try again.", "Save failed");
             } finally {
                 submitButton.disabled = false;
             }
@@ -1601,7 +1768,7 @@ if (isset($_GET['action'])) {
             if (!announcement) return;
 
             if (getStatus(announcement) !== "Published") {
-                alert("This announcement can only be edited during its active period.");
+                showAppMessage("This announcement can only be edited during its active period.", "Announcement inactive");
                 return;
             }
 
@@ -1624,18 +1791,18 @@ if (isset($_GET['action'])) {
             if (!announcement) return;
 
             if (getStatus(announcement) !== "Published") {
-                alert("This announcement can only be deleted during its active period.");
+                showAppMessage("This announcement can only be deleted during its active period.", "Announcement inactive");
                 return;
             }
-            if (!confirm("Are you sure you want to delete this announcement?")) return;
+            if (!(await showAppConfirm("Are you sure you want to delete this announcement?", "Delete announcement", { okText: "Delete", danger: true }))) return;
 
             try {
                 await apiRequest("delete", { announcementId: announcement.announcementId });
                 if (editIndex === index) clearForm();
                 await loadAnnouncements(false);
-                alert("Announcement deleted successfully.");
+                await showAppMessage("Announcement deleted successfully.", "Success");
             } catch (error) {
-                alert(error.message || "The announcement could not be deleted. Please try again.");
+                await showAppMessage(error.message || "The announcement could not be deleted. Please try again.", "Delete failed");
             }
         }
 
@@ -1643,7 +1810,7 @@ if (isset($_GET['action'])) {
            PHP API HELPERS / LOAD DATABASE RECORDS
         ========================================== */
         async function apiRequest(action, payload) {
-            var options = { method: payload ? "POST" : "GET", headers: { "Accept": "application/json" } };
+            var options = { method: payload ? "POST" : "GET", headers: { "Accept": "application/json", "Cache-Control": "no-cache" }, credentials: "same-origin", cache: "no-store" };
             if (payload) {
                 options.headers["Content-Type"] = "application/json";
                 options.body = JSON.stringify(payload);
@@ -1670,7 +1837,7 @@ if (isset($_GET['action'])) {
                 var table = document.getElementById("announcementTable");
                 table.innerHTML = '<tr><td colspan="6" class="no-data">' + escapeHTML(error.message || "Unable to load announcements from the database.") + '</td></tr>';
                 if (showError) {
-                    alert("Could not load announcements from MySQL. Check Connection/db.php and the announcements table.\n\n" + (error.message || "Unknown error"));
+                    await showAppMessage("Could not load announcements from MySQL. Check Connection/db.php and the announcements table.\n\n" + (error.message || "Unknown error"), "Could not load announcements");
                 }
             }
         }
@@ -1747,7 +1914,8 @@ if (isset($_GET['action'])) {
 
         ========================================== */
 
-        displayAnnouncements();
+        // Load the persisted records from MySQL on initial page startup.
+        loadAnnouncements(true);
 
         /* ==========================================
 

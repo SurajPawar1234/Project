@@ -766,6 +766,37 @@ if ($action !== '') {
         }
         .upi-paid-btn:hover { background: #222; }
 
+
+        /* Desktop-safe in-page dialogs for PHP Desktop (avoid native alert/confirm). */
+        .app-dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            background: rgba(0, 0, 0, .48);
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .app-dialog-overlay.show { display: flex; }
+        .app-dialog-box {
+            width: 460px;
+            max-width: 100%;
+            background: #fff;
+            border: 1px solid #d7dce0;
+            border-radius: 8px;
+            padding: 24px;
+            box-shadow: 0 12px 38px rgba(0, 0, 0, .3);
+        }
+        .app-dialog-box h2 { margin: 0 0 14px; color: #465660; font-size: 21px; }
+        .app-dialog-box p { margin: 0; color: #333; font-size: 15px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+        .app-dialog-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+        .app-dialog-actions button { min-width: 90px; padding: 10px 16px; border: 0; border-radius: 4px; font-size: 14px; cursor: pointer; }
+        .app-dialog-cancel { background: #e6e8e9; color: #333; }
+        .app-dialog-ok { background: #465660; color: #fff; }
+        .app-dialog-actions button:focus { outline: 2px solid #7b9eb4; outline-offset: 2px; }
+        .app-dialog-actions button:disabled { opacity: .6; cursor: wait; }
+
         @media (max-width: 800px) {
             .payment-options { flex-direction: column; }
             .payment-box { padding: 24px 20px; }
@@ -1174,7 +1205,78 @@ if ($action !== '') {
         </div>
     </div>
 
+
+    <!-- In-app confirmation/message popup for the desktop app -->
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <div class="app-dialog-box" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage" onclick="event.stopPropagation()">
+            <h2 id="appDialogTitle">Message</h2>
+            <p id="appDialogMessage"></p>
+            <div class="app-dialog-actions">
+                <button type="button" id="appDialogCancel" class="app-dialog-cancel">Cancel</button>
+                <button type="button" id="appDialogOk" class="app-dialog-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script>
+        /* Promise-based custom dialogs; these stay inside the PHP Desktop WebView. */
+        function showAppDialog(message, options) {
+            options = options || {};
+            return new Promise(function(resolve) {
+                var overlay = document.getElementById('appDialogOverlay');
+                var title = document.getElementById('appDialogTitle');
+                var messageElement = document.getElementById('appDialogMessage');
+                var cancelButton = document.getElementById('appDialogCancel');
+                var okButton = document.getElementById('appDialogOk');
+                var isConfirm = options.confirm === true;
+                var previousFocus = document.activeElement;
+                var finished = false;
+
+                title.textContent = options.title || (isConfirm ? 'Confirm action' : 'Message');
+                messageElement.textContent = String(message == null ? '' : message);
+                cancelButton.style.display = isConfirm ? 'inline-block' : 'none';
+                okButton.textContent = isConfirm ? 'Yes, continue' : 'OK';
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+
+                function finish(result) {
+                    if (finished) return;
+                    finished = true;
+                    overlay.classList.remove('show');
+                    overlay.setAttribute('aria-hidden', 'true');
+                    okButton.removeEventListener('click', onOk);
+                    cancelButton.removeEventListener('click', onCancel);
+                    document.removeEventListener('keydown', onKeyDown, true);
+                    if (previousFocus && typeof previousFocus.focus === 'function') {
+                        try { previousFocus.focus(); } catch (ignore) {}
+                    }
+                    resolve(result);
+                }
+                function onOk() { finish(true); }
+                function onCancel() { finish(false); }
+                function onKeyDown(event) {
+                    if (event.key === 'Escape') {
+                        event.preventDefault();
+                        finish(isConfirm ? false : true);
+                    } else if (event.key === 'Enter' && event.target !== cancelButton && event.target !== okButton) {
+                        event.preventDefault();
+                        finish(true);
+                    }
+                }
+
+                okButton.addEventListener('click', onOk);
+                cancelButton.addEventListener('click', onCancel);
+                document.addEventListener('keydown', onKeyDown, true);
+                okButton.focus();
+            });
+        }
+        function showAppMessage(message, title) {
+            return showAppDialog(message, { confirm: false, title: title || 'Message' });
+        }
+        function showAppConfirm(message, title) {
+            return showAppDialog(message, { confirm: true, title: title || 'Confirm action' });
+        }
+
         function toggleMenu() {
             var menu = document.getElementById('submenu');
             var arrow = document.getElementById('arrow');
@@ -1280,10 +1382,10 @@ if ($action !== '') {
             var fines = ['all','with_fine','without_fine'];
             var sorts = ['default','issue_asc','issue_desc','id_asc','id_desc','title_asc','title_desc','year_desc','year_asc'];
 
-            if (!categories.includes(f.category)) { alert('Please select a valid category.'); return false; }
-            if (!dueDates.includes(f.dueDate)) { alert('Please select a valid due date filter.'); return false; }
-            if (!fines.includes(f.fine)) { alert('Please select a valid fine filter.'); return false; }
-            if (!sorts.includes(f.sort)) { alert('Please select a valid sorting option.'); return false; }
+            if (!categories.includes(f.category)) { showAppMessage('Please select a valid category.', 'Invalid filter'); return false; }
+            if (!dueDates.includes(f.dueDate)) { showAppMessage('Please select a valid due date filter.', 'Invalid filter'); return false; }
+            if (!fines.includes(f.fine)) { showAppMessage('Please select a valid fine filter.', 'Invalid filter'); return false; }
+            if (!sorts.includes(f.sort)) { showAppMessage('Please select a valid sorting option.', 'Invalid filter'); return false; }
             return true;
         }
 
@@ -1540,10 +1642,10 @@ if ($action !== '') {
             var payments = ['all','UPI','Cash','none'];
             var sorts = ['issue_desc','issue_asc','return_desc','return_asc','id_asc','id_desc','title_asc','title_desc'];
 
-            if (!categories.includes(f.category)) { alert('Please select a valid category.'); return false; }
-            if (!fines.includes(f.fine)) { alert('Please select a valid fine filter.'); return false; }
-            if (!payments.includes(f.payment)) { alert('Please select a valid payment filter.'); return false; }
-            if (!sorts.includes(f.sort)) { alert('Please select a valid sorting option.'); return false; }
+            if (!categories.includes(f.category)) { showAppMessage('Please select a valid category.', 'Invalid filter'); return false; }
+            if (!fines.includes(f.fine)) { showAppMessage('Please select a valid fine filter.', 'Invalid filter'); return false; }
+            if (!payments.includes(f.payment)) { showAppMessage('Please select a valid payment filter.', 'Invalid filter'); return false; }
+            if (!sorts.includes(f.sort)) { showAppMessage('Please select a valid sorting option.', 'Invalid filter'); return false; }
             return true;
         }
 
@@ -1831,13 +1933,13 @@ if ($action !== '') {
                 });
                 var payload = await response.json();
                 if (!response.ok || !payload.success) {
-                    alert(payload.message || 'The book could not be returned. Please try again.');
+                    await showAppMessage(payload.message || 'The book could not be returned. Please try again.', 'Return failed');
                     return false;
                 }
                 await loadRecordsFromDatabase();
                 return true;
             } catch (error) {
-                alert('Unable to save the return to the database. Check your PHP/MySQL connection and try again.');
+                await showAppMessage('Unable to save the return to the database. Check your PHP/MySQL connection and try again.', 'Database error');
                 return false;
             }
         }
@@ -1857,7 +1959,7 @@ if ($action !== '') {
 
             closeUpiModal();
             closePaymentModal();
-            alert('Fine of ₹' + Number(record.fineAmount).toFixed(2) + ' recorded as paid by ' + paymentLabel + '. Book returned successfully.');
+            await showAppMessage('Fine of ₹' + Number(record.fineAmount).toFixed(2) + ' recorded as paid by ' + paymentLabel + '. Book returned successfully.', 'Return successful');
         }
 
         async function returnBook(issueId) {
@@ -1869,11 +1971,11 @@ if ($action !== '') {
                 return;
             }
 
-            var confirmed = confirm('Are you sure you want to return this book?');
+            var confirmed = await showAppConfirm('Are you sure you want to return this book?', 'Confirm book return');
             if (!confirmed) return;
 
             var saved = await completeReturn(record, '');
-            if (saved) alert('Book returned successfully!');
+            if (saved) await showAppMessage('Book returned successfully!', 'Return successful');
         }
 
         async function loadRecordsFromDatabase() {

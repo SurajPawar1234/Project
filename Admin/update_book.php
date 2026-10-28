@@ -204,6 +204,25 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $isJsonRequest) {
                 updateBookJsonResponse(['success' => false, 'message' => 'Invalid Book ID.'], 400);
             }
             $id = (int)$idRaw;
+
+            // Never delete a book that is currently issued (not yet returned).
+            // Check this first so the user sees a meaningful message instead of a MySQL FK error.
+            $activeIssueCheck = $conn->prepare(
+                'SELECT COUNT(*) AS active_count FROM `issue_return` WHERE `Book_id` = ? AND `Return_date` IS NULL'
+            );
+            $activeIssueCheck->bind_param('i', $id);
+            $activeIssueCheck->execute();
+            $activeIssueRow = $activeIssueCheck->get_result()->fetch_assoc();
+            $activeIssueCheck->close();
+
+            if ((int)($activeIssueRow['active_count'] ?? 0) > 0) {
+                updateBookJsonResponse([
+                    'success' => false,
+                    'code' => 'BOOK_CURRENTLY_ISSUED',
+                    'message' => 'Cannot delete this book because it is currently issued to a member. Return the book first.'
+                ], 409);
+            }
+
             $stmt = $conn->prepare('DELETE FROM `book` WHERE `Book_id` = ?');
             $stmt->bind_param('i', $id);
             $stmt->execute();
@@ -257,6 +276,21 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && $isJsonRequest) {
         updateBookJsonResponse(['success' => false, 'message' => 'Unknown request action.'], 400);
     } catch (Throwable $e) {
         error_log('Update Book page error: ' . $e->getMessage());
+        $rawError = strtolower($e->getMessage());
+
+        // If another historical issue/request row still references this book,
+        // translate the foreign-key error into a clear message for the in-app dialog.
+        $isForeignKeyError = strpos($rawError, 'foreign key constraint fails') !== false
+            || strpos($rawError, 'cannot delete or update a parent row') !== false
+            || strpos($rawError, '1451') !== false;
+        if (($action ?? '') === 'delete' && $isForeignKeyError) {
+            updateBookJsonResponse([
+                'success' => false,
+                'code' => 'BOOK_HAS_HISTORY',
+                'message' => 'Cannot delete this book because it is linked to issue or request records. Keep the book record to preserve the library history.'
+            ], 409);
+        }
+
         $message = $e instanceof RuntimeException ? $e->getMessage() : 'The database operation failed. Check your table structure and any related records.';
         updateBookJsonResponse(['success' => false, 'message' => $message], 400);
     }
@@ -504,6 +538,19 @@ if ($booksJson === false) {
         .cancel-btn { background:#777; margin-left:10px; }
 
 
+
+        /* In-app message/confirmation dialog for PHP Desktop. */
+        .app-dialog-overlay { display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,.48); align-items:center; justify-content:center; padding:20px; }
+        .app-dialog-overlay.show { display:flex; }
+        .app-dialog-box { width:460px; max-width:100%; background:#fff; border-radius:8px; padding:24px; box-shadow:0 12px 38px rgba(0,0,0,.3); border:1px solid #d7dce0; }
+        .app-dialog-box h2 { margin:0 0 14px; color:#465660; font-size:21px; }
+        .app-dialog-box p { margin:0; color:#333; font-size:15px; line-height:1.55; white-space:pre-line; overflow-wrap:anywhere; }
+        .app-dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+        .app-dialog-actions button { min-width:90px; padding:10px 16px; border:0; border-radius:4px; font-size:14px; cursor:pointer; }
+        .app-dialog-cancel { background:#e6e8e9; color:#333; }
+        .app-dialog-ok { background:#465660; color:#fff; }
+        .app-dialog-actions button:focus { outline:2px solid #7b9eb4; outline-offset:2px; }
+        .app-dialog-actions button:disabled { opacity:.6; cursor:wait; }
 
         @media(max-width:900px){ .main{margin-left:220px;padding:0 15px 20px;} .search{flex-wrap:wrap;} }
 
@@ -779,7 +826,17 @@ if ($booksJson === false) {
 
     </div>
 
-
+    <!-- Desktop-safe in-app dialog for confirmations and messages -->
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <div class="app-dialog-box" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage" onclick="event.stopPropagation()">
+            <h2 id="appDialogTitle">Message</h2>
+            <p id="appDialogMessage"></p>
+            <div class="app-dialog-actions">
+                <button type="button" id="appDialogCancel" class="app-dialog-cancel">Cancel</button>
+                <button type="button" id="appDialogOk" class="app-dialog-ok">OK</button>
+            </div>
+        </div>
+    </div>
 
     <script>
 
@@ -875,11 +932,11 @@ if ($booksJson === false) {
 
             var st=['all','Available','Issued'];
 
-            if(!c.includes(f.category)){alert('Please select a valid category.');return false;}
+            if(!c.includes(f.category)){showAppMessage('Please select a valid category.', 'Invalid filter');return false;}
 
-            if(!s.includes(f.sort)){alert('Please select a valid sorting option.');return false;}
+            if(!s.includes(f.sort)){showAppMessage('Please select a valid sorting option.', 'Invalid filter');return false;}
 
-            if(!st.includes(f.status)){alert('Please select a valid status.');return false;}
+            if(!st.includes(f.status)){showAppMessage('Please select a valid status.', 'Invalid filter');return false;}
 
             return true;
 
@@ -1197,6 +1254,66 @@ if ($booksJson === false) {
 
 
 
+        /* Use an HTML dialog so confirmations remain inside the desktop window. */
+        (function initialiseAppDialog() {
+            var overlay = document.getElementById('appDialogOverlay');
+            var title = document.getElementById('appDialogTitle');
+            var message = document.getElementById('appDialogMessage');
+            var cancelButton = document.getElementById('appDialogCancel');
+            var okButton = document.getElementById('appDialogOk');
+            var pendingResolve = null;
+            var previousFocus = null;
+
+            function finish(result) {
+                if (!overlay.classList.contains('show')) return;
+                overlay.classList.remove('show');
+                overlay.setAttribute('aria-hidden', 'true');
+                var resolve = pendingResolve;
+                pendingResolve = null;
+                if (previousFocus && typeof previousFocus.focus === 'function') previousFocus.focus();
+                previousFocus = null;
+                if (resolve) resolve(result);
+            }
+
+            function show(text, heading, isConfirmation) {
+                if (pendingResolve) finish(false);
+                previousFocus = document.activeElement;
+                title.textContent = heading || (isConfirmation ? 'Confirm action' : 'Message');
+                message.textContent = String(text == null ? '' : text);
+                cancelButton.style.display = isConfirmation ? '' : 'none';
+                okButton.textContent = isConfirmation ? 'Yes, continue' : 'OK';
+                overlay.classList.add('show');
+                overlay.setAttribute('aria-hidden', 'false');
+                return new Promise(function(resolve) {
+                    pendingResolve = resolve;
+                    okButton.focus();
+                });
+            }
+
+            cancelButton.addEventListener('click', function() { finish(false); });
+            okButton.addEventListener('click', function() { finish(true); });
+            overlay.addEventListener('click', function(event) {
+                if (event.target === overlay) finish(false);
+            });
+            document.addEventListener('keydown', function(event) {
+                if (!overlay.classList.contains('show')) return;
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    finish(false);
+                } else if (event.key === 'Enter' && event.target !== cancelButton && event.target !== okButton) {
+                    event.preventDefault();
+                    finish(true);
+                }
+            });
+
+            window.showAppMessage = function(text, heading) {
+                return show(text, heading || 'Message', false);
+            };
+            window.showAppConfirm = function(text, heading) {
+                return show(text, heading || 'Confirm action', true);
+            };
+        })();
+
         async function undoLastAction() {
             if (!undoSnapshot) return;
             var snapshot = undoSnapshot;
@@ -1215,10 +1332,10 @@ if ($booksJson === false) {
                 renderResults();
                 undoSnapshot = null;
                 if (undoButton) undoButton.disabled = true;
-                alert('Last action undone.');
+                showAppMessage('Last action undone.', 'Success');
             } catch (error) {
                 if (undoButton) undoButton.disabled = false;
-                alert(error.message || 'Could not undo the last action.');
+                showAppMessage(error.message || 'Could not undo the last action.', 'Undo failed');
             }
         }
 
@@ -1294,9 +1411,9 @@ if ($booksJson === false) {
                 currentPage = Math.min(currentPage, Math.max(1, Math.ceil(currentResults.length / rowsPerPage)));
                 renderResults();
                 closeForm();
-                alert(result.message || 'Book updated successfully.');
+                showAppMessage(result.message || 'Book updated successfully.', 'Success');
             } catch (error) {
-                alert(error.message || 'Could not update the book.');
+                showAppMessage(error.message || 'Could not update the book.', 'Update failed');
             } finally {
                 submitButton.disabled = false;
             }
@@ -1305,7 +1422,7 @@ if ($booksJson === false) {
         async function deleteBook(bookId) {
             var book = bookRecords.find(function(x) { return String(x.id) === String(bookId); });
             if (!book) return;
-            if (!confirm('Are you sure you want to delete Book ID ' + book.id + ' - ' + book.title + '?')) return;
+            if (!(await showAppConfirm('Are you sure you want to delete Book ID ' + book.id + ' - ' + book.title + '?', 'Confirm delete'))) return;
             var beforeRecords = JSON.parse(JSON.stringify(bookRecords));
             var previousRecord = JSON.parse(JSON.stringify(book));
             try {
@@ -1315,9 +1432,9 @@ if ($booksJson === false) {
                 currentResults = applyFiltersToResults(getSearchMatches());
                 currentPage = Math.min(currentPage, Math.max(1, Math.ceil(currentResults.length / rowsPerPage)));
                 renderResults();
-                alert(result.message || 'Book deleted successfully.');
+                showAppMessage(result.message || 'Book deleted successfully.', 'Success');
             } catch (error) {
-                alert(error.message || 'Could not delete the book.');
+                showAppMessage(error.message || 'Could not delete the book.', 'Delete failed');
             }
         }
 

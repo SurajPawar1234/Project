@@ -348,12 +348,20 @@ if ($portalAction === 'request_issue') {
             member_portal_json_response(['success' => false, 'message' => 'You already have an active request for this book.'], 409);
         }
 
+        // Request_limit may not exist in older library_details schemas.
+        // Keep the default limit instead of failing the entire request when the column is absent.
         $requestLimit = 3;
-        $limitResult = $conn->query('SELECT Request_limit FROM library_details ORDER BY Id LIMIT 1');
-        if ($limitResult instanceof mysqli_result) {
-            $limitRow = $limitResult->fetch_assoc();
-            if ($limitRow && isset($limitRow['Request_limit'])) $requestLimit = max(0, (int)$limitRow['Request_limit']);
-            $limitResult->free();
+        try {
+            $limitResult = $conn->query('SELECT Request_limit FROM library_details ORDER BY Id LIMIT 1');
+            if ($limitResult instanceof mysqli_result) {
+                $limitRow = $limitResult->fetch_assoc();
+                if ($limitRow && isset($limitRow['Request_limit'])) {
+                    $requestLimit = max(0, (int)$limitRow['Request_limit']);
+                }
+                $limitResult->free();
+            }
+        } catch (Throwable $limitError) {
+            error_log('Library Request_limit could not be loaded; using default limit of 3: ' . $limitError->getMessage());
         }
         $stmt = $conn->prepare("SELECT COUNT(*) AS total FROM issue_request WHERE Member_id = ? AND Status IN ('Pending','Approved')");
         $stmt->bind_param('i', $memberId);
@@ -1549,6 +1557,69 @@ if ($portalAction === 'request_issue') {
 
         }
 
+    
+
+        /* PHP Desktop 130.1 workaround: use an in-page dialog instead of native JS confirm/alert. */
+        .app-dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(0, 0, 0, 0.48);
+        }
+        .app-dialog {
+            width: 430px;
+            max-width: 100%;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #d9dfe2;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+            padding: 22px;
+        }
+        .app-dialog h3 {
+            margin: 0 0 12px;
+            color: #43515a;
+            font-size: 19px;
+        }
+        .app-dialog-message {
+            margin: 0;
+            color: #37434a;
+            font-size: 14px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+        .app-dialog-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 22px;
+        }
+        .app-dialog-actions button {
+            min-width: 88px;
+            border: 0;
+            border-radius: 4px;
+            padding: 10px 15px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .app-dialog-cancel {
+            background: #e8ecee;
+            color: #334149;
+        }
+        .app-dialog-ok {
+            background: #43515a;
+            color: #fff;
+        }
+        .app-dialog-actions button:focus-visible {
+            outline: 2px solid #2c719b;
+            outline-offset: 2px;
+        }
+
     </style>
 
 </head>
@@ -2139,6 +2210,20 @@ if ($portalAction === 'request_issue') {
     Library Management System &nbsp;|&nbsp; Member Portal
 </div>
 
+
+
+<!-- Custom confirmation/message dialog for PHP Desktop Chromium 130.1. -->
+<div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+    <section class="app-dialog" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage">
+        <h3 id="appDialogTitle">Library Management System</h3>
+        <p class="app-dialog-message" id="appDialogMessage"></p>
+        <div class="app-dialog-actions">
+            <button type="button" class="app-dialog-cancel" id="appDialogCancel">Cancel</button>
+            <button type="button" class="app-dialog-ok" id="appDialogOk">OK</button>
+        </div>
+    </section>
+</div>
+
 <script>
 
 
@@ -2151,6 +2236,76 @@ const books = <?= member_portal_json($books) ?>;
 let issuedBooks = <?= member_portal_json($issuedBooks) ?>;
 const memberRequests = <?= member_portal_json($memberRequests) ?>;
 const currentMember = <?= member_portal_json($currentMemberData) ?>;
+
+/* In-page dialogs: native JavaScript alert()/confirm() are broken in PHP Desktop 130.1. */
+let appDialogResolver = null;
+let appDialogConfirmMode = false;
+
+function closeAppDialog(result) {
+    const overlay = document.getElementById("appDialogOverlay");
+    if (!overlay) return;
+    overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
+    const resolver = appDialogResolver;
+    appDialogResolver = null;
+    if (resolver) resolver(Boolean(result));
+}
+
+function showAppDialog(message, confirmMode = false, title = "Library Management System") {
+    const overlay = document.getElementById("appDialogOverlay");
+    const titleElement = document.getElementById("appDialogTitle");
+    const messageElement = document.getElementById("appDialogMessage");
+    const cancelButton = document.getElementById("appDialogCancel");
+    const okButton = document.getElementById("appDialogOk");
+    if (!overlay || !titleElement || !messageElement || !cancelButton || !okButton) {
+        // This should only happen if the dialog markup was removed from the page.
+        console.error("The in-page dialog elements are missing.", message);
+        return Promise.resolve(false);
+    }
+    if (appDialogResolver) closeAppDialog(false);
+    appDialogConfirmMode = confirmMode;
+    titleElement.textContent = title;
+    messageElement.textContent = String(message ?? "");
+    cancelButton.style.display = confirmMode ? "inline-block" : "none";
+    okButton.textContent = confirmMode ? "Yes, continue" : "OK";
+    overlay.style.display = "flex";
+    overlay.setAttribute("aria-hidden", "false");
+    return new Promise(resolve => {
+        appDialogResolver = resolve;
+        (confirmMode ? cancelButton : okButton).blur();
+        okButton.focus();
+    });
+}
+
+function appAlert(message) {
+    return showAppDialog(message, false, "Library Management System");
+}
+
+function appConfirm(message) {
+    return showAppDialog(message, true, "Confirm Action");
+}
+
+(function initialiseAppDialog() {
+    const overlay = document.getElementById("appDialogOverlay");
+    const cancelButton = document.getElementById("appDialogCancel");
+    const okButton = document.getElementById("appDialogOk");
+    if (!overlay || !cancelButton || !okButton) return;
+    cancelButton.addEventListener("click", () => closeAppDialog(false));
+    okButton.addEventListener("click", () => closeAppDialog(true));
+    overlay.addEventListener("click", event => {
+        if (event.target === overlay) closeAppDialog(false);
+    });
+    document.addEventListener("keydown", event => {
+        if (overlay.style.display !== "flex") return;
+        if (event.key === "Escape") {
+            event.preventDefault();
+            closeAppDialog(false);
+        } else if (event.key === "Enter") {
+            event.preventDefault();
+            closeAppDialog(true);
+        }
+    });
+})();
 
 function getMemberIssueRequests() {
     return Array.isArray(memberRequests) ? memberRequests : [];
@@ -2208,7 +2363,7 @@ function renderBooksPage() {
         } else if (hasActiveRequest) {
             actionCell = '<button type="button" class="request-btn" disabled>Requested</button>';
         } else {
-            actionCell = `<button type="button" class="request-btn" onclick="requestBookIssue(${Number(book.bookId)})">Request Issue</button>`;
+            actionCell = `<button type="button" class="request-btn" onclick="requestBookIssue(${Number(book.bookId)}, this)">Request Issue</button>`;
         }
 
         row.innerHTML = `
@@ -2316,49 +2471,110 @@ function isActiveIssueRequest(bookId) {
     });
 }
 
-async function requestBookIssue(bookId) {
+function memberPortalActionUrl(action) {
+    // Keep the desktop app's current origin and any existing query parameters.
+    // Do not hard-code localhost or navigate the top-level window to an endpoint.
+    const url = new URL(window.location.href);
+    url.hash = "";
+    url.searchParams.set("action", action);
+    return url.toString();
+}
+
+async function requestBookIssue(bookId, button = null) {
     const book = books.find(item => String(item.bookId) === String(bookId));
 
     if (!currentMember || !currentMember.id) {
-        alert("Please log in with your Member account before requesting a book.");
+        appAlert("Please log in with your Member account before requesting a book.");
         return;
     }
     if (!book || String(book.status).toLowerCase() !== "available" || Number(book.availableCopies) <= 0) {
-        alert("This book is currently unavailable.");
+        appAlert("This book is currently unavailable.");
         return;
     }
 
     const duplicate = getIssueRequests().some(request => {
+        const requestMemberId = String(request.memberId ?? request.member_id ?? "");
         const requestBookId = String(request.bookId ?? request.book_id ?? "");
         const status = String(request.status || "Pending").toLowerCase();
-        return requestBookId === String(book.bookId) && ["pending", "approve", "approved"].includes(status);
+        return requestMemberId === String(currentMember.id) &&
+            requestBookId === String(book.bookId) &&
+            ["pending", "approve", "approved"].includes(status);
     });
     if (duplicate) {
-        alert("You already have an active request for this book.");
+        appAlert("You already have an active request for this book.");
         return;
     }
-    if (!confirm(`Send an issue request for "${book.name}"?`)) return;
+
+    // Keep the confirmation in the current PHP Desktop window.
+    if (!(await appConfirm(`Send an issue request for "${book.name}"?`))) return;
+
+    const originalButtonText = button ? button.textContent : "Request Issue";
+    if (button) {
+        button.disabled = true;
+        button.textContent = "Submitting...";
+    }
 
     try {
         const body = new URLSearchParams();
         body.set("action", "request_issue");
         body.set("book_id", String(book.bookId));
-        const requestUrl = window.location.pathname + "?action=request_issue";
-        const response = await fetch(requestUrl, {
+
+        // POST through the same URL/origin as the page; never open a separate browser window.
+        const response = await fetch(memberPortalActionUrl("request_issue"), {
             method: "POST",
             credentials: "same-origin",
-            headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8", "Accept": "application/json" },
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
+                "Accept": "application/json"
+            },
+            cache: "no-store",
+            redirect: "error",
             body: body.toString()
         });
+
+        const contentType = response.headers.get("content-type") || "";
+        if (!contentType.toLowerCase().includes("application/json")) {
+            throw new Error("The server did not return JSON. Check the PHP Desktop URL and PHP error log.");
+        }
+
         const result = await response.json();
         if (!response.ok || !result.success) {
-            alert(result.message || "The issue request could not be submitted.");
+            appAlert(result.message || "The issue request could not be submitted.");
+            if (button) {
+                button.disabled = false;
+                button.textContent = originalButtonText;
+            }
             return;
         }
-        alert(result.message || "Issue request submitted successfully.");
-        window.location.reload();
+
+        // Update the current page without reloading/navigating away from the desktop app.
+        const now = new Date();
+        const requestDate = now.toLocaleString("en-IN", {
+            day: "2-digit", month: "2-digit", year: "numeric",
+            hour: "2-digit", minute: "2-digit", hour12: false
+        });
+        memberRequests.unshift({
+            requestId: result.requestId ?? "-",
+            memberId: String(currentMember.id),
+            bookId: Number(book.bookId),
+            bookTitle: String(book.name || ""),
+            bookName: String(book.name || ""),
+            title: String(book.name || ""),
+            requestDate,
+            requestedAt: now.toISOString(),
+            status: "Pending"
+        });
+
+        loadMyRequests();
+        renderBooksPage();
+        appAlert(result.message || "Issue request submitted successfully.");
     } catch (error) {
-        alert("Could not contact the server. Check that Apache and MySQL are running, then try again.");
+        console.error("Issue request failed:", error);
+        appAlert("Could not submit the request inside the desktop app. Check that Apache and MySQL are running, then inspect the PHP/Chromium console for the request error.");
+        if (button) {
+            button.disabled = false;
+            button.textContent = originalButtonText;
+        }
     }
 }
 
@@ -2815,7 +3031,7 @@ document
 async function loadAnnouncements() {
     const track = document.getElementById("announcementTrack");
     try {
-        const response = await fetch(window.location.pathname + "?action=active_announcements", {
+        const response = await fetch(memberPortalActionUrl("active_announcements"), {
             credentials: "same-origin",
             headers: { "Accept": "application/json" },
             cache: "no-store"

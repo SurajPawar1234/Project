@@ -174,9 +174,22 @@ if ($apiAction !== '') {
                 $activeMemberStmt->execute();
                 $activeMemberCount = (int)$activeMemberStmt->get_result()->fetch_assoc()['active_count'];
 
-                $limitResult = $conn->query('SELECT Borrow_limit FROM library_details ORDER BY Id LIMIT 1');
-                $limitRow = $limitResult ? $limitResult->fetch_assoc() : null;
-                $borrowLimit = $limitRow ? (int)$limitRow['Borrow_limit'] : 3;
+                // Borrow_limit is optional in some existing installations. Use 3 if the column is absent.
+                $borrowLimit = 3;
+                try {
+                    $columnCheck = $conn->query("SHOW COLUMNS FROM `library_details` LIKE 'Borrow_limit'");
+                    $hasBorrowLimit = $columnCheck instanceof mysqli_result && $columnCheck->num_rows > 0;
+                    if ($columnCheck instanceof mysqli_result) $columnCheck->free();
+                    if ($hasBorrowLimit) {
+                        $limitResult = $conn->query('SELECT `Borrow_limit` FROM `library_details` ORDER BY `Id` LIMIT 1');
+                        $limitRow = $limitResult instanceof mysqli_result ? $limitResult->fetch_assoc() : null;
+                        if ($limitResult instanceof mysqli_result) $limitResult->free();
+                        if ($limitRow && isset($limitRow['Borrow_limit'])) $borrowLimit = (int)$limitRow['Borrow_limit'];
+                    }
+                } catch (Throwable $limitError) {
+                    error_log('Issue Book page: Borrow_limit could not be read; using default limit 3. ' . $limitError->getMessage());
+                    $borrowLimit = 3;
+                }
                 if ($borrowLimit < 1) $borrowLimit = 3;
                 if ($activeMemberCount >= $borrowLimit) {
                     throw new RuntimeException('This member has reached the library borrowing limit of ' . $borrowLimit . ' active book(s).');
@@ -1262,6 +1275,20 @@ if ($conn instanceof mysqli) {
             display: none !important;
         }
 
+
+        /* Desktop-safe confirmation and message dialogs (avoid native JS alert/confirm). */
+        .app-dialog-overlay { display:none; position:fixed; inset:0; z-index:5000; background:rgba(0,0,0,.48); align-items:center; justify-content:center; padding:20px; }
+        .app-dialog-overlay.show { display:flex; }
+        .app-dialog-box { width:460px; max-width:100%; background:#fff; border-radius:8px; padding:24px; box-shadow:0 12px 38px rgba(0,0,0,.3); border:1px solid #d7dce0; }
+        .app-dialog-box h2 { margin:0 0 14px; color:#465660; font-size:21px; }
+        .app-dialog-box p { margin:0; color:#333; font-size:15px; line-height:1.55; white-space:pre-line; overflow-wrap:anywhere; }
+        .app-dialog-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:24px; }
+        .app-dialog-actions button { min-width:90px; padding:10px 16px; border:0; border-radius:4px; font-size:14px; cursor:pointer; }
+        .app-dialog-cancel { background:#e6e8e9; color:#333; }
+        .app-dialog-ok { background:#333; color:#fff; }
+        .app-dialog-actions button:focus { outline:2px solid #7b9eb4; outline-offset:2px; }
+        .app-dialog-actions button:disabled { opacity:.6; cursor:wait; }
+
     </style>
 
 </head>
@@ -1562,6 +1589,19 @@ if ($conn instanceof mysqli) {
 
     </div>
 
+
+    <!-- Custom in-app dialogs for PHP Desktop compatibility -->
+    <div class="app-dialog-overlay" id="appDialogOverlay" aria-hidden="true">
+        <div class="app-dialog-box" role="dialog" aria-modal="true" aria-labelledby="appDialogTitle" aria-describedby="appDialogMessage" onclick="event.stopPropagation()">
+            <h2 id="appDialogTitle">Message</h2>
+            <p id="appDialogMessage"></p>
+            <div class="app-dialog-actions">
+                <button type="button" id="appDialogCancel" class="app-dialog-cancel">Cancel</button>
+                <button type="button" id="appDialogOk" class="app-dialog-ok">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- =========================
 
          JAVASCRIPT
@@ -1569,6 +1609,87 @@ if ($conn instanceof mysqli) {
     ========================== -->
 
     <script>
+
+        /* In-app dialogs: use these instead of native alert()/confirm() in PHP Desktop. */
+        const appDialogOverlay = document.getElementById("appDialogOverlay");
+        const appDialogTitle = document.getElementById("appDialogTitle");
+        const appDialogMessage = document.getElementById("appDialogMessage");
+        const appDialogCancel = document.getElementById("appDialogCancel");
+        const appDialogOk = document.getElementById("appDialogOk");
+        let appDialogResolver = null;
+        let appDialogPreviousFocus = null;
+        let appDialogKeyHandler = null;
+
+        function openAppDialog(message, options = {}) {
+            return new Promise(resolve => {
+                if (appDialogResolver) {
+                    const previousResolver = appDialogResolver;
+                    appDialogResolver = null;
+                    if (appDialogKeyHandler) {
+                        document.removeEventListener("keydown", appDialogKeyHandler, true);
+                        appDialogKeyHandler = null;
+                    }
+                    appDialogOk.onclick = null;
+                    appDialogCancel.onclick = null;
+                    appDialogOverlay.classList.remove("show");
+                    appDialogOverlay.setAttribute("aria-hidden", "true");
+                    previousResolver(false);
+                }
+                const isConfirm = options.confirm === true;
+                appDialogResolver = resolve;
+                appDialogPreviousFocus = document.activeElement;
+                appDialogTitle.textContent = options.title || (isConfirm ? "Please confirm" : "Message");
+                appDialogMessage.textContent = String(message ?? "");
+                appDialogCancel.hidden = !isConfirm;
+                appDialogCancel.textContent = options.cancelText || "Cancel";
+                appDialogOk.textContent = options.okText || (isConfirm ? "Yes, continue" : "OK");
+                appDialogOverlay.classList.add("show");
+                appDialogOverlay.setAttribute("aria-hidden", "false");
+
+                const finish = result => {
+                    if (!appDialogResolver) return;
+                    const done = appDialogResolver;
+                    appDialogResolver = null;
+                    appDialogOverlay.classList.remove("show");
+                    appDialogOverlay.setAttribute("aria-hidden", "true");
+                    appDialogOk.onclick = null;
+                    appDialogCancel.onclick = null;
+                    if (appDialogKeyHandler) {
+                        document.removeEventListener("keydown", appDialogKeyHandler, true);
+                        appDialogKeyHandler = null;
+                    }
+                    done(result);
+                    if (appDialogPreviousFocus && typeof appDialogPreviousFocus.focus === "function") {
+                        try { appDialogPreviousFocus.focus({ preventScroll: true }); }
+                        catch (error) { appDialogPreviousFocus.focus(); }
+                    }
+                };
+
+                appDialogOk.onclick = () => finish(true);
+                appDialogCancel.onclick = () => finish(false);
+                appDialogKeyHandler = event => {
+                    if (event.key === "Escape") {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        finish(isConfirm ? false : true);
+                    } else if (event.key === "Enter" && document.activeElement === appDialogOk) {
+                        event.preventDefault();
+                        finish(true);
+                    }
+                };
+                document.addEventListener("keydown", appDialogKeyHandler, true);
+                window.setTimeout(() => (isConfirm ? appDialogCancel : appDialogOk).focus(), 0);
+            });
+        }
+
+        function showAppMessage(message, title = "Message") {
+            return openAppDialog(message, { title: title, confirm: false, okText: "OK" });
+        }
+
+        function showAppConfirm(message, title = "Please confirm", okText = "Yes, continue") {
+            return openAppDialog(message, { title: title, confirm: true, okText: okText, cancelText: "Cancel" });
+        }
+
 
         /* =========================
            SIDEBAR MENU
@@ -1689,7 +1810,7 @@ if ($conn instanceof mysqli) {
 
         async function callIssueBookApi(action, payload = null) {
             const url = window.location.pathname + "?action=" + encodeURIComponent(action);
-            const options = { method: payload ? "POST" : "GET", headers: { "Accept": "application/json" }, cache: "no-store" };
+            const options = { method: payload ? "POST" : "GET", credentials: "same-origin", headers: { "Accept": "application/json" }, cache: "no-store" };
             if (payload) {
                 options.headers["Content-Type"] = "application/x-www-form-urlencoded;charset=UTF-8";
                 options.body = new URLSearchParams(payload).toString();
@@ -1812,20 +1933,21 @@ if ($conn instanceof mysqli) {
                 document.querySelector(".form-container").scrollIntoView({ behavior: "smooth", block: "start" });
                 window.setTimeout(() => document.getElementById("issueDate").focus({ preventScroll: true }), 350);
             } catch (error) {
-                alert(error.message);
+                await showAppMessage(error.message, "Could not load request");
             }
         }
 
         async function rejectIssueRequest(requestId) {
             const request = issueRequests.find(item => item.requestId === Number(requestId));
             if (!request || (request.status !== "Pending" && request.status !== "Approved")) return;
-            if (!confirm('Reject the request from "' + request.memberName + '" for book title "' + request.bookName + '"?')) return;
+            const confirmed = await showAppConfirm('Reject the request from "' + request.memberName + '" for book title "' + request.bookName + '"?', "Reject issue request", "Reject request");
+            if (!confirmed) return;
             try {
                 await callIssueBookApi("reject_request", { request_id: request.requestId });
                 if (activeIssueRequestId === request.requestId) activeIssueRequestId = null;
                 await loadIssueRequests();
             } catch (error) {
-                alert(error.message);
+                await showAppMessage(error.message, "Could not reject request");
             }
         }
 
@@ -1841,17 +1963,21 @@ if ($conn instanceof mysqli) {
             const bookLabel = bookOption ? bookOption.textContent.trim() : bookId;
 
             if (!memberId || !bookId) {
-                alert("Please select a member and a book from the dropdown lists.");
+                await showAppMessage("Please select a member and a book from the dropdown lists.", "Missing selection");
+                return;
+            }
+            if (!issueDate || !dueDate) {
+                await showAppMessage("Please select both the issue date and due date.", "Missing dates");
                 return;
             }
             if (dueDate < issueDate) {
-                alert("Due Date cannot be before Issue Date.");
+                await showAppMessage("Due Date cannot be before Issue Date.", "Invalid dates");
                 return;
             }
-            if (!window.confirm("Confirm issuing this book?\n\nMember: " + memberLabel +
-                "\nBook Title: " + bookLabel + "\nIssue Date: " + issueDate + "\nDue Date: " + dueDate)) {
-                return;
-            }
+            const confirmed = await showAppConfirm("Confirm issuing this book?\n\nMember: " + memberLabel +
+                "\nBook Title: " + bookLabel + "\nIssue Date: " + issueDate + "\nDue Date: " + dueDate,
+                "Confirm book issue", "Issue book");
+            if (!confirmed) return;
 
             const submitButton = this.querySelector('button[type="submit"]');
             submitButton.disabled = true;
@@ -1864,7 +1990,7 @@ if ($conn instanceof mysqli) {
                     request_id: activeIssueRequestId === null ? "" : String(activeIssueRequestId)
                 };
                 const result = await callIssueBookApi("issue_book", payload);
-                alert(result.message + "\n\nMember: " + memberLabel + "\nBook: " + bookLabel + "\nDue Date: " + dueDate);
+                await showAppMessage(result.message + "\n\nMember: " + memberLabel + "\nBook: " + bookLabel + "\nDue Date: " + dueDate, "Book issued");
                 activeIssueRequestId = null;
                 this.reset();
                 const today = new Date().toISOString().split("T")[0];
@@ -1877,7 +2003,7 @@ if ($conn instanceof mysqli) {
                 }
                 await loadIssueRequests();
             } catch (error) {
-                alert(error.message);
+                await showAppMessage(error.message, "Could not issue book");
             } finally {
                 submitButton.disabled = false;
             }
@@ -2105,9 +2231,9 @@ if ($conn instanceof mysqli) {
 
                 event.stopImmediatePropagation();
 
-                alert("Please select a member from the dropdown list.");
-
-                document.getElementById("memberLookup").focus();
+                showAppMessage("Please select a member from the dropdown list.", "Member required").then(function () {
+                    document.getElementById("memberLookup").focus();
+                });
 
             } else if (!book.value) {
 
@@ -2115,9 +2241,9 @@ if ($conn instanceof mysqli) {
 
                 event.stopImmediatePropagation();
 
-                alert("Please select a book from the dropdown list.");
-
-                document.getElementById("bookLookup").focus();
+                showAppMessage("Please select a book from the dropdown list.", "Book required").then(function () {
+                    document.getElementById("bookLookup").focus();
+                });
 
             }
 
@@ -2125,7 +2251,7 @@ if ($conn instanceof mysqli) {
 
         document.getElementById("issueForm").addEventListener("reset", function () {
 
-            activeIssueRequestIndex = null;
+            activeIssueRequestId = null;
 
             window.setTimeout(function () {
 
